@@ -20,7 +20,7 @@ The first working slice is a static web/PWA application. It is designed so that 
 - a no-dependency pack compiler for Markdown sources;
 - an optional OpenAI-compatible enrichment pass for a local model or private server.
 
-The bundled demo pack is derived from the public, source-linked MiniMed pilot and contains four pediatric navigation cards. It is intentionally incomplete and is not a clinical decision or prescribing system.
+The bundled demo catalog is derived from the public, source-linked MiniMed pilot and contains four independently installable pediatric navigation-card packs. It is intentionally incomplete and is not a clinical decision or prescribing system.
 
 ## Run locally
 
