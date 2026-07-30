@@ -24,10 +24,10 @@ const modelRunHistory = create('section', { className: 'answer-panel hidden', 'a
 const modelLab = create('section', { className: 'answer-panel' }, [
   create('h2', { text: 'Локальные модели для сравнения' }),
   create('p', {
-    text: 'Все три модели работают в браузере через WebGPU. Первая загрузка требует сети; затем веса остаются в кэше браузера.',
+    text: 'Три независимых семейства работают в браузере через WebGPU: лёгкая Gemma 3, рекомендуемый Qwen3 и более тяжёлая Phi-4 Mini. Первая загрузка требует сети; затем веса остаются в кэше браузера.',
   }),
   create('label', {}, [
-    create('strong', { text: 'Выберите Qwen3: ' }),
+    create('strong', { text: 'Выберите модель: ' }),
     localAiModel,
   ]),
   localAiModelDetails,
