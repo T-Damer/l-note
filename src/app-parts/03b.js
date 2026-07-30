@@ -9,15 +9,43 @@
   );
 }
 
-function updateNoteRelatedPreview() {
-  const entities = detectRelatedEntities(`${dom.noteTitle.value} ${dom.noteBody.value}`);
+function updateNoteRelatedPreview(savedNote = null) {
+  const detected = detectRelatedEntities(`${dom.noteTitle.value} ${dom.noteBody.value}`);
+  const savedIds = new Set(savedNote?.relatedEntityIds ?? []);
+  const savedEntities = [...savedIds]
+    .map((id) => state.knowledge.entities.get(id))
+    .filter(Boolean);
+  const proposedEntities = detected.filter((entity) => !savedIds.has(entity.id));
+
   dom.noteRelatedPreview.replaceChildren();
-  if (!entities.length) {
-    dom.noteRelatedPreview.textContent = 'Автоматические связи с понятиями появятся, когда в заметке встретятся термины из установленных пакетов.';
-    return;
+  if (savedEntities.length) {
+    dom.noteRelatedPreview.append(Text({ variant: 'label', text: 'Связано со справочником' }));
+    const links = create('div', { className: 'entity-aliases' });
+    for (const entity of savedEntities) {
+      const button = create('button', {
+        className: 'pill entity-pill-button',
+        type: 'button',
+        text: entity.name,
+      });
+      button.addEventListener('click', () => navigateResource('concept', entity.id));
+      links.append(button);
+    }
+    dom.noteRelatedPreview.append(links);
   }
-  dom.noteRelatedPreview.append(Text({ variant: 'label', text: 'Будут связаны понятия: ' }));
-  for (const entity of entities) dom.noteRelatedPreview.append(create('span', { className: 'pill', text: entity.name }));
+
+  if (proposedEntities.length) {
+    dom.noteRelatedPreview.append(Text({
+      variant: 'label',
+      text: savedEntities.length ? 'Дополнительно будут связаны' : 'Будут связаны понятия',
+    }));
+    const proposed = create('div', { className: 'entity-aliases' });
+    for (const entity of proposedEntities) proposed.append(create('span', { className: 'pill', text: entity.name }));
+    dom.noteRelatedPreview.append(proposed);
+  }
+
+  if (!savedEntities.length && !proposedEntities.length) {
+    dom.noteRelatedPreview.textContent = 'Автоматические связи с понятиями появятся, когда в заметке встретятся термины из установленных пакетов.';
+  }
 }
 
 function renderNoteDialog(note = null, targetClaimId = null) {
@@ -30,7 +58,7 @@ function renderNoteDialog(note = null, targetClaimId = null) {
   dom.noteRelation.value = note?.relation ?? 'observation';
   dom.deleteNoteButton.classList.toggle('hidden', !editing);
   renderNoteTarget(dom.noteTargetClaim.value);
-  updateNoteRelatedPreview();
+  updateNoteRelatedPreview(note);
   showRoutedDialog(dom.noteDialog);
   return true;
 }
