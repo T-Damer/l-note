@@ -67,6 +67,22 @@ export interface LocalModelPort {
   answer(query: string, evidence: EvidenceEnvelope): Promise<LocalModelAnswer>;
 }
 
+export interface EvidenceVerificationResult {
+  accepted: boolean;
+  supported: boolean;
+  invalidCitations?: string[];
+  unsupportedStatements?: string[];
+  diagnostics?: Record<string, unknown>;
+}
+
+export interface EvidenceVerifierPort {
+  readonly id?: string;
+  verify(
+    answer: LocalModelAnswer | string,
+    evidence: EvidenceEnvelope,
+  ): EvidenceVerificationResult | Promise<EvidenceVerificationResult>;
+}
+
 export type SearchPortFactory = (
   records: SearchRecord[],
   concepts: KnowledgeConcept[],
@@ -77,6 +93,7 @@ export function defineSearchPort<T extends SearchPort>(candidate: T): T;
 export function defineStoragePort<T extends StoragePort>(candidate: T): T;
 export function defineDomainQueryPlannerPort<T extends DomainQueryPlannerPort>(candidate: T): T;
 export function defineLocalModelPort<T extends LocalModelPort>(candidate: T): T;
+export function defineEvidenceVerifierPort<T extends EvidenceVerifierPort>(candidate: T): T;
 export function activeDomainQueryExpanders(
   planners: DomainQueryPlannerPort[],
   packs: KnowledgePack[],
