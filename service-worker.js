@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v1';
-const RUNTIME_CACHE = 'l-note-runtime-v1';
+const SHELL_CACHE = 'l-note-shell-v2';
+const RUNTIME_CACHE = 'l-note-runtime-v2';
 const SHELL = [
   './',
   './index.html',
