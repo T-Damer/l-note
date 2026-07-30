@@ -6,6 +6,7 @@ export type IconKey =
   | 'packages'
   | 'notes'
   | 'back'
+  | 'forward'
   | 'close'
   | 'download'
   | 'import'
