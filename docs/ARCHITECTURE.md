@@ -11,12 +11,13 @@ L-Note is a hosted, offline-first knowledge workspace with:
 - source-linked statements, relations, backlinks and a separate personal-note overlay;
 - optional WebLLM over a versioned evidence envelope;
 - model installation that is independent from question/evidence entry;
-- shared `Text`, Icon, Card, Button and SourceCard primitives;
-- list/graph views for packages;
+- a model-first Ask page: compact name/parameters/size/power state, then progress/error/retry, then the question workspace;
+- shared `Text`, Icon, Card, Button, SourceCard and routed-dialog primitives;
+- list/graph views for packages, documents, sections, concepts and relations;
 - SCSS partials and a deterministic static-PWA build;
 - headless-Chrome E2E for direct links, reload, nested Back, full-chain Close and modal scrolling.
 
-The outer dialog and its shell do not scroll. `.dialog-body` is the only vertical scroll container, and the document root/body are locked while a routed card is open. The E2E scenario installs the infectious-disease pack and verifies this behavior on the rotavirus document.
+The outer dialog and its shell never scroll. `.dialog-body` is the only vertical scroll container; the document root and body are locked while a routed card is open. The header reserves Back, title and Close columns, so hiding Back cannot move Close away from the right edge.
 
 ## L-Note Core and MiniMed
 
@@ -100,20 +101,23 @@ Every ranking failure becomes a regression test. Domain vocabulary belongs in a 
 
 ## Local-model boundary
 
-Downloading and loading a model does not require a question or retrieved evidence. The selected `LocalModelPort` can be prepared first; a question and evidence become mandatory only when generation begins.
+Downloading and loading a model does not require a question or retrieved evidence. The selected `LocalModelPort` is prepared first; a question and evidence become mandatory only when generation begins.
 
 ```text
-select model
-  → download/load WebLLM
-  → reveal question workspace
+selected model off
+  → compact metadata and download interface
+  → percentage + approximate loaded/total/remaining size + speed
+  → ready or structured error with retry
+  → selected model on
+  → reveal question and answer workspace
   → retrieve local evidence
   → generate from evidence only
   → validate source identifiers
 ```
 
-The current browser UI displays progress estimated from WebLLM events. Exact resumable byte ranges, cancellation and the shared model/document priority queue remain separate future capabilities.
+Selecting another unloaded model hides the workspace again. Approximate byte/speed values are derived from the configured model size and WebLLM progress callbacks. Exact resumable byte ranges, cancellation and a shared model/document priority queue remain future runtime capabilities.
 
-## Routing and graph
+## Routing, dialogs and graph
 
 Stable routes:
 
@@ -129,9 +133,11 @@ Stable routes:
 #/note/:id
 ```
 
-Browser history owns nested card traversal. Back moves through the card chain; full Close returns to the recorded base page and removes forward card routes.
+Browser history owns nested card traversal. Back moves through the card chain; full Close returns to the recorded base page and removes forward card routes. A shared routed-dialog controller owns show/close, back visibility and dialog content surfaces; resource-specific body renderers are the remaining migration step.
 
-The package graph uses the same resource routes. Its data model contains available/installed package, document, section and concept nodes plus containment, mention and concept-relation edges. Category colors are SCSS variables. Explicit pack categories take priority; the generic projector may infer common presentation categories from metadata without changing the knowledge contract. Mixed-category nodes render proportional gradients, including the tested 50/50 pediatric/dentistry tooth-eruption case.
+The package graph uses the same resource routes. Its data model contains available/installed package, document, section and concept nodes plus containment, mention and concept-relation edges. An uninstalled package node opens its normal routed installation card.
+
+Category colors are SCSS variables. Explicit pack categories take priority; the generic projector may infer presentation categories from metadata without changing the knowledge contract. Multiple weighted categories render proportional gradients. A downloadable demonstration pack includes a 50/50 pediatrics/dentistry tooth-eruption node.
 
 ## Preparation boundary
 
@@ -147,11 +153,12 @@ PDF/DOCX parsing, OCR and database exporters belong before this normalized contr
 
 ## Next ordered work
 
-1. Split transitional app fragments into pages, services, helpers and components.
-2. Replace repeated fields and resource renderers with shared fields and one routed-dialog renderer.
-3. Add a visible mixed-category demo pack and browser graph coverage.
+1. Replace the three resource-specific body renderers with the shared routed-dialog renderer and split transitional app fragments into pages/services/helpers.
+2. Add shared field/switch primitives and finish interaction-state auditing.
+3. Add browser E2E for graph/list switching and node navigation.
 4. Add internal local PDF assets with exact anchors.
-5. Add SQLite/FTS5 behind `SearchPort`/`StoragePort`.
-6. Connect the adapter in MiniMed and require MiniMed’s existing retrieval/safety benchmarks before migration.
+5. Add cancellation and a persistent model/document download queue where runtimes allow it.
+6. Add SQLite/FTS5 behind `SearchPort`/`StoragePort`.
+7. Connect the adapter in MiniMed and require MiniMed’s existing retrieval/safety benchmarks before migration.
 
 Android and iOS remain deferred until the hosted web core is stable.
