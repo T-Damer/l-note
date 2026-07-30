@@ -9,7 +9,20 @@ import { minimedDomainQueryPlanner } from './domain-plugins/minimed.js';
 const storagePort = createIndexedDbStoragePort();
 const domainQueryPlanners = [minimedDomainQueryPlanner];
 
+state.storage = storagePort;
+state.search = createMiniSearchPort([], []);
 state.localAi = createWebLlmPort();
+
+renderSidebarStatus = function renderSidebarStatusThroughStoragePort() {
+  const enabled = state.packRecords.filter((record) => record.enabled);
+  const offline = !navigator.onLine;
+  dom.sidebarStatus.replaceChildren(
+    create('strong', { text: offline ? 'Оффлайн-режим' : 'Локальное хранилище' }),
+    create('span', {
+      text: `${enabled.length} пак. · ${storagePort.mode() === 'persistent' ? 'IndexedDB' : 'память вкладки'}`,
+    }),
+  );
+};
 
 installPack = async function installPackThroughStoragePort(pack, source = {}) {
   const validation = validatePack(pack);
