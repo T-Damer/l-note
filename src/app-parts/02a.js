@@ -60,7 +60,10 @@ function runSearch(query) {
     card.append(header, snippet, footer);
     card.tabIndex = 0;
     card.setAttribute('role', 'button');
-    const open = () => (result.kind === 'note' ? openNoteById(result.noteId) : openDocument(result));
+    const open = () => {
+      if (result.kind === 'note') navigateResource('note', result.noteId);
+      else navigateResource('document', result.documentId, { sectionId: result.sectionId });
+    };
     card.addEventListener('click', open);
     card.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') {
@@ -96,7 +99,7 @@ function appendEntityLinkedText(container, text, entityIds) {
     const candidate = candidates.find(({ term }) => normalizeText(term) === normalizeText(matched));
     if (candidate) {
       const button = create('button', { className: 'entity-link', text: matched, type: 'button' });
-      button.addEventListener('click', () => openEntity(candidate.entity.id));
+      button.addEventListener('click', () => navigateResource('concept', candidate.entity.id));
       container.append(button);
     } else container.append(document.createTextNode(matched));
     cursor = index + matched.length;
@@ -110,12 +113,9 @@ function claimsForSection(documentId, sectionId) {
   );
 }
 
-function openDocument(record) {
+function renderDocumentDialog(record) {
   const documentRecord = findDocumentForSection(state.knowledge, record);
-  if (!documentRecord) {
-    toast('Исходный документ не найден.', 'error');
-    return;
-  }
+  if (!documentRecord) return false;
   dom.documentDialogHeading.replaceChildren(
     create('p', { className: 'eyebrow', text: documentRecord.packTitle }),
     create('h2', { text: documentRecord.title }),
