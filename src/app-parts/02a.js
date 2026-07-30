@@ -52,7 +52,10 @@ function runSearch(query) {
     const footer = create('footer');
     footer.append(
       create('span', { className: 'pill muted', text: result.kind === 'note' ? 'Личная запись' : 'Справочный источник' }),
-      create('span', { text: `релевантность ${Number(result.score).toFixed(1)}` }),
+      create('span', {
+        title: 'Относительная релевантность внутри текущей поисковой выдачи, а не вероятность диагноза.',
+        text: `релевантность ${result.relevance ?? 0}%`,
+      }),
     );
     card.append(header, snippet, footer);
     card.tabIndex = 0;
@@ -120,4 +123,3 @@ function openDocument(record) {
   );
   dom.documentDialogBody.replaceChildren();
   if (documentRecord.summary) dom.documentDialogBody.append(create('p', { className: 'document-summary', text: documentRecord.summary }));
-
