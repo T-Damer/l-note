@@ -2,126 +2,102 @@
 
 ## Current state
 
-The hosted web prototype currently provides:
+L-Note is a hosted, offline-first knowledge workspace with:
 
-- installable, checksummed JSON knowledge packs persisted in IndexedDB;
-- MiniSearch full-text, prefix, alias and fuzzy retrieval with a deterministic fallback;
-- optional domain query planners isolated from the generic search engine;
-- normalized `0–100%` retrieval relevance;
-- routed packages, documents, concepts, statements and notes using hash URLs and browser history;
-- exact source-linked statements, relations, backlinks and a separate personal-note overlay;
-- optional browser-local WebLLM over retrieved evidence only;
-- versioned evidence envelopes and deterministic citation-ID validation;
-- SCSS source partials and deterministic static-PWA builds;
-- shared `Text`, Icon, Card and Button primitives plus centralized routed-dialog close binding.
+- checksummed JSON knowledge packs stored in IndexedDB;
+- MiniSearch exact, prefix, alias and fuzzy retrieval with deterministic fallback;
+- optional domain query planners outside the generic search engine;
+- hash-routed packages, documents, concepts, statements and notes;
+- source-linked statements, relations, backlinks and a separate personal-note overlay;
+- optional WebLLM over a versioned evidence envelope;
+- shared `Text`, Icon, Card, Button and SourceCard primitives;
+- list/graph views for packages;
+- SCSS partials and a deterministic static-PWA build;
+- headless-Chrome E2E for direct links, reload, nested Back, full-chain Close and modal scrolling.
 
-The active shell composes its search, storage, domain planner and local-model behavior through shared ports. Transitional legacy functions remain in the concatenated prototype files until the page/component split removes them, but they are no longer the active runtime path.
+The outer dialog and its shell do not scroll. `.dialog-body` is the only vertical scroll container, and the document root/body are locked while a routed card is open. The E2E scenario installs the infectious-disease pack and verifies this behavior on the rotavirus document.
 
-## Product and MiniMed boundary
+## L-Note Core and MiniMed
 
-L-Note is the canonical **domain-neutral knowledge runtime**, not a replacement for MiniMed's medical domain layer.
+L-Note is the domain-neutral runtime. MiniMed should consume it as an adapter-backed core, not copy its infrastructure and not move clinical policy into L-Note.
 
-Reusable L-Note responsibilities:
+L-Note owns:
 
 ```text
 portable contracts and stable IDs
-installed-pack composition
-storage and search ports
+pack installation and composition
+storage/search/model ports
 concepts, statements, relations and backlinks
 personal overlay
 versioned evidence collection
-provider-independent local-model boundary
-shared routing and UI primitives
+generic evidence-verification boundary
+hash-routing primitives
+shared generic UI primitives
 ```
 
-MiniMed-owned responsibilities:
+MiniMed continues to own:
 
 ```text
 medical query parsing and negation
 clinical intent and section ranking
 medical aliases and taxonomy
-dose and regimen validation
+dose/regimen validation
 clinical abstention and safety gates
-medical benchmarks and source policies
+medical benchmark suites and source policy
 ```
 
-MiniMed should later consume L-Note through adapters. Medicine must not leak into the universal contracts, and L-Note must not weaken MiniMed into a lowest-common-denominator generic search application.
+## Public adapter API
 
-## Shared core
+Stable pre-release entrypoints:
 
 ```text
-src/core/contracts.js + .d.ts   versioned pack, resource, note, search and evidence contracts
-src/core/ports.js + .d.ts       SearchPort, StoragePort, DomainQueryPlannerPort, LocalModelPort
-src/core/runtime.js + .d.ts     installed-pack composition and headless runtime state
-src/adapters/runtime-adapters   MiniSearch, IndexedDB/memory and WebLLM browser adapters
-src/domain-plugins/minimed.js   optional MiniMed query planner adapter
+l-note/core
+l-note/adapters/browser
+l-note/integrations/minimed
 ```
 
-`LNOTE_CONTRACT_VERSION` versions runtime-facing evidence and public contracts. `KNOWLEDGE_PACK_SCHEMA_VERSION` versions portable pack payloads. Runtime guards reject malformed boundary objects; the existing pack validator remains responsible for referential integrity and exact-evidence checks.
-
-The serialized names remain compatible with the current pack format:
+Important modules:
 
 ```text
-concept   ↔ pack.entities[]
-statement ↔ pack.claims[]
-relation  ↔ pack.relations[]
+src/core/contracts.*             public pack/resource/evidence contracts
+src/core/ports.*                 Search, Storage, DomainPlanner, LocalModel, EvidenceVerifier
+src/core/runtime.*               headless pack/note/search composition
+src/core/application-adapter.*   bundle of runtime ports for an application
+src/adapters/runtime-adapters.*  MiniSearch, IndexedDB/memory and WebLLM
+src/integrations/minimed-adapter.* MiniMed compatibility boundary
 ```
 
-Changing user-facing terminology does not require changing stable serialized IDs.
+`KnowledgeApplicationAdapter` bundles storage, search, domain planners, an optional local model and an optional evidence verifier. `composeKnowledgeApplicationRuntime()` builds the headless runtime without DOM assumptions.
 
-## Runtime
+The MiniMed adapter requires at least one medical query planner, an evidence verifier, MiniMed-owned analysis/ranking/dose/abstention functions and a benchmark-suite ID. These are compatibility requirements, not medical implementations in L-Note.
+
+## Storage and retrieval
+
+JSON remains the current transport and small/medium browser artifact. It is not the permanent search abstraction.
 
 ```text
-application shell
-  → KnowledgeRuntime
-  → StoragePort
-  → SearchPort
-  → optional DomainQueryPlannerPort(s)
-  → versioned EvidenceEnvelope
-  → optional LocalModelPort
+MiniSearch + IndexedDB   current browser implementation
+SQLite + FTS5            planned large-pack and MiniMed implementation
+optional vector adapter  planned semantic/hybrid layer
 ```
 
-Browser adapters currently resolve to:
+Retrieval order:
 
-```text
-StoragePort     → IndexedDB with in-memory fallback
-SearchPort      → MiniSearch with Damerau–Levenshtein fallback
-Domain planner  → optional MiniMed vocabulary plugin
-LocalModelPort  → WebLLM
-```
-
-Search, linked reading, notes and deterministic evidence must remain useful when no model is installed.
-
-## Storage and search boundary
-
-JSON is currently the transport and small-corpus prototype artifact. It is not the permanent search abstraction.
-
-```text
-MiniSearch + IndexedDB   current small/medium browser adapter
-SQLite + FTS5            planned large-pack and MiniMed adapter
-optional vector adapter  planned semantic/hybrid retrieval layer
-```
-
-A SQLite adapter should be reusable by L-Note and MiniMed, while medical query planning remains a MiniMed plugin.
-
-## Retrieval path
-
-1. Normalize Unicode, Russian `ё`/`е`, punctuation and whitespace.
+1. Normalize Unicode, Russian `ё/е`, punctuation and whitespace.
 2. Expand declared concept names and aliases.
-3. Apply optional domain planners, such as the isolated MiniMed demo planner.
-4. Run MiniSearch with field boosts, prefix search and fuzzy matching.
-5. Fall back to the embedded Damerau–Levenshtein scorer when MiniSearch is unavailable.
-6. Normalize displayed relevance relative to the current result set; it is not diagnostic probability.
-7. Resolve results to pack, document, section, concepts, statements and source metadata.
-8. Merge the personal overlay according to the selected ranking policy.
-9. Build a bounded, versioned evidence envelope.
-10. Only then may a local model synthesize an answer; unknown source IDs are rejected.
+3. Apply optional domain planners.
+4. Retrieve with field boosts, prefix and fuzzy matching.
+5. Use deterministic Damerau–Levenshtein fallback when MiniSearch is unavailable.
+6. Normalize displayed relevance to `0–100%`; it is never diagnostic probability.
+7. Resolve results to sources, statements, concepts and personal notes.
+8. Build a bounded, versioned evidence envelope.
+9. Optionally verify and synthesize through application/domain adapters.
 
-Every reported ranking failure should become a regression test. Domain vocabulary belongs in a plugin or pack, never in the generic search implementation.
+Every ranking failure becomes a regression test. Domain vocabulary belongs in a plugin or pack.
 
-## Route boundary
+## Routing and graph
 
-Hash URLs are the portable navigation contract:
+Stable routes:
 
 ```text
 #/search
@@ -135,27 +111,11 @@ Hash URLs are the portable navigation contract:
 #/note/:id
 ```
 
-The URL is the source of truth for opened resources. Browser history owns nested traversal. Back returns through the chain; full Close returns to the recorded base page and removes the forward resource chain.
+Browser history owns nested card traversal. Back moves through the card chain; full Close returns to the recorded base page and removes forward card routes.
 
-Routing belongs to the application shell. Stable resource IDs and resolvers belong to the core contract.
+The package graph uses the same resource routes. Its data model contains package, document, section and concept nodes plus containment, mention and concept-relation edges. Category colors are SCSS variables; mixed-category nodes render proportional gradients.
 
-## UI and styling boundary
-
-All authored styles live under `styles/`. `styles/main.scss` defines partial order and `tools/build-styles.mjs` generates `styles.css`. Palette, themes, semantic colors, interaction states and graph-category colors remain centralized.
-
-The framework-free shell now has reusable primitives:
-
-```text
-src/ui/text.js + .d.ts         predefined typography variants without raw HTML
-src/ui/icons.js + .d.ts        centralized Phosphor names, category mapping and placeholder
-src/ui/components.js + .d.ts   Button, Card and routed-dialog close binding
-```
-
-`@phosphor-icons/web` is pinned and copied into `vendor/phosphor` during local and static builds. The font, CSS and UI modules are part of the offline shell; the application does not depend on an icon CDN.
-
-`Card` now owns keyboard activation for search results, packages and notes. `Button` is used by package actions. Escape and backdrop closing use the shared routed-dialog binding. The migration is not complete: fields, source cards and the three dialog renderers still need shared components, and the transitional app parts still need to become page/services modules.
-
-## Pack preparation boundary
+## Preparation boundary
 
 ```text
 reviewed records or Markdown/TXT/JSON
@@ -165,18 +125,15 @@ reviewed records or Markdown/TXT/JSON
   → validated portable pack
 ```
 
-PDF/DOCX parsing, OCR, database exporters and domain ETL belong before the normalized authoring contract. A model may propose structure but never silently replace source text.
-
-## Personal overlay
-
-Reference packs are immutable installed inputs. Notes remain physically separate and may link to a stable statement using `observation`, `supports`, `refines`, `contradicts` or `supersedes`. `supersedes` changes local ranking only; both versions remain visible and traceable.
+PDF/DOCX parsing, OCR and database exporters belong before this normalized contract. Model output may propose structure but never silently replace source text.
 
 ## Next ordered work
 
-1. Add browser E2E coverage for direct links, refresh, nested Back and full-chain Close.
-2. Remove transitional direct imports while splitting the shell into page, service and component modules.
-3. Extract shared fields, source cards and one routed-dialog renderer around the current primitives.
-4. Add the internal PDF asset path and knowledge graph after the component boundary is stable.
-5. Add SQLite/FTS5 without moving MiniMed rules into the shared core.
+1. Split transitional app fragments into pages, services, helpers and components.
+2. Replace repeated fields and resource renderers with shared fields and one routed-dialog renderer.
+3. Finish package-graph installation/category examples and add its browser coverage.
+4. Add internal local PDF assets with exact anchors.
+5. Add SQLite/FTS5 behind `SearchPort`/`StoragePort`.
+6. Connect the adapter in MiniMed and require MiniMed’s existing retrieval/safety benchmarks before migration.
 
-Android and iOS remain deferred until the hosted web core is stable.
+Android/iOS remain deferred until the hosted web core is stable.
