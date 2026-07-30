@@ -1,0 +1,32 @@
+.sheet-dialog {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.dialog-shell {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dialog-header,
+.dialog-footer {
+  flex: 0 0 auto;
+}
+
+.dialog-body {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 680px) {
+  .sheet-dialog,
+  .sheet-dialog.narrow {
+    height: calc(100dvh - env(safe-area-inset-top));
+    max-height: calc(100dvh - env(safe-area-inset-top));
+  }
+}
