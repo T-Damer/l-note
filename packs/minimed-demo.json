@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "id": "minimed-demo",
+  "version": "2026.07.30",
+  "title": "MiniMed demo",
+  "description": "Демонстрационный медицинский пакет с provenance и связями.",
+  "license": "Source-specific; see document provenance",
+  "documents": [
+    {
+      "id": "drug.rf.ceftriaxone.injection-1g",
+      "title": "Цефтриаксон — порошок для инъекций 1 г",
+      "aliases": ["цефтриаксон 1г", "ceftriaxone"],
+      "tags": ["лекарство", "регистрация", "инъекции"],
+      "text": "В государственном реестре предельных отпускных цен присутствует лекарственный препарат с МНН цефтриаксон: порошок для приготовления раствора для внутривенного и внутримышечного введения, дозировка 1 г, регистрационное удостоверение ЛП-№(005496)-(РГ-RU). Дата вступления решения в силу — 7 июля 2026 года. Карточка фиксирует регистрационную идентичность и форму выпуска. Она не заменяет официальную инструкцию, не содержит режима дозирования и не подтверждает применимость конкретному пациенту.",
+      "source": {
+        "label": "MiniMed / государственный реестр предельных отпускных цен",
+        "url": "https://pots.minzdrav.gov.ru/public_price_limits?page=3456",
+        "date": "2026-07-07",
+        "recordId": "1000135207",
+        "registrationNumber": "ЛП-№(005496)-(РГ-RU)",
+        "sourceRepository": "T-Damer/MiniMed",
+        "sourcePath": "content/pilot-rf/ceftriaxone.md"
+      }
+    },
+    {
+      "id": "concept.evidence-first",
+      "title": "Retrieval-first: источник первичен",
+      "aliases": ["evidence first", "проверка источника", "retrieval first"],
+      "tags": ["методология", "цитаты", "фактчекинг"],
+      "text": "Поиск и чтение точного источника должны работать полностью офлайн. Извлечение выполняется после поиска, а каждый модельный вывод обязан разрешаться в конкретный найденный фрагмент. Сгенерированный текст не заменяет исходный абзац. При отсутствии подтверждения система должна воздержаться от ответа.",
+      "source": {
+        "label": "MiniMed product contract",
+        "url": "https://github.com/T-Damer/MiniMed/blob/main/docs/PRODUCT.md",
+        "date": "2026-07-29",
+        "sourceRepository": "T-Damer/MiniMed",
+        "sourcePath": "docs/PRODUCT.md"
+      }
+    },
+    {
+      "id": "concept.content-modules",
+      "title": "Устанавливаемые модули знаний",
+      "aliases": ["knowledge pack", "content module", "пакет знаний"],
+      "tags": ["оффлайн", "модули", "скачивание"],
+      "text": "Каталог описывает устанавливаемые модули с версиями, совместимостью, контрольными суммами, размерами, зависимостями и возможностями. Опубликованный модуль должен иметь скачиваемый индекс и SHA-256. Пользователь может устанавливать, отключать, удалять и откатывать модули независимо.",
+      "source": {
+        "label": "MiniMed content module contracts",
+        "url": "https://github.com/T-Damer/MiniMed/blob/main/packages/contracts/src/content-modules.ts",
+        "date": "2026-07-29",
+        "sourceRepository": "T-Damer/MiniMed",
+        "sourcePath": "packages/contracts/src/content-modules.ts"
+      }
+    }
+  ],
+  "entities": [
+    {"id":"entity.ceftriaxone","name":"Цефтриаксон","aliases":["ceftriaxone","цефтриаксон 1 г"],"type":"medication","documentIds":["drug.rf.ceftriaxone.injection-1g"]},
+    {"id":"entity.mnn","name":"МНН","aliases":["международное непатентованное наименование"],"type":"abbreviation","documentIds":["drug.rf.ceftriaxone.injection-1g"]},
+    {"id":"entity.retrieval-first","name":"Retrieval-first","aliases":["поиск до генерации","evidence-first"],"type":"method","documentIds":["concept.evidence-first"]},
+    {"id":"entity.knowledge-pack","name":"Пакет знаний","aliases":["content module","knowledge pack"],"type":"architecture","documentIds":["concept.content-modules"]}
+  ],
+  "relations": [
+    {"sourceId":"entity.mnn","predicate":"EXPANDS_TO","targetLabel":"международное непатентованное наименование","evidenceDocumentId":"drug.rf.ceftriaxone.injection-1g"},
+    {"sourceId":"entity.ceftriaxone","predicate":"HAS_FORM","targetLabel":"порошок для внутривенного и внутримышечного введения 1 г","evidenceDocumentId":"drug.rf.ceftriaxone.injection-1g"},
+    {"sourceId":"entity.retrieval-first","predicate":"REQUIRES","targetId":"entity.knowledge-pack","evidenceDocumentId":"concept.evidence-first"}
+  ]
+}
