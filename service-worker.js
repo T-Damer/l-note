@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v12';
-const RUNTIME_CACHE = 'l-note-runtime-v12';
+const SHELL_CACHE = 'l-note-shell-v13';
+const RUNTIME_CACHE = 'l-note-runtime-v13';
 const SHELL = [
   './',
   './index.html',
@@ -21,13 +21,16 @@ const SHELL = [
   './src/core/ports.js',
   './src/core/runtime.js',
   './src/core/application-adapter.js',
+  './src/core/knowledge-graph.js',
   './src/adapters/runtime-adapters.js',
   './src/domain-plugins/minimed.js',
   './src/integrations/minimed-adapter.js',
   './src/services/model-action.js',
+  './src/services/model-progress.js',
   './src/ui/text.js',
   './src/ui/icons.js',
   './src/ui/components.js',
+  './src/ui/knowledge-graph.js',
   './packs/catalog.json',
 ];
 
