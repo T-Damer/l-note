@@ -97,5 +97,10 @@ async function bootstrap() {
   } catch (error) {
     toast(error instanceof Error ? error.message : String(error), 'error');
   }
+  try {
+    await ensureWelcomeNote(storagePort);
+  } catch (error) {
+    console.warn('Welcome note could not be seeded.', error);
+  }
   await refreshState();
 }
