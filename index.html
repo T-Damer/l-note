@@ -20,10 +20,10 @@
           <span><strong>L-Note</strong><small>локальная база знаний</small></span>
         </a>
         <nav class="primary-nav">
-          <button type="button" data-nav="search" class="active"><span>⌕</span>Поиск</button>
-          <button type="button" data-nav="ask"><span>✦</span>Спросить</button>
-          <button type="button" data-nav="library"><span>▦</span>Пакеты</button>
-          <button type="button" data-nav="notes"><span>✎</span>Заметки <b id="notes-count"></b></button>
+          <button type="button" data-nav="search" class="active"><i class="ph ph-magnifying-glass icon" aria-hidden="true"></i>Поиск</button>
+          <button type="button" data-nav="ask"><i class="ph ph-sparkle icon" aria-hidden="true"></i>Спросить</button>
+          <button type="button" data-nav="library"><i class="ph ph-books icon" aria-hidden="true"></i>Пакеты</button>
+          <button type="button" data-nav="notes"><i class="ph ph-note-pencil icon" aria-hidden="true"></i>Заметки <b id="notes-count"></b></button>
         </nav>
         <section class="sidebar-status" id="sidebar-status" aria-live="polite"></section>
       </aside>
@@ -41,7 +41,7 @@
             <label for="search-input">Запрос</label>
             <div class="search-input-row">
               <input id="search-input" name="query" autocomplete="off" placeholder="Например: сыпь не бледнеет при надавливании" />
-              <button type="submit" class="primary-button">Найти</button>
+              <button type="submit" class="primary-button button-with-icon"><i class="ph ph-magnifying-glass icon" aria-hidden="true"></i>Найти</button>
             </div>
             <div class="search-options">
               <label><input id="personal-priority" type="checkbox" /> Поднимать личные заметки выше</label>
@@ -66,8 +66,8 @@
           <form id="ask-form" class="ask-composer">
             <textarea id="ask-input" rows="4" placeholder="Сформулируйте комплексный вопрос…"></textarea>
             <div class="composer-actions">
-              <button type="submit" class="primary-button">Собрать доказательства</button>
-              <button type="button" class="secondary-button" data-action="load-local-ai">Подключить локальный WebLLM</button>
+              <button type="submit" class="primary-button button-with-icon"><i class="ph ph-magnifying-glass icon" aria-hidden="true"></i>Собрать доказательства</button>
+              <button type="button" class="secondary-button button-with-icon" data-action="load-local-ai"><i class="ph ph-brain icon" aria-hidden="true"></i>Подключить локальный WebLLM</button>
             </div>
             <p id="ai-status" class="muted">ИИ необязателен: сводка источников работает полностью офлайн без модели.</p>
           </form>
@@ -82,7 +82,7 @@
               <p>Каждый пакет хранится локально и удаляется независимо. После установки поиск не обращается к серверу.</p>
             </div>
             <div class="header-actions">
-              <label class="secondary-button file-button">Импортировать .json<input id="pack-file-input" type="file" accept="application/json,.json" /></label>
+              <label class="secondary-button file-button file-button-with-icon"><i class="ph ph-upload-simple icon" aria-hidden="true"></i>Импортировать .json<input id="pack-file-input" type="file" accept="application/json,.json" /></label>
             </div>
           </header>
           <div id="storage-summary" class="storage-summary"></div>
@@ -97,9 +97,9 @@
               <p>Личные наблюдения не переписывают справочник: они хранятся отдельно и явно связываются с утверждениями.</p>
             </div>
             <div class="header-actions">
-              <button class="secondary-button" type="button" data-action="export-notes">Экспорт</button>
-              <label class="secondary-button file-button">Импорт<input id="notes-file-input" type="file" accept="application/json,.json" /></label>
-              <button class="primary-button" type="button" data-action="new-note">Новая заметка</button>
+              <button class="secondary-button button-with-icon" type="button" data-action="export-notes"><i class="ph ph-download-simple icon" aria-hidden="true"></i>Экспорт</button>
+              <label class="secondary-button file-button file-button-with-icon"><i class="ph ph-upload-simple icon" aria-hidden="true"></i>Импорт<input id="notes-file-input" type="file" accept="application/json,.json" /></label>
+              <button class="primary-button button-with-icon" type="button" data-action="new-note"><i class="ph ph-note-pencil icon" aria-hidden="true"></i>Новая заметка</button>
             </div>
           </header>
           <section id="notes-grid" class="notes-grid"></section>
@@ -107,19 +107,19 @@
       </main>
 
       <nav class="mobile-nav" aria-label="Основная навигация">
-        <button type="button" data-nav="search" class="active"><span>⌕</span>Поиск</button>
-        <button type="button" data-nav="ask"><span>✦</span>Ответ</button>
-        <button type="button" data-nav="library"><span>▦</span>Пакеты</button>
-        <button type="button" data-nav="notes"><span>✎</span>Заметки</button>
+        <button type="button" data-nav="search" class="active"><i class="ph ph-magnifying-glass icon" aria-hidden="true"></i>Поиск</button>
+        <button type="button" data-nav="ask"><i class="ph ph-sparkle icon" aria-hidden="true"></i>Ответ</button>
+        <button type="button" data-nav="library"><i class="ph ph-books icon" aria-hidden="true"></i>Пакеты</button>
+        <button type="button" data-nav="notes"><i class="ph ph-note-pencil icon" aria-hidden="true"></i>Заметки</button>
       </nav>
     </div>
 
     <dialog id="document-dialog" class="sheet-dialog">
       <form method="dialog" class="dialog-shell">
         <header class="dialog-header">
-          <button class="icon-button dialog-back-button" type="button" data-action="resource-back" aria-label="Назад" hidden>←</button>
+          <button class="icon-button dialog-back-button" type="button" data-action="resource-back" aria-label="Назад" hidden><i class="ph ph-arrow-left icon" aria-hidden="true"></i></button>
           <div id="document-dialog-heading" class="dialog-heading"></div>
-          <button class="icon-button" type="button" data-action="close-resource-chain" aria-label="Закрыть">×</button>
+          <button class="icon-button" type="button" data-action="close-resource-chain" aria-label="Закрыть"><i class="ph ph-x icon" aria-hidden="true"></i></button>
         </header>
         <div id="document-dialog-body" class="dialog-body"></div>
       </form>
@@ -128,9 +128,9 @@
     <dialog id="entity-dialog" class="sheet-dialog narrow">
       <form method="dialog" class="dialog-shell">
         <header class="dialog-header">
-          <button class="icon-button dialog-back-button" type="button" data-action="resource-back" aria-label="Назад" hidden>←</button>
+          <button class="icon-button dialog-back-button" type="button" data-action="resource-back" aria-label="Назад" hidden><i class="ph ph-arrow-left icon" aria-hidden="true"></i></button>
           <div id="entity-dialog-heading" class="dialog-heading"></div>
-          <button class="icon-button" type="button" data-action="close-resource-chain" aria-label="Закрыть">×</button>
+          <button class="icon-button" type="button" data-action="close-resource-chain" aria-label="Закрыть"><i class="ph ph-x icon" aria-hidden="true"></i></button>
         </header>
         <div id="entity-dialog-body" class="dialog-body"></div>
       </form>
@@ -139,9 +139,9 @@
     <dialog id="note-dialog" class="sheet-dialog narrow">
       <form id="note-form" class="dialog-shell">
         <header class="dialog-header">
-          <button class="icon-button dialog-back-button" type="button" data-action="resource-back" aria-label="Назад" hidden>←</button>
+          <button class="icon-button dialog-back-button" type="button" data-action="resource-back" aria-label="Назад" hidden><i class="ph ph-arrow-left icon" aria-hidden="true"></i></button>
           <div class="dialog-heading"><p class="eyebrow">Личная запись</p><h2 id="note-dialog-title">Новая заметка</h2></div>
-          <button class="icon-button" type="button" data-action="close-resource-chain" aria-label="Закрыть">×</button>
+          <button class="icon-button" type="button" data-action="close-resource-chain" aria-label="Закрыть"><i class="ph ph-x icon" aria-hidden="true"></i></button>
         </header>
         <div class="dialog-body note-form-body">
           <input id="note-id" type="hidden" />
