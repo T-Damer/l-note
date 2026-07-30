@@ -275,7 +275,78 @@ try {
   await new Promise((resolvePromise) => setTimeout(resolvePromise, 300));
   assert.equal(await client.evaluate(`location.hash === '#/library' && ![...document.querySelectorAll('dialog')].some((item) => item.open)`), true);
 
-  console.log('Browser E2E passed: direct route, reload, single modal scroll, nested Back and full-chain Close.');
+  assert.equal(await client.evaluate(`(() => {
+    const button = document.querySelector('[data-action="toggle-library-view"]');
+    button?.click();
+    return Boolean(button);
+  })()`), true);
+  await waitFor(
+    () => client.evaluate(`
+      document.querySelector('[data-action="toggle-library-view"]')?.getAttribute('aria-pressed') === 'true' &&
+      !document.querySelector('#knowledge-graph-view')?.classList.contains('hidden') &&
+      document.querySelectorAll('#knowledge-graph-view .knowledge-graph-node').length > 0
+    `),
+    'Knowledge graph view did not open',
+  );
+
+  const mixedGraphNode = await client.evaluate(`(() => {
+    const node = [...document.querySelectorAll('#knowledge-graph-view .knowledge-graph-node')]
+      .find((item) => item.textContent.includes('Демонстрация: педиатрия и стоматология'));
+    const fill = node?.querySelector('rect')?.getAttribute('fill') ?? '';
+    return { found: Boolean(node), mixedGradient: fill.startsWith('url(#') };
+  })()`);
+  assert.equal(mixedGraphNode.found, true);
+  assert.equal(mixedGraphNode.mixedGradient, true);
+
+  assert.equal(await client.evaluate(`(() => {
+    const node = [...document.querySelectorAll('#knowledge-graph-view .knowledge-graph-node')]
+      .find((item) => item.textContent.includes('Демонстрация: педиатрия и стоматология'));
+    node?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    return Boolean(node);
+  })()`), true);
+  await waitFor(
+    () => client.evaluate(`
+      location.hash.startsWith('#/package/lnote.mixed-domains.demo') &&
+      document.querySelector('#document-dialog')?.open === true &&
+      document.querySelector('#document-dialog-heading')?.textContent.includes('Демонстрация: педиатрия и стоматология')
+    `),
+    'Mixed-domain graph node did not open its routed package card',
+  );
+
+  assert.equal(await client.evaluate(`(() => {
+    const button = [...document.querySelectorAll('#document-dialog-body button')]
+      .find((item) => item.textContent.includes('Скачать пакет'));
+    button?.click();
+    return Boolean(button);
+  })()`), true);
+  await waitFor(
+    () => client.evaluate(`
+      [...document.querySelectorAll('#document-dialog-body .backlink-button')]
+        .some((button) => button.textContent.includes('Как отображается междоменное знание'))
+    `),
+    'Mixed-domain package did not install from the graph route',
+  );
+
+  assert.equal(await client.evaluate(`(() => {
+    const button = document.querySelector('#document-dialog [data-action="close-resource-chain"]');
+    button?.click();
+    return Boolean(button);
+  })()`), true);
+  await waitFor(
+    () => client.evaluate(`
+      location.hash === '#/library' &&
+      ![...document.querySelectorAll('dialog')].some((item) => item.open) &&
+      !document.querySelector('#knowledge-graph-view')?.classList.contains('hidden')
+    `),
+    'Graph route did not return to the active graph view after package installation',
+  );
+  assert.equal(await client.evaluate(`(() => {
+    const node = [...document.querySelectorAll('#knowledge-graph-view .knowledge-graph-node')]
+      .find((item) => item.textContent.includes('Демонстрация: педиатрия и стоматология'));
+    return Boolean(node && !node.classList.contains('is-uninstalled'));
+  })()`), true);
+
+  console.log('Browser E2E passed: routing, single modal scroll, model-independent shell and graph installation flow.');
 } finally {
   client?.close();
   browser.kill('SIGTERM');
