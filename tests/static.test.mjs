@@ -43,10 +43,14 @@ test('static build contains the complete offline shell', async () => {
   assert.match(css, /vendor\/phosphor\/style\.css/u);
   assert.match(css, /html:has\(body\.modal-open\)/u);
   assert.match(css, /grid-column:\s*3/u);
+  assert.match(css, /\.source-card__action/u);
 
   const html = await readFile(path.join(root, 'dist', 'index.html'), 'utf8');
   assert.match(html, /ph-magnifying-glass/u);
   assert.match(html, /ph-note-pencil/u);
+
+  const app = await readFile(path.join(root, 'dist', 'src', 'app.js'), 'utf8');
+  assert.match(app, /SourceCard\(\{/u);
 
   const syntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
     cwd: root,
