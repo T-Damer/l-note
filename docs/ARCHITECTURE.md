@@ -10,6 +10,7 @@ L-Note is a hosted, offline-first knowledge workspace with:
 - hash-routed packages, documents, concepts, statements and notes;
 - source-linked statements, relations, backlinks and a separate personal-note overlay;
 - optional WebLLM over a versioned evidence envelope;
+- model installation that is independent from question/evidence entry;
 - shared `Text`, Icon, Card, Button and SourceCard primitives;
 - list/graph views for packages;
 - SCSS partials and a deterministic static-PWA build;
@@ -33,6 +34,7 @@ versioned evidence collection
 generic evidence-verification boundary
 hash-routing primitives
 shared generic UI primitives
+generic knowledge-graph projection
 ```
 
 MiniMed continues to own:
@@ -59,15 +61,16 @@ l-note/integrations/minimed
 Important modules:
 
 ```text
-src/core/contracts.*             public pack/resource/evidence contracts
-src/core/ports.*                 Search, Storage, DomainPlanner, LocalModel, EvidenceVerifier
-src/core/runtime.*               headless pack/note/search composition
-src/core/application-adapter.*   bundle of runtime ports for an application
-src/adapters/runtime-adapters.*  MiniSearch, IndexedDB/memory and WebLLM
+src/core/contracts.*               public pack/resource/evidence contracts
+src/core/ports.*                   Search, Storage, DomainPlanner, LocalModel, EvidenceVerifier
+src/core/runtime.*                 headless pack/note/search composition
+src/core/application-adapter.*     bundle of runtime ports for an application
+src/core/knowledge-graph.*         generic graph projection and category inference
+src/adapters/runtime-adapters.*    MiniSearch, IndexedDB/memory and WebLLM
 src/integrations/minimed-adapter.* MiniMed compatibility boundary
 ```
 
-`KnowledgeApplicationAdapter` bundles storage, search, domain planners, an optional local model and an optional evidence verifier. `composeKnowledgeApplicationRuntime()` builds the headless runtime without DOM assumptions.
+`KnowledgeApplicationAdapter` bundles storage, search, domain planners, an optional local model and an optional evidence verifier. `composeKnowledgeApplicationRuntime()` builds the headless runtime without DOM assumptions. The hosted web application runs through this adapter rather than constructing its core services directly.
 
 The MiniMed adapter requires at least one medical query planner, an evidence verifier, MiniMed-owned analysis/ranking/dose/abstention functions and a benchmark-suite ID. These are compatibility requirements, not medical implementations in L-Note.
 
@@ -95,6 +98,21 @@ Retrieval order:
 
 Every ranking failure becomes a regression test. Domain vocabulary belongs in a plugin or pack.
 
+## Local-model boundary
+
+Downloading and loading a model does not require a question or retrieved evidence. The selected `LocalModelPort` can be prepared first; a question and evidence become mandatory only when generation begins.
+
+```text
+select model
+  → download/load WebLLM
+  → reveal question workspace
+  → retrieve local evidence
+  → generate from evidence only
+  → validate source identifiers
+```
+
+The current browser UI displays progress estimated from WebLLM events. Exact resumable byte ranges, cancellation and the shared model/document priority queue remain separate future capabilities.
+
 ## Routing and graph
 
 Stable routes:
@@ -113,7 +131,7 @@ Stable routes:
 
 Browser history owns nested card traversal. Back moves through the card chain; full Close returns to the recorded base page and removes forward card routes.
 
-The package graph uses the same resource routes. Its data model contains package, document, section and concept nodes plus containment, mention and concept-relation edges. Category colors are SCSS variables; mixed-category nodes render proportional gradients.
+The package graph uses the same resource routes. Its data model contains available/installed package, document, section and concept nodes plus containment, mention and concept-relation edges. Category colors are SCSS variables. Explicit pack categories take priority; the generic projector may infer common presentation categories from metadata without changing the knowledge contract. Mixed-category nodes render proportional gradients, including the tested 50/50 pediatric/dentistry tooth-eruption case.
 
 ## Preparation boundary
 
@@ -131,9 +149,9 @@ PDF/DOCX parsing, OCR and database exporters belong before this normalized contr
 
 1. Split transitional app fragments into pages, services, helpers and components.
 2. Replace repeated fields and resource renderers with shared fields and one routed-dialog renderer.
-3. Finish package-graph installation/category examples and add its browser coverage.
+3. Add a visible mixed-category demo pack and browser graph coverage.
 4. Add internal local PDF assets with exact anchors.
 5. Add SQLite/FTS5 behind `SearchPort`/`StoragePort`.
 6. Connect the adapter in MiniMed and require MiniMed’s existing retrieval/safety benchmarks before migration.
 
-Android/iOS remain deferred until the hosted web core is stable.
+Android and iOS remain deferred until the hosted web core is stable.
