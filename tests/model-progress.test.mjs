@@ -12,7 +12,7 @@ import {
 
 const profile = { modelId: 'model-1', sizeMB: 1000 };
 
-test('tracks approximate model bytes and speed from progress callbacks', () => {
+test('tracks approximate model bytes and a smoothed speed from progress callbacks', () => {
   const idle = createModelLoadState(profile, 1000);
   const loading = startModelLoad(idle, profile, 1000);
   const halfway = updateModelLoadProgress(loading, { progress: 0.5, text: 'Загрузка весов' }, 2000);
@@ -20,7 +20,7 @@ test('tracks approximate model bytes and speed from progress callbacks', () => {
   assert.equal(halfway.progress, 0.5);
   assert.equal(halfway.loadedMB, 500);
   assert.equal(halfway.remainingMB, 500);
-  assert.equal(halfway.speedMBps, 500);
+  assert.equal(halfway.speedMBps, 175);
   assert.equal(halfway.text, 'Загрузка весов');
 });
 
