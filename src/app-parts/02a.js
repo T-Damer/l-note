@@ -118,10 +118,10 @@ function claimsForSection(documentId, sectionId) {
 function renderDocumentDialog(record) {
   const documentRecord = findDocumentForSection(state.knowledge, record);
   if (!documentRecord) return false;
-  dom.documentDialogView.replaceHeading([
+  dom.documentDialogHeading.replaceChildren(
     Text({ variant: 'eyebrow', text: documentRecord.packTitle }),
     Text({ variant: 'title', as: 'h2', text: documentRecord.title }),
     Text({ variant: 'muted', text: documentRecord.source?.title ?? 'Локальный источник' }),
-  ]);
-  dom.documentDialogView.replaceBody();
-  if (documentRecord.summary) dom.documentDialogView.appendBody(create('p', { className: 'document-summary', text: documentRecord.summary }));
+  );
+  dom.documentDialogBody.replaceChildren();
+  if (documentRecord.summary) dom.documentDialogBody.append(create('p', { className: 'document-summary', text: documentRecord.summary }));
