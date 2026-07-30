@@ -32,6 +32,7 @@ test('static build contains the complete offline shell', async () => {
     'src/domain-plugins/minimed.js',
     'src/ui/text.js',
     'src/ui/icons.js',
+    'src/ui/components.js',
   ]) {
     await access(path.join(root, 'dist', relative));
   }
