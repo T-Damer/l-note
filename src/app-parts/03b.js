@@ -2,10 +2,14 @@
     return;
   }
   const documentRecord = state.knowledge.documents.get(claim.source?.documentId);
+  const targetButton = create('button', { className: 'backlink-button', type: 'button' }, [
+    Text({ variant: 'body', as: 'strong', text: claim.text }),
+    Text({ variant: 'caption', text: `${documentRecord?.title ?? claim.source?.documentId} — ${claim.source?.sectionId}` }),
+  ]);
+  targetButton.addEventListener('click', () => navigateResource('statement', claim.id));
   dom.noteTargetSummary.append(
     Text({ variant: 'label', text: 'Связанное утверждение' }),
-    Text({ variant: 'body', as: 'div', text: claim.text }),
-    Text({ variant: 'caption', text: `${documentRecord?.title ?? claim.source?.documentId} — ${claim.source?.sectionId}` }),
+    targetButton,
   );
 }
 
