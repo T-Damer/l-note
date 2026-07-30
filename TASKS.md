@@ -1,8 +1,8 @@
 # L-Note implementation backlog
 
-Single source of future work. Completed items reflect code merged into the active branch; browser/device verification remains explicit where it is still needed.
+Single source of future work. Completed items reflect code in the active branch; browser/device verification remains explicit where it is still needed.
 
-**Current focus:** finish Phase 0 contracts and browser routing tests, then move to Phase 1 SCSS/component foundation. Android/iOS remain deferred.
+**Current focus:** typed core ports and browser routing E2E, followed by the reusable component/typography/icon layer. Android/iOS remain deferred.
 
 ## Phase 0 — shared-core boundary and correctness
 
@@ -45,12 +45,14 @@ Single source of future work. Completed items reflect code merged into the activ
 
 ### SCSS and themes
 
-- [ ] Migrate project styles to SCSS.
-- [ ] Create partials for base palette, light theme, dark theme, semantic colors, graph categories and interaction states.
-- [ ] Move shared animations and repeated UI patterns into common partials.
-- [ ] Preserve the current light theme.
-- [ ] Replace the green-heavy dark theme with a neutral dark base and warm Solarized-like accents.
-- [ ] Remove duplicated literal colors from component styles.
+- [x] Move all authored project styles to SCSS partials.
+- [x] Create partials for base palette, light theme, dark theme, semantic colors, graph categories and interaction states.
+- [x] Move shared animations and repeated UI patterns into common partials.
+- [x] Preserve the current light theme direction.
+- [x] Replace the green-heavy dark theme with a neutral dark base and warm Solarized-like accents.
+- [x] Generate `styles.css` deterministically before local and production builds.
+- [ ] Finish auditing remaining non-palette literal colors in component styles.
+- [ ] Replace the transitional CSS-compatible SCSS builder with a full Sass compiler only when Sass-only syntax is needed.
 
 ### Component architecture
 
@@ -69,7 +71,7 @@ Single source of future work. Completed items reflect code merged into the activ
 - [ ] Audit all controls for consistent hover, focus-visible, active and disabled states.
 - [ ] Increase clickable areas where controls remain too small.
 - [ ] Ensure hover is never the only discoverability signal.
-- [ ] Normalize spacing, radii, typography, control heights and icon sizing.
+- [ ] Normalize spacing, radii, typography, control heights and icon sizing through shared components.
 
 ## Phase 2 — dialogs, resource navigation and readers
 
@@ -150,8 +152,8 @@ Single source of future work. Completed items reflect code merged into the activ
 - [x] Keep deterministic evidence collection before generation.
 - [x] Limit generated answers to retrieved evidence.
 - [ ] Improve citation validation from ID existence toward statement-to-evidence support checks.
-- [ ] Redesign source cards with softer radii, clearer information hierarchy and a larger explicit open action.
-- [x] Add pointer and hover behavior to current source cards.
+- [ ] Redesign source cards with clearer title/type/excerpt/action hierarchy.
+- [x] Add softer source-card radii, larger click targets, hover and pointer behavior.
 - [x] Route current sources into the internal document reader.
 
 ## Phase 5 — notes and personal knowledge
