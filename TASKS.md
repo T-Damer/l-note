@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items reflect code in the active branch; browser/device verification remains explicit where it is still needed.
 
-**Current focus:** typed core ports and browser routing E2E, followed by the reusable component/typography/icon layer. Android/iOS remain deferred.
+**Current focus:** finish migrating the web shell onto the new ports and add browser routing E2E; then introduce the reusable component/typography/icon layer. Android/iOS remain deferred.
 
 ## Phase 0 — shared-core boundary and correctness
 
@@ -10,8 +10,11 @@ Single source of future work. Completed items reflect code in the active branch;
 
 - [x] Define L-Note as a domain-neutral knowledge runtime rather than a medical-only application.
 - [x] Record the boundary between reusable L-Note capabilities and MiniMed-owned medical adapters.
-- [ ] Extract typed, versioned contracts for packs, documents, sections, concepts, statements, relations and evidence.
-- [ ] Introduce explicit storage, search, domain-query-planner and local-model ports.
+- [x] Extract typed, versioned contracts for packs, documents, sections, concepts, statements, relations and evidence.
+- [x] Introduce explicit storage, search, domain-query-planner and local-model ports.
+- [x] Add tested MiniSearch, IndexedDB/memory and WebLLM browser adapters.
+- [x] Add a UI-independent runtime composer for enabled packs, notes, knowledge state and search.
+- [ ] Migrate the remaining web-shell direct adapter calls to the shared ports.
 - [x] Keep MiniSearch as the first web search adapter.
 - [ ] Add a SQLite/FTS5 adapter suitable for large packs and later MiniMed integration.
 - [x] Keep clinical parsing, medical ranking, dose validation and clinical safeguards outside the generic core.
@@ -26,6 +29,7 @@ Single source of future work. Completed items reflect code in the active branch;
 - [x] Describe relevance as retrieval relevance, not diagnostic probability.
 - [x] Keep ordinary search fully functional without a model.
 - [x] Add a generic domain-expansion hook without hard-coding medical synonyms in the search engine.
+- [x] Expose the MiniMed demo expander through `DomainQueryPlannerPort`.
 
 ### Hash routing and resource cards
 
@@ -150,6 +154,7 @@ Single source of future work. Completed items reflect code in the active branch;
 ### Grounded answers and sources
 
 - [x] Keep deterministic evidence collection before generation.
+- [x] Version the evidence envelope passed across the local-model boundary.
 - [x] Limit generated answers to retrieved evidence.
 - [ ] Improve citation validation from ID existence toward statement-to-evidence support checks.
 - [ ] Redesign source cards with clearer title/type/excerpt/action hierarchy.
