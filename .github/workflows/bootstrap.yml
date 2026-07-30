@@ -13,7 +13,7 @@ permissions:
 
 concurrency:
   group: l-note-bootstrap
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   expand-test-and-commit:
@@ -29,10 +29,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cp bootstrap/fix-search.patch /tmp/fix-search.patch
           cat bootstrap/stream-* | base64 --decode > /tmp/l-note.tar.gz
           echo "b9b6c9d7163b8bb500749fdefba27ccd77dc8411d14241c075bddf33b35e2cb0  /tmp/l-note.tar.gz" | sha256sum --check --strict
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           tar -xzf /tmp/l-note.tar.gz -C .
+          git apply /tmp/fix-search.patch
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

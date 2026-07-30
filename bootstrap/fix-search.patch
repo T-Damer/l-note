@@ -1,0 +1,71 @@
+diff --git a/src/search-engine.js b/src/search-engine.js
+index 04888df..c221281 100644
+--- a/src/search-engine.js
++++ b/src/search-engine.js
+@@ -250,6 +250,41 @@ export function expandQuery(query, aliasPhrases) {
+   return unique([query, ...additions]).join(' ');
+ }
+ 
++function fallbackLexicalScore(item, query) {
++  const queryTokens = unique(tokenize(query)).filter((token) => token.length >= 2);
++  if (queryTokens.length === 0) return 0;
++
++  const searchableText = normalizeText(
++    [
++      item.title,
++      item.section,
++      item.body,
++      ...(item.aliases ?? []),
++      ...(item.tags ?? []),
++      ...(item.entityNames ?? []),
++      ...(item.relationText ?? [])
++    ].join(' ')
++  );
++  const documentTokens = new Set(tokenize(searchableText));
++  let exactMatches = 0;
++  let partialMatches = 0;
++
++  for (const token of queryTokens) {
++    if (documentTokens.has(token)) {
++      exactMatches += 1;
++    } else if (token.length >= 5 && searchableText.includes(token)) {
++      partialMatches += 1;
++    }
++  }
++
++  const requiredMatches = queryTokens.length <= 2 ? 1 : 2;
++  if (exactMatches + partialMatches < requiredMatches) return 0;
++
++  const coverage = (exactMatches + partialMatches * 0.5) / queryTokens.length;
++  const phraseBonus = searchableText.includes(normalizeText(query)) ? 0.35 : 0;
++  return coverage + phraseBonus;
++}
++
+ export async function searchKnowledge(index, query, options = {}) {
+   const normalized = normalizeText(query);
+   if (!normalized) return { hits: [], correctedQuery: null, expandedQuery: '' };
+@@ -303,6 +338,24 @@ export async function searchKnowledge(index, query, options = {}) {
+       rawScore: rawHit.score
+     });
+   }
++
++  // Orama remains the primary fuzzy engine. This deterministic lexical pass
++  // fills gaps that can occur for mixed Cyrillic queries and abbreviations,
++  // while preserving scope isolation and the same source registry.
++  const candidateLimit = options.candidateLimit ?? 80;
++  if (hits.length < candidateLimit) {
++    for (const item of index.registry.values()) {
++      if (!typeAllowed(item.type) || seen.has(item.id)) continue;
++      const rawScore = fallbackLexicalScore(item, expandedQuery);
++      if (rawScore <= 0) continue;
++      seen.add(item.id);
++      hits.push({
++        ...item,
++        score: rawScore * authorityMultiplier(item.authority),
++        rawScore
++      });
++    }
++  }
+   hits.sort((left, right) => right.score - left.score);
+ 
+   const correctedQuery = suggestQuery(query, index.dictionary);
