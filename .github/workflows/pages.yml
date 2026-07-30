@@ -5,25 +5,19 @@ on:
     branches:
       - main
       - agent/universal-offline-kb
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:
   contents: read
   pages: write
   id-token: write
-  pull-requests: read
-  issues: write
 
 concurrency:
-  group: pages-${{ github.event_name }}
+  group: pages
   cancel-in-progress: true
 
 jobs:
   build:
-    if: ${{ github.event_name != 'pull_request' || (github.head_ref == 'agent/universal-offline-kb' && github.event.pull_request.head.repo.full_name == github.repository) }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,74 +34,10 @@ jobs:
   deploy:
     needs: build
     environment:
-      name: ${{ github.event_name == 'push' && github.ref_name == 'main' && 'github-pages' || 'github-pages-preview' }}
+      name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    outputs:
-      page_url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-  report:
-    if: ${{ always() && (github.ref_name == 'agent/universal-offline-kb' || github.head_ref == 'agent/universal-offline-kb') }}
-    needs:
-      - build
-      - deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Report Pages result on the canonical PR
-        uses: actions/github-script@v7
-        env:
-          BUILD_RESULT: ${{ needs.build.result }}
-          DEPLOY_RESULT: ${{ needs.deploy.result }}
-          PAGE_URL: ${{ needs.deploy.outputs.page_url }}
-        with:
-          script: |
-            const marker = '<!-- l-note-pages-preview -->';
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-            const branch = context.payload.pull_request?.head?.ref ?? context.ref.replace('refs/heads/', '');
-            const { data: prs } = await github.rest.pulls.list({
-              owner,
-              repo,
-              head: `${owner}:${branch}`,
-              state: 'open',
-            });
-            if (!prs.length) return;
-
-            const issue_number = prs[0].number;
-            const buildResult = process.env.BUILD_RESULT || 'unknown';
-            const deployResult = process.env.DEPLOY_RESULT || 'unknown';
-            const pageUrl = process.env.PAGE_URL || '';
-            const outcome = buildResult === 'success' && deployResult === 'success'
-              ? `Hosted preview: ${pageUrl}`
-              : 'Pages did not publish. Open the workflow run for the failing stage.';
-            const body = [
-              marker,
-              '## Hosted preview',
-              '',
-              `Commit: \`${context.sha.slice(0, 12)}\``,
-              `Build: **${buildResult}**`,
-              `Deploy: **${deployResult}**`,
-              '',
-              outcome,
-            ].join('\n');
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner,
-              repo,
-              issue_number,
-              per_page: 100,
-            });
-            const existing = comments.find((comment) => comment.body?.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({ owner, repo, issue_number, body });
-            }
