@@ -1,5 +1,22 @@
 # Architecture
 
+## Current state
+
+The active web prototype currently provides:
+
+- installable, checksummed JSON knowledge packs persisted in IndexedDB;
+- MiniSearch full-text, prefix, alias and fuzzy retrieval with a deterministic fallback;
+- optional domain query expansion isolated from the generic search engine;
+- normalized `0–100%` retrieval relevance;
+- routed packages, documents, concepts, statements and notes using hash URLs and browser history;
+- Back traversal through linked cards and one full-chain Close operation;
+- exact source-linked statements, relations, backlinks and a separate personal-note overlay;
+- optional browser-local WebLLM over retrieved evidence only;
+- one model comparison block with Gemma 3 1B, preferred Qwen3 1.7B and Phi-4 Mini;
+- static PWA hosting through GitHub Pages.
+
+The next implementation slice is the maintainable UI foundation: SCSS themes, a component layer, shared typography/icons and browser E2E tests for routed dialogs. The complete future backlog lives only in `TASKS.md`.
+
 ## Product and shared-core boundary
 
 L-Note is the canonical **domain-neutral knowledge runtime**, not a replacement for MiniMed's medical domain layer.
@@ -7,9 +24,9 @@ L-Note is the canonical **domain-neutral knowledge runtime**, not a replacement 
 The reusable layer is expected to contain:
 
 ```text
-@lnote/contracts     portable pack, document, section, concept, statement, relation and evidence contracts
-@lnote/core          installed-pack composition, entity resolution, backlinks, claims and personal overlay
-@lnote/search        SearchPort plus generic ranking/fusion contracts
+@lnote/contracts     pack, document, section, concept, statement, relation and evidence contracts
+@lnote/core          installed-pack composition, entity resolution, backlinks, statements and personal overlay
+@lnote/search        SearchPort plus generic ranking and fusion contracts
 @lnote/storage       StoragePort plus IndexedDB and future SQLite adapters
 @lnote/llm           provider-independent grounded-evidence orchestration
 ```
@@ -25,7 +42,7 @@ clinical abstention and safety gates
 medical benchmarks and source policies
 ```
 
-This avoids two bad outcomes: hard-coding medicine into L-Note, or weakening MiniMed into a lowest-common-denominator generic search application. The current browser implementation is still a prototype; shared packages should become typed and UI-independent before MiniMed imports them.
+This prevents medicine from leaking into the universal core without weakening MiniMed into a generic lowest-common-denominator search app. Before MiniMed imports the core, shared contracts and ports should become typed and UI-independent.
 
 ## Runtime
 
@@ -34,38 +51,69 @@ static PWA shell
   ├─ pack catalog (network-first, cached)
   ├─ selected JSON packs → checksum verification → IndexedDB
   ├─ flattened sections/notes → MiniSearch or built-in fuzzy fallback
-  ├─ entities + relations + exact claims → linked readers/backlinks
+  ├─ optional domain query expanders
+  ├─ concepts + relations + exact statements → linked readers/backlinks
   ├─ personal notes → separate IndexedDB store
   └─ optional WebLLM → retrieved evidence only
 ```
 
-The browser runtime is serverless and static-host friendly. It can later be wrapped in an Android WebView or Capacitor shell without changing the pack contract. Search, linked reading, notes, and deterministic evidence remain the baseline; model installation stays optional and user-controlled.
+The browser runtime is serverless and static-host friendly. Search, linked reading, notes and deterministic evidence remain useful without a model.
 
-## Why JSON first
+## Storage and search boundary
 
-SQLite/FTS remains a sensible production target for very large packs, but JSON makes the first contract inspectable and portable across browsers, desktop tools, Android, scripts, GitHub Releases, and private file servers. The runtime already isolates pack validation, storage, indexing, and UI orchestration so a SQLite adapter can coexist with JSON packs later.
+JSON is currently both the transport format and the small-corpus prototype artifact. It is not the permanent search abstraction.
 
-JSON is a transport and prototype artifact, not the permanent search abstraction. Search consumers must depend on `SearchPort`, not on MiniSearch-specific result objects. MiniMed's SQLite/FTS5 implementation should therefore be reusable without moving the medical parser into L-Note.
+Search consumers should depend on a future `SearchPort`, not on MiniSearch result objects. The first adapters are expected to be:
+
+```text
+MiniSearch + IndexedDB   small/medium browser packs
+SQLite + FTS5            large local packs and MiniMed
+optional vector adapter  semantic or hybrid retrieval
+```
+
+A SQLite adapter should be reusable by L-Note and MiniMed, while medical query planning remains a MiniMed plugin.
 
 ## Retrieval path
 
-1. Normalize Unicode, Russian `ё`/`е`, dashes, punctuation, and whitespace.
-2. Expand recognized entities to canonical names and aliases.
-3. Run MiniSearch with title/alias boosts, prefix search, and fuzzy matching.
-4. Fall back to an embedded Damerau–Levenshtein scorer when MiniSearch is unavailable.
-5. Resolve a result to its pack, document, section, entities, claims, and source metadata.
-6. Merge the separately stored personal layer according to the selected ranking policy.
-7. For complex questions, select a bounded evidence set and list linked personal conflicts.
-8. Only then may an optional local model synthesize an answer. Unknown source IDs are flagged.
+1. Normalize Unicode, Russian `ё`/`е`, dashes, punctuation and whitespace.
+2. Expand declared concept names and aliases.
+3. Apply optional domain expanders, such as the isolated MiniMed demo vocabulary.
+4. Run MiniSearch with title/alias boosts, prefix search and fuzzy matching.
+5. Fall back to the embedded Damerau–Levenshtein scorer when MiniSearch is unavailable.
+6. Normalize displayed relevance relative to the current result set; this is not diagnostic probability.
+7. Resolve results to their pack, document, section, concepts, statements and source metadata.
+8. Merge the separately stored personal layer according to the selected ranking policy.
+9. For complex questions, select a bounded evidence set and list linked personal conflicts.
+10. Only then may an optional local model synthesize an answer; unknown source IDs are rejected.
 
-Domain-specific expansion is a plugin point. A general engine may expand declared aliases and relations, while MiniMed may additionally produce negation-aware clinical branches, measurement facts and medical section preferences.
+Every reported ranking failure should become a regression test. Domain-specific vocabulary belongs in a plugin or pack, not in the generic search engine.
+
+## Route boundary
+
+Hash URLs are the portable navigation contract for static hosting and future Capacitor shells:
+
+```text
+#/search
+#/ask
+#/library
+#/notes
+#/package/:id
+#/document/:id
+#/concept/:id
+#/statement/:id
+#/note/:id
+```
+
+The URL is the source of truth for opened resources. Browser history owns nested card traversal. A resource route stores its base page and chain depth; Back returns through the chain, while full Close returns to the base page and truncates forward resource routes.
+
+Routing belongs to the application shell rather than the headless knowledge core. Stable IDs and resource resolvers belong to the core contract.
 
 ## Pack preparation boundary
 
-There are two supported preparation paths:
+Two preparation paths are supported:
 
 ```text
-reviewed manifest/documents/entities/claims/relations
+reviewed manifest/documents/concepts/statements/relations
   → deterministic compiler
   → validated pack
 ```
@@ -80,29 +128,22 @@ Markdown / TXT / JSON
   → validated pack
 ```
 
-The current preparer deliberately does not parse arbitrary PDFs or DOCX. Docling, Marker, OCR, database exporters, or domain-specific ETL can be placed before the normalized authoring contract without coupling the app to one ingestion vendor.
-
-The central invariant is provenance-first: a structured claim is publishable only when its exact quote resolves inside a supplied section. Model output is a proposal, never a replacement for source text.
+Arbitrary PDF/DOCX parsing, OCR, database exporters and domain ETL belong before the normalized authoring contract. The core invariant is provenance-first: a structured statement is publishable only when its exact quote resolves inside a supplied section. Model output is a proposal, never a silent replacement for source text.
 
 ## Personal overlay
 
-Reference packs are immutable inputs. Notes live in another object store and can point to a stable claim ID with one of five relations: observation, supports, refines, contradicts, or supersedes. Even `supersedes` is a local ranking choice; both versions remain visible and traceable.
+Reference packs are immutable installed inputs. Notes live in another object store and may link to a stable statement using `observation`, `supports`, `refines`, `contradicts` or `supersedes`. Even `supersedes` changes only local ranking; both versions remain visible and traceable.
 
-## Route boundary
+## Planned compatible layers
 
-Hash URLs are the portable navigation contract for static hosting and future Capacitor shells. Base pages and opened resources must be restorable from the URL. Browser history, rather than an in-memory card stack, owns traversal between linked documents, concepts, statements, packages and notes.
-
-Routing belongs to the application shell and is not part of the headless knowledge core. Stable resource IDs and resolvers are part of the core contract.
-
-## Next compatible layers
-
-The current schema can be extended with capability declarations for:
-
+- typed public contracts and adapter ports;
 - SQLite/FTS and vector-index artifacts;
-- signed catalogs and publisher trust;
-- pack dependencies and compatibility ranges;
-- delta updates and retained rollback versions;
-- temporal claim validity and explicit applicability conditions;
-- domain query-planner plugins;
-- native Android llama.cpp/LiteRT inference;
-- optional sync of the personal overlay.
+- browser E2E routing coverage;
+- SCSS themes and a reusable component layer;
+- internal PDF/source assets;
+- knowledge graph view;
+- persistent prioritized model/document download queue;
+- signed catalogs, dependencies, delta updates and rollback;
+- temporal statement validity and applicability conditions;
+- optional sync of the personal overlay;
+- Capacitor only after the web core stabilizes.
