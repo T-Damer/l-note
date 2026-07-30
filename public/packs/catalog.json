@@ -1,0 +1,40 @@
+{
+  "catalogVersion": "2026.07.30",
+  "publishedAt": "2026-07-30T11:30:00Z",
+  "packs": [
+    {
+      "id": "l-note-foundations",
+      "version": "1.0.0",
+      "title": "Основы локальной базы знаний",
+      "description": "Пакеты знаний, fuzzy-поиск, сущности, утверждения, доказательства и retrieval-first ИИ.",
+      "language": "ru",
+      "license": "CC-BY-4.0",
+      "tags": [
+        "архитектура",
+        "поиск",
+        "ИИ"
+      ],
+      "featured": true,
+      "url": "packs/l-note-foundations.json",
+      "sha256": "sha256:11ae9ec64028db265960aaf1ef93a88cca2f8c475a084cc6c9d1928097060440",
+      "sizeBytes": 19008
+    },
+    {
+      "id": "offline-web-runtime",
+      "version": "1.0.0",
+      "title": "Оффлайн web-runtime",
+      "description": "PWA, Service Worker, IndexedDB, WebGPU и перенос общего ядра в Android-обёртку.",
+      "language": "ru",
+      "license": "CC-BY-4.0",
+      "tags": [
+        "PWA",
+        "Android",
+        "хранилище"
+      ],
+      "featured": false,
+      "url": "packs/offline-web-runtime.json",
+      "sha256": "sha256:3d8005596bce6c0ccfad518098c8d125db0cf32ca3cb157caeeaa5303ef6e597",
+      "sizeBytes": 16092
+    }
+  ]
+}
