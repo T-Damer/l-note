@@ -31,12 +31,25 @@ async function importNotesFile(file) {
   }
 }
 
+function bindDialogCloseBehavior(dialog) {
+  dialog.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeResourceChain();
+  });
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) closeResourceChain();
+  });
+}
+
 function bindEvents() {
   for (const button of dom.navButtons) button.addEventListener('click', () => routeTo(button.dataset.nav));
   document.querySelectorAll('[data-action="open-library"]').forEach((button) => button.addEventListener('click', () => routeTo('library')));
-  document.querySelectorAll('[data-action="new-note"]').forEach((button) => button.addEventListener('click', () => openNoteDialog()));
-  document.querySelectorAll('[data-action="close-note-dialog"]').forEach((button) => button.addEventListener('click', () => dom.noteDialog.close()));
+  document.querySelectorAll('[data-action="new-note"]').forEach((button) => button.addEventListener('click', () => navigateResource('note', 'new')));
+  document.querySelectorAll('[data-action="close-resource-chain"]').forEach((button) => button.addEventListener('click', () => closeResourceChain()));
+  document.querySelectorAll('[data-action="resource-back"]').forEach((button) => button.addEventListener('click', goBackInResourceChain));
   document.querySelectorAll('[data-action="export-notes"]').forEach((button) => button.addEventListener('click', () => downloadJson(`l-note-notes-${new Date().toISOString().slice(0, 10)}.json`, { schemaVersion: 1, exportedAt: new Date().toISOString(), notes: state.notes })));
+
+  for (const dialog of [dom.documentDialog, dom.entityDialog, dom.noteDialog]) bindDialogCloseBehavior(dialog);
 
   dom.searchForm.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -51,8 +64,8 @@ function bindEvents() {
   dom.deleteNoteButton.addEventListener('click', async () => {
     const id = dom.noteId.value;
     if (!id || !confirm('Удалить эту заметку?')) return;
+    closeResourceChain();
     await deleteOne('notes', id);
-    dom.noteDialog.close();
     await refreshState();
   });
   dom.packFileInput.addEventListener('change', async () => {
@@ -65,7 +78,8 @@ function bindEvents() {
     if (file) await importNotesFile(file);
     dom.notesFileInput.value = '';
   });
-  window.addEventListener('hashchange', () => routeTo(currentRouteFromHash()));
+  window.addEventListener('popstate', () => applyRouteFromLocation());
+  window.addEventListener('hashchange', () => applyRouteFromLocation());
   window.addEventListener('online', renderSidebarStatus);
   window.addEventListener('offline', renderSidebarStatus);
 }
@@ -80,8 +94,9 @@ async function registerServiceWorker() {
 }
 
 async function bootstrap() {
+  ensureInitialRouteHistory();
   bindEvents();
-  routeTo(currentRouteFromHash());
+  applyRouteFromLocation();
   await registerServiceWorker();
   try {
     await loadCatalog();
