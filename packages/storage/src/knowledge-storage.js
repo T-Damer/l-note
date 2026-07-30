@@ -3,38 +3,42 @@ import { openDB } from 'idb';
 const DEFAULT_DATABASE_NAME = 'l-note';
 const DATABASE_VERSION = 1;
 
+const clone = (value) => structuredClone(value);
+
 export function createMemoryStorage(seed = {}) {
-  const packs = new Map((seed.packs ?? []).map((pack) => [pack.manifest.id, structuredClone(pack)]));
-  const notes = new Map((seed.notes ?? []).map((note) => [note.id, structuredClone(note)]));
-  const settings = new Map(Object.entries(seed.settings ?? {}));
+  const packs = new Map((seed.packs ?? []).map((pack) => [pack.manifest.id, clone(pack)]));
+  const notes = new Map((seed.notes ?? []).map((note) => [note.id, clone(note)]));
+  const settings = new Map(
+    Object.entries(seed.settings ?? {}).map(([key, value]) => [key, clone(value)]),
+  );
 
   return {
     kind: 'memory',
     async listPacks() {
-      return [...packs.values()].map(structuredClone);
+      return [...packs.values()].map((pack) => clone(pack));
     },
     async putPack(pack) {
-      packs.set(pack.manifest.id, structuredClone(pack));
+      packs.set(pack.manifest.id, clone(pack));
     },
     async deletePack(packId) {
       packs.delete(packId);
     },
     async listNotes() {
       return [...notes.values()]
-        .map(structuredClone)
+        .map((note) => clone(note))
         .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt));
     },
     async putNote(note) {
-      notes.set(note.id, structuredClone(note));
+      notes.set(note.id, clone(note));
     },
     async deleteNote(noteId) {
       notes.delete(noteId);
     },
     async getSetting(key, fallback = null) {
-      return settings.has(key) ? structuredClone(settings.get(key)) : fallback;
+      return settings.has(key) ? clone(settings.get(key)) : clone(fallback);
     },
     async setSetting(key, value) {
-      settings.set(key, structuredClone(value));
+      settings.set(key, clone(value));
     },
     async clearAll() {
       packs.clear();
