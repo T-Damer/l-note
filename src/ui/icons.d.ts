@@ -11,6 +11,7 @@ export type IconKey =
   | 'download'
   | 'import'
   | 'graph'
+  | 'list'
   | 'document'
   | 'pdf'
   | 'concept'
