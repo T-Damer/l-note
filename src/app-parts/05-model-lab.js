@@ -99,8 +99,12 @@ function formatModelDuration(value) {
   return `${(value / 1000).toFixed(value < 10_000 ? 1 : 0)} с`;
 }
 
-function formatModelSpeed(value) {
+function formatDownloadSpeed(value) {
   return Number.isFinite(value) ? `${value.toFixed(1)} МБ/с` : 'скорость определяется';
+}
+
+function formatGenerationSpeed(value) {
+  return Number.isFinite(value) ? `${value.toFixed(1)} ток/с` : 'скорость не сообщена';
 }
 
 function modelIsReady(profile = selectedLocalModelProfile()) {
@@ -156,7 +160,7 @@ function renderModelProgress() {
   dom.modelProgressStats.replaceChildren(
     create('span', { text: `≈${formatBytes(progressState.loadedMB * 1024 * 1024)} / ${formatBytes(progressState.totalMB * 1024 * 1024)}` }),
     create('span', { text: `осталось ≈${formatBytes(progressState.remainingMB * 1024 * 1024)}` }),
-    create('span', { text: formatModelSpeed(progressState.speedMBps) }),
+    create('span', { text: formatDownloadSpeed(progressState.speedMBps) }),
   );
   const hasError = progressState.status === MODEL_LOAD_STATUS.ERROR && progressState.error;
   dom.modelLoadError.classList.toggle('hidden', !hasError);
@@ -212,7 +216,7 @@ function renderModelRunHistory() {
     dom.modelRunHistory.append(
       Text({
         variant: 'muted',
-        text: `${profile?.label ?? run.modelId}: загрузка ${formatModelDuration(run.loadMs)}, ответ ${formatModelDuration(run.durationMs)}, ${Number.isFinite(run.tokensPerSecond) ? `${run.tokensPerSecond.toFixed(1)} ток/с` : 'скорость не сообщена'}, ${status}.`,
+        text: `${profile?.label ?? run.modelId}: загрузка ${formatModelDuration(run.loadMs)}, ответ ${formatModelDuration(run.durationMs)}, ${formatGenerationSpeed(run.tokensPerSecond)}, ${status}.`,
       }),
     );
   }
