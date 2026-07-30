@@ -22,11 +22,11 @@
       }
       article.append(claimList);
     }
-    dom.documentDialogView.appendBody(article);
+    dom.documentDialogBody.append(article);
   }
 
   if (documentRecord.source?.url) {
-    dom.documentDialogView.appendBody(
+    dom.documentDialogBody.append(
       create('a', {
         className: 'source-link',
         href: documentRecord.source.url,
@@ -36,10 +36,10 @@
       }),
     );
   }
-  dom.documentDialogView.show();
+  showRoutedDialog(dom.documentDialog);
   queueMicrotask(() => {
     const sectionId = record.sectionId;
-    if (sectionId) dom.documentDialogView.scrollTo(`#section-${CSS.escape(sectionId)}`, { block: 'start' });
+    if (sectionId) dom.documentDialogBody.querySelector(`#section-${CSS.escape(sectionId)}`)?.scrollIntoView({ block: 'start' });
   });
   return true;
 }
@@ -47,15 +47,15 @@
 function renderEntityDialog(entityId) {
   const entity = state.knowledge.entities.get(entityId);
   if (!entity) return false;
-  dom.entityDialogView.replaceHeading([
+  dom.entityDialogHeading.replaceChildren(
     create('p', { className: 'eyebrow', text: entity.type ?? 'Понятие' }),
     create('h2', { text: entity.name }),
-  ]);
-  dom.entityDialogView.replaceBody();
-  if (entity.description) dom.entityDialogView.appendBody(create('p', { className: 'entity-description', text: entity.description }));
+  );
+  dom.entityDialogBody.replaceChildren();
+  if (entity.description) dom.entityDialogBody.append(create('p', { className: 'entity-description', text: entity.description }));
   const aliases = create('div', { className: 'entity-aliases' });
   for (const alias of entity.aliases ?? []) aliases.append(create('span', { className: 'pill', text: alias }));
-  if (aliases.childElementCount) dom.entityDialogView.appendBody(aliases);
+  if (aliases.childElementCount) dom.entityDialogBody.append(aliases);
 
   const relations = state.knowledge.relations.filter((relation) => relation.sourceId === entityId || relation.targetId === entityId);
   if (relations.length) {
@@ -78,12 +78,12 @@ function renderEntityDialog(entityId) {
       list.append(button);
     }
     accordion.append(list);
-    dom.entityDialogView.appendBody(accordion);
+    dom.entityDialogBody.append(accordion);
   }
 
   const mentions = state.knowledge.entityMentions.get(entityId) ?? [];
   if (mentions.length) {
-    dom.entityDialogView.appendBody(create('h3', { text: 'Где встречается' }));
+    dom.entityDialogBody.append(create('h3', { text: 'Где встречается' }));
     const list = create('div', { className: 'backlink-list' });
     for (const mention of mentions) {
       const documentRecord = state.knowledge.documents.get(mention.documentId);
@@ -95,12 +95,12 @@ function renderEntityDialog(entityId) {
       button.addEventListener('click', () => navigateResource('document', mention.documentId, { sectionId: mention.sectionId }));
       list.append(button);
     }
-    dom.entityDialogView.appendBody(list);
+    dom.entityDialogBody.append(list);
   }
 
   const notes = state.notes.filter((note) => (note.relatedEntityIds ?? []).includes(entityId));
   if (notes.length) {
-    dom.entityDialogView.appendBody(create('h3', { text: 'Личные заметки' }));
+    dom.entityDialogBody.append(create('h3', { text: 'Личные заметки' }));
     const list = create('div', { className: 'backlink-list' });
     for (const note of notes) {
       const button = create('button', { className: 'backlink-button', type: 'button' }, [
@@ -110,20 +110,21 @@ function renderEntityDialog(entityId) {
       button.addEventListener('click', () => navigateResource('note', note.id));
       list.append(button);
     }
-    dom.entityDialogView.appendBody(list);
+    dom.entityDialogBody.append(list);
   }
-  dom.entityDialogView.show();
+  showRoutedDialog(dom.entityDialog);
   return true;
 }
 
 function renderStatementDialog(claimId) {
   const claim = state.knowledge.claims.get(claimId);
   if (!claim) return false;
-  dom.entityDialogView.replaceHeading([
+  dom.entityDialogHeading.replaceChildren(
     create('p', { className: 'eyebrow', text: 'Утверждение' }),
     create('h2', { text: claim.predicate ? relationPredicateLabel(claim.predicate) : 'Утверждение источника' }),
-  ]);
-  dom.entityDialogView.replaceBody(create('p', { className: 'statement-text', text: claim.text }));
+  );
+  dom.entityDialogBody.replaceChildren();
+  dom.entityDialogBody.append(create('p', { className: 'statement-text', text: claim.text }));
 
   const linkedEntities = [claim.subjectId, claim.objectId]
     .filter(Boolean)
@@ -136,7 +137,7 @@ function renderStatementDialog(claimId) {
       button.addEventListener('click', () => navigateResource('concept', entity.id));
       entities.append(button);
     }
-    dom.entityDialogView.appendBody(entities);
+    dom.entityDialogBody.append(entities);
   }
 
   if (claim.source?.documentId) {
@@ -146,12 +147,12 @@ function renderStatementDialog(claimId) {
       create('small', { text: claim.source.quote ?? `Раздел: ${claim.source.sectionId ?? 'не указан'}` }),
     ]);
     sourceButton.addEventListener('click', () => navigateResource('document', claim.source.documentId, { sectionId: claim.source.sectionId }));
-    dom.entityDialogView.appendBody(create('h3', { text: 'Источник' }), sourceButton);
+    dom.entityDialogBody.append(create('h3', { text: 'Источник' }), sourceButton);
   }
 
   const notes = state.knowledge.claimNotes.get(claimId) ?? [];
   if (notes.length) {
-    dom.entityDialogView.appendBody(create('h3', { text: 'Личный слой' }));
+    dom.entityDialogBody.append(create('h3', { text: 'Личный слой' }));
     const noteList = create('div', { className: 'backlink-list' });
     for (const note of notes) {
       const button = create('button', { className: 'backlink-button', type: 'button' }, [
@@ -161,12 +162,12 @@ function renderStatementDialog(claimId) {
       button.addEventListener('click', () => navigateResource('note', note.id));
       noteList.append(button);
     }
-    dom.entityDialogView.appendBody(noteList);
+    dom.entityDialogBody.append(noteList);
   }
 
   const addNote = create('button', { className: 'primary-button statement-note-button', type: 'button', text: 'Добавить наблюдение' });
   addNote.addEventListener('click', () => navigateResource('note', 'new', { claimId }));
-  dom.entityDialogView.appendBody(addNote);
-  dom.entityDialogView.show();
+  dom.entityDialogBody.append(addNote);
+  showRoutedDialog(dom.entityDialog);
   return true;
 }
