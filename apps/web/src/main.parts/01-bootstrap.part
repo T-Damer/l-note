@@ -1,0 +1,201 @@
+import './styles.css';
+
+import {
+  parseKnowledgePack,
+  parseKnowledgePackCatalog,
+  parseLocalNote,
+} from '../../../packages/contracts/src/index.js';
+import { KnowledgeEngine } from '../../../packages/core/src/index.js';
+import { openKnowledgeStorage } from '../../../packages/storage/src/index.js';
+import { answerWithSelfCheck } from '../../../packages/ai/src/index.js';
+
+const root = document.querySelector('#app');
+const baseUrl = new URL(import.meta.env.BASE_URL, window.location.origin);
+const assetUrl = (path) => new URL(String(path).replace(/^\/+/, ''), baseUrl).toString();
+
+const state = {
+  ready: false,
+  view: 'search',
+  online: navigator.onLine,
+  catalog: null,
+  catalogError: null,
+  storage: null,
+  engine: new KnowledgeEngine(),
+  packs: [],
+  notes: [],
+  query: '',
+  results: [],
+  suggestions: [],
+  currentBundle: null,
+  aiQuestion: '',
+  aiDraft: '',
+  aiAnswer: '',
+  aiError: '',
+  aiRunning: false,
+  aiSettings: {
+    baseUrl: 'http://127.0.0.1:11434/v1',
+    model: 'qwen3:1.7b',
+  },
+};
+
+let searchTimer = null;
+let toastTimer = null;
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+function paragraph(value) {
+  return escapeHtml(value).replaceAll('\n', '<br />');
+}
+
+function formatBytes(value) {
+  if (!Number.isFinite(value)) return 'неизвестно';
+  const units = ['Б', 'КБ', 'МБ', 'ГБ'];
+  let number = value;
+  let unit = 0;
+  while (number >= 1024 && unit < units.length - 1) {
+    number /= 1024;
+    unit += 1;
+  }
+  return `${number >= 10 || unit === 0 ? number.toFixed(0) : number.toFixed(1)} ${units[unit]}`;
+}
+
+function truncate(value, length = 300) {
+  const text = String(value ?? '').trim();
+  return text.length > length ? `${text.slice(0, length).trim()}…` : text;
+}
+
+function encodeReference(packId, itemId) {
+  return `${packId}|${itemId}`;
+}
+
+function decodeReference(value) {
+  const [packId, itemId] = String(value ?? '').split('|');
+  return packId && itemId ? { packId, itemId } : null;
+}
+
+function installedPack(packId) {
+  return state.packs.find((pack) => pack.manifest.id === packId) ?? null;
+}
+
+function showToast(message) {
+  const toast = document.querySelector('#toast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('visible'), 2800);
+}
+
+function setBusy(button, busy, label = 'Выполняется…') {
+  if (!button) return;
+  if (busy) {
+    button.dataset.previousLabel = button.textContent;
+    button.textContent = label;
+    button.disabled = true;
+  } else {
+    button.textContent = button.dataset.previousLabel ?? button.textContent;
+    button.disabled = false;
+  }
+}
+
+async function sha256(text) {
+  const bytes = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return `sha256:${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+}
+
+async function loadCatalog() {
+  try {
+    const response = await fetch(assetUrl('packs/catalog.json'), { cache: 'no-cache' });
+    if (!response.ok) throw new Error(`Catalog HTTP ${response.status}`);
+    state.catalog = parseKnowledgePackCatalog(await response.json());
+    state.catalogError = null;
+  } catch (error) {
+    state.catalogError = error instanceof Error ? error.message : String(error);
+  }
+}
+
+async function fetchCatalogPack(entry) {
+  const response = await fetch(assetUrl(entry.url), { cache: 'no-cache' });
+  if (!response.ok) throw new Error(`Не удалось скачать пакет (${response.status}).`);
+  const text = await response.text();
+  const digest = await sha256(text);
+  if (digest !== entry.sha256) {
+    throw new Error(`Контрольная сумма пакета ${entry.id} не совпала.`);
+  }
+  const pack = parseKnowledgePack(JSON.parse(text));
+  if (pack.manifest.id !== entry.id || pack.manifest.version !== entry.version) {
+    throw new Error('Манифест скачанного пакета не соответствует каталогу.');
+  }
+  return pack;
+}
+
+async function savePack(pack) {
+  await state.storage.putPack(pack);
+  state.packs = [...state.packs.filter((item) => item.manifest.id !== pack.manifest.id), pack];
+  state.engine.setPacks(state.packs);
+  executeSearch();
+}
+
+async function installCatalogEntry(entry, { silent = false } = {}) {
+  const pack = await fetchCatalogPack(entry);
+  await savePack(pack);
+  if (!silent) showToast(`Пакет «${pack.manifest.title}» установлен.`);
+}
+
+async function bootstrap() {
+  root.innerHTML = '<div class="loading">Открываю локальную базу…</div>';
+  state.storage = await openKnowledgeStorage();
+
+  const [storedPacks, storedNotes, aiSettings] = await Promise.all([
+    state.storage.listPacks(),
+    state.storage.listNotes(),
+    state.storage.getSetting('ai-settings', state.aiSettings),
+  ]);
+
+  state.packs = storedPacks.flatMap((pack) => {
+    try {
+      return [parseKnowledgePack(pack)];
+    } catch (error) {
+      console.warn('Skipping invalid stored pack.', error);
+      return [];
+    }
+  });
+  state.notes = storedNotes.flatMap((note) => {
+    try {
+      return [parseLocalNote(note)];
+    } catch (error) {
+      console.warn('Skipping invalid stored note.', error);
+      return [];
+    }
+  });
+  state.aiSettings = { ...state.aiSettings, ...(aiSettings ?? {}) };
+
+  await loadCatalog();
+  if (state.packs.length === 0 && state.catalog) {
+    const featured = state.catalog.packs.find((entry) => entry.featured);
+    if (featured) {
+      try {
+        await installCatalogEntry(featured, { silent: true });
+      } catch (error) {
+        console.warn('Could not seed the demo pack.', error);
+      }
+    }
+  }
+
+  state.engine = new KnowledgeEngine({ packs: state.packs, notes: state.notes });
+  state.ready = true;
+  root.addEventListener('click', handleClick);
+  root.addEventListener('submit', handleSubmit);
+  root.addEventListener('input', handleInput);
+  root.addEventListener('change', handleChange);
+  renderApp();
+  registerServiceWorker();
+}
