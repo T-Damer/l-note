@@ -1,0 +1,21 @@
+{
+  "name": "l-note",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve": "node tools/serve.mjs",
+    "build:pack": "node tools/build-pack.mjs",
+    "build:static": "node tools/build-static.mjs",
+    "validate": "node tools/validate-packs.mjs",
+    "test": "node --test",
+    "check": "npm run validate && npm test && npm run build:static",
+    "build:example": "node tools/build-pack.mjs --input examples/custom-pack --output dist/example.pack.json"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "minisearch": "7.2.0"
+  }
+}

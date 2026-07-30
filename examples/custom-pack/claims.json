@@ -1,0 +1,15 @@
+[
+  {
+    "id": "claim:offline-search",
+    "subjectId": "concept:offline-first",
+    "predicate": "allows",
+    "text": "После установки пакета поиск по его разделам не требует сетевого запроса.",
+    "status": "reviewed",
+    "confidence": 1,
+    "source": {
+      "documentId": "example.offline",
+      "sectionId": "installed",
+      "quote": "После установки пакета поиск по его разделам не требует сетевого запроса."
+    }
+  }
+]

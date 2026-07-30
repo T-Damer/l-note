@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "example.offline-basics.ru",
+  "version": "1.0.0",
+  "title": "Пример локального пакета",
+  "description": "Минимальный исходник для tools/build-pack.mjs.",
+  "language": "ru",
+  "publishedAt": "2026-07-30T00:00:00Z",
+  "license": "MIT",
+  "tags": ["example", "offline"]
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "id": "concept:offline-first",
+    "type": "concept",
+    "name": "Offline-first",
+    "aliases": ["офлайн-first", "работа без сети"],
+    "description": "Подход, при котором локальный сценарий остаётся основным и полноценным."
+  }
+]

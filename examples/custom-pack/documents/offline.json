@@ -1,0 +1,20 @@
+{
+  "id": "example.offline",
+  "title": "Работа установленного пакета",
+  "summary": "Пример документа в исходном каталоге сборщика.",
+  "authority": "reference",
+  "effectiveFrom": "2026-07-30",
+  "source": {
+    "title": "L-Note example"
+  },
+  "tags": ["offline"],
+  "sections": [
+    {
+      "id": "installed",
+      "title": "После установки",
+      "text": "После установки пакета поиск по его разделам не требует сетевого запроса. Пакет хранится в IndexedDB отдельно от пользовательских заметок.",
+      "entityIds": ["concept:offline-first"],
+      "tags": ["storage", "search"]
+    }
+  ]
+}
