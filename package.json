@@ -11,7 +11,8 @@
     "build:static": "node tools/build-static.mjs",
     "validate": "node tools/validate-packs.mjs",
     "test": "node --test",
-    "check": "npm run validate && npm test && npm run build:static",
+    "test:e2e": "node tools/browser-e2e.mjs",
+    "check": "npm run validate && npm test && npm run build:static && npm run test:e2e",
     "build:example": "node tools/build-pack.mjs --input examples/custom-pack --output dist/example.pack.json"
   },
   "engines": {
