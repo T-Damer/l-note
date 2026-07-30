@@ -1,4 +1,4 @@
-const WEBLLM_URL = 'https://esm.run/@mlc-ai/web-llm@0.2.83';
+const WEBLLM_URL = 'https://esm.run/@mlc-ai/web-llm@0.2.84';
 
 function evidenceId(index) {
   return `S${index + 1}`;
