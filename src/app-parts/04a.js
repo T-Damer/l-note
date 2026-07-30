@@ -49,14 +49,6 @@ async function handleAsk(event) {
 }
 
 async function loadOrRunLocalAi(button) {
-  if (!state.currentEvidence) {
-    const query = dom.askInput.value.trim();
-    if (!query) {
-      toast('Сначала введите вопрос и соберите доказательства.', 'error');
-      return;
-    }
-    renderEvidence(buildEvidenceForQuestion(query));
-  }
   if (!state.localAi.available) {
     toast('WebGPU недоступен. Доказательная сводка остаётся полностью рабочей.', 'error');
     return;
@@ -65,7 +57,17 @@ async function loadOrRunLocalAi(button) {
   const selectedModelId = dom.localAiModel.value;
   const selectedProfile = selectedLocalModelProfile();
   const selectedReady = state.localAiReady && state.localAi.modelId === selectedModelId;
-  if (!selectedReady) {
+  const query = dom.askInput.value.trim();
+  const evidenceMatchesQuestion = Boolean(
+    state.currentEvidence && (!query || state.currentEvidence.query === query),
+  );
+  const action = resolveLocalModelAction({
+    modelReady: selectedReady,
+    hasEvidence: evidenceMatchesQuestion,
+    hasQuestion: Boolean(query),
+  });
+
+  if (action === LOCAL_MODEL_ACTION.LOAD) {
     button.disabled = true;
     button.textContent = `Загрузка ${selectedProfile.label}…`;
     try {
@@ -79,8 +81,8 @@ async function loadOrRunLocalAi(button) {
       state.localAiReady = true;
       renderLocalModelDetails();
       syncLocalAiButton();
-      dom.aiStatus.textContent = `${selectedProfile.label} готова; загрузка заняла ${formatModelDuration(loaded.loadMs)}${loaded.reused ? ' (использован текущий экземпляр)' : ''}.`;
-      toast(`${selectedProfile.label} готова. Повторное открытие использует браузерный кэш.`);
+      dom.aiStatus.textContent = `${selectedProfile.label} готова; загрузка заняла ${formatModelDuration(loaded.loadMs)}${loaded.reused ? ' (использован текущий экземпляр)' : ''}. Можно вводить вопрос позже.`;
+      toast(`${selectedProfile.label} готова. Вопрос для скачивания модели не требуется.`);
     } catch (error) {
       state.localAiReady = false;
       toast(error instanceof Error ? error.message : String(error), 'error');
@@ -89,6 +91,15 @@ async function loadOrRunLocalAi(button) {
       syncLocalAiButton();
     }
     return;
+  }
+
+  if (action === LOCAL_MODEL_ACTION.NEEDS_QUESTION) {
+    toast('Модель уже загружена. Введите вопрос, чтобы собрать источники и получить ответ.', 'error');
+    return;
+  }
+
+  if (action === LOCAL_MODEL_ACTION.COLLECT_AND_ANSWER) {
+    renderEvidence(buildEvidenceForQuestion(query));
   }
 
   button.disabled = true;
