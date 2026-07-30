@@ -19,6 +19,8 @@ test('static build contains the complete offline shell', async () => {
     'styles.css',
     'service-worker.js',
     'vendor/minisearch.js',
+    'vendor/phosphor/style.css',
+    'vendor/phosphor/Phosphor.woff2',
     'packs/catalog.json',
     'src/app.js',
     'src/router.js',
@@ -28,12 +30,19 @@ test('static build contains the complete offline shell', async () => {
     'src/core/runtime.js',
     'src/adapters/runtime-adapters.js',
     'src/domain-plugins/minimed.js',
+    'src/ui/text.js',
+    'src/ui/icons.js',
   ]) {
     await access(path.join(root, 'dist', relative));
   }
   const css = await readFile(path.join(root, 'dist', 'styles.css'), 'utf8');
   assert.match(css, /Generated from styles\/main\.scss/u);
   assert.match(css, /--palette-dark-paper/u);
+  assert.match(css, /vendor\/phosphor\/style\.css/u);
+
+  const html = await readFile(path.join(root, 'dist', 'index.html'), 'utf8');
+  assert.match(html, /ph-magnifying-glass/u);
+  assert.match(html, /ph-note-pencil/u);
 
   const syntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
     cwd: root,
