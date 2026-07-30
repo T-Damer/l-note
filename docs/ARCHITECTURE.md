@@ -2,38 +2,46 @@
 
 ## Current state
 
-The active web prototype currently provides:
+The active web prototype provides:
 
 - installable, checksummed JSON knowledge packs persisted in IndexedDB;
 - MiniSearch full-text, prefix, alias and fuzzy retrieval with a deterministic fallback;
-- optional domain query expansion isolated from the generic search engine;
+- optional domain query planning isolated from the generic search engine;
 - normalized `0–100%` retrieval relevance;
 - routed packages, documents, concepts, statements and notes using hash URLs and browser history;
-- Back traversal through linked cards and one full-chain Close operation;
 - exact source-linked statements, relations, backlinks and a separate personal-note overlay;
 - optional browser-local WebLLM over retrieved evidence only;
-- one model comparison block with Gemma 3 1B, preferred Qwen3 1.7B and Phi-4 Mini;
-- SCSS source partials for palette, themes, base, layout, components, dialogs and utilities;
-- a deterministic style builder that generates `styles.css` before local and production builds;
-- static PWA hosting through GitHub Pages.
+- versioned evidence envelopes and deterministic citation-ID validation;
+- SCSS source partials and deterministic static-PWA builds.
 
-The next implementation slice is typed core ports, browser E2E coverage for routed dialogs, and a reusable component/typography/icon layer. The complete future backlog lives only in `TASKS.md`.
+The shared-core foundation now exists as UI-independent modules:
 
-## Product and shared-core boundary
+```text
+src/core/contracts.js + .d.ts   versioned pack, resource, note, search and evidence contracts
+src/core/ports.js + .d.ts       SearchPort, StoragePort, DomainQueryPlannerPort, LocalModelPort
+src/core/runtime.js + .d.ts     installed-pack composition and headless runtime state
+src/adapters/runtime-adapters   MiniSearch, IndexedDB/memory and WebLLM browser adapters
+```
+
+These ports are covered by Node tests and cached by the offline shell. The current PWA still contains a small amount of direct legacy adapter usage; migrating the shell completely to the port objects remains the next core task. The complete future backlog lives only in `TASKS.md`.
+
+## Product and MiniMed boundary
 
 L-Note is the canonical **domain-neutral knowledge runtime**, not a replacement for MiniMed's medical domain layer.
 
-The reusable layer is expected to contain:
+Reusable L-Note responsibilities:
 
 ```text
-@lnote/contracts     pack, document, section, concept, statement, relation and evidence contracts
-@lnote/core          installed-pack composition, entity resolution, backlinks, statements and personal overlay
-@lnote/search        SearchPort plus generic ranking and fusion contracts
-@lnote/storage       StoragePort plus IndexedDB and future SQLite adapters
-@lnote/llm           provider-independent grounded-evidence orchestration
+portable contracts and stable IDs
+installed-pack composition
+storage and search ports
+concepts, statements, relations and backlinks
+personal overlay
+versioned evidence collection
+provider-independent local-model boundary
 ```
 
-MiniMed should consume those capabilities through adapters and retain ownership of:
+MiniMed-owned responsibilities:
 
 ```text
 medical query parsing and negation
@@ -44,55 +52,81 @@ clinical abstention and safety gates
 medical benchmarks and source policies
 ```
 
-This prevents medicine from leaking into the universal core without weakening MiniMed into a generic lowest-common-denominator search app. Before MiniMed imports the core, shared contracts and ports should become typed and UI-independent.
+MiniMed should later consume L-Note through adapters. Medicine must not leak into the universal contracts, and L-Note must not weaken MiniMed into a lowest-common-denominator generic search application.
 
 ## Runtime
 
+Current browser path:
+
 ```text
 static PWA shell
-  ├─ pack catalog (network-first, cached)
-  ├─ selected JSON packs → checksum verification → IndexedDB
-  ├─ flattened sections/notes → MiniSearch or built-in fuzzy fallback
-  ├─ optional domain query expanders
-  ├─ concepts + relations + exact statements → linked readers/backlinks
-  ├─ personal notes → separate IndexedDB store
-  └─ optional WebLLM → retrieved evidence only
+  ├─ catalog and selected JSON packs
+  ├─ checksum verification
+  ├─ IndexedDB with in-memory fallback
+  ├─ pack composition into documents/concepts/statements/relations
+  ├─ MiniSearch or deterministic fuzzy fallback
+  ├─ optional domain query planners
+  ├─ separate personal-note overlay
+  └─ optional WebLLM over retrieved evidence only
 ```
 
-The browser runtime is serverless and static-host friendly. Search, linked reading, notes and deterministic evidence remain useful without a model.
+Target shared path:
+
+```text
+application shell
+  → KnowledgeRuntime
+  → StoragePort
+  → SearchPort
+  → optional DomainQueryPlannerPort(s)
+  → optional LocalModelPort
+```
+
+Search, linked reading, notes and deterministic evidence must remain useful when no model is installed.
+
+## Contracts and compatibility
+
+`LNOTE_CONTRACT_VERSION` versions runtime-facing evidence and public contracts. `KNOWLEDGE_PACK_SCHEMA_VERSION` versions portable pack payloads. Runtime guards reject malformed boundary objects; the existing pack validator remains responsible for referential integrity and exact-evidence checks.
+
+The first typed concepts intentionally map onto the current serialized names:
+
+```text
+concept   ↔ pack.entities[]
+statement ↔ pack.claims[]
+relation  ↔ pack.relations[]
+```
+
+Changing user-facing terminology does not require changing stable serialized IDs.
 
 ## Storage and search boundary
 
-JSON is currently both the transport format and the small-corpus prototype artifact. It is not the permanent search abstraction.
-
-Search consumers should depend on a future `SearchPort`, not on MiniSearch result objects. The first adapters are expected to be:
+JSON is currently the transport and small-corpus prototype artifact. It is not the permanent search abstraction.
 
 ```text
-MiniSearch + IndexedDB   small/medium browser packs
-SQLite + FTS5            large local packs and MiniMed
-optional vector adapter  semantic or hybrid retrieval
+MiniSearch + IndexedDB   current small/medium browser adapter
+SQLite + FTS5            planned large-pack and MiniMed adapter
+optional vector adapter  planned semantic/hybrid retrieval layer
 ```
 
 A SQLite adapter should be reusable by L-Note and MiniMed, while medical query planning remains a MiniMed plugin.
 
 ## Retrieval path
 
-1. Normalize Unicode, Russian `ё`/`е`, dashes, punctuation and whitespace.
+1. Normalize Unicode, Russian `ё`/`е`, punctuation and whitespace.
 2. Expand declared concept names and aliases.
-3. Apply optional domain expanders, such as the isolated MiniMed demo vocabulary.
-4. Run MiniSearch with title/alias boosts, prefix search and fuzzy matching.
+3. Apply optional domain planners, such as the isolated MiniMed demo planner.
+4. Run MiniSearch with field boosts, prefix search and fuzzy matching.
 5. Fall back to the embedded Damerau–Levenshtein scorer when MiniSearch is unavailable.
-6. Normalize displayed relevance relative to the current result set; this is not diagnostic probability.
-7. Resolve results to their pack, document, section, concepts, statements and source metadata.
-8. Merge the separately stored personal layer according to the selected ranking policy.
-9. For complex questions, select a bounded evidence set and list linked personal conflicts.
-10. Only then may an optional local model synthesize an answer; unknown source IDs are rejected.
+6. Normalize displayed relevance relative to the current result set; it is not diagnostic probability.
+7. Resolve results to pack, document, section, concepts, statements and source metadata.
+8. Merge the personal overlay according to the selected ranking policy.
+9. Build a bounded, versioned evidence envelope.
+10. Only then may a local model synthesize an answer; unknown source IDs are rejected.
 
-Every reported ranking failure should become a regression test. Domain-specific vocabulary belongs in a plugin or pack, not in the generic search engine.
+Every reported ranking failure should become a regression test. Domain vocabulary belongs in a plugin or pack, never in the generic search implementation.
 
 ## Route boundary
 
-Hash URLs are the portable navigation contract for static hosting and future Capacitor shells:
+Hash URLs are the portable navigation contract:
 
 ```text
 #/search
@@ -106,52 +140,36 @@ Hash URLs are the portable navigation contract for static hosting and future Cap
 #/note/:id
 ```
 
-The URL is the source of truth for opened resources. Browser history owns nested card traversal. A resource route stores its base page and chain depth; Back returns through the chain, while full Close returns to the base page and truncates forward resource routes.
+The URL is the source of truth for opened resources. Browser history owns nested traversal. Back returns through the chain; full Close returns to the recorded base page and removes the forward resource chain.
 
-Routing belongs to the application shell rather than the headless knowledge core. Stable IDs and resource resolvers belong to the core contract.
+Routing belongs to the application shell. Stable resource IDs and resolvers belong to the core contract.
 
 ## Styling boundary
 
-All authored style source lives under `styles/`. `styles/main.scss` defines partial order; `tools/build-styles.mjs` generates `styles.css`. The current builder intentionally supports CSS-compatible SCSS plus deterministic `@use` ordering without adding a new runtime dependency. Sass-only features require adding an explicit compiler and lockfile update.
-
-Palette values, light/dark semantic assignments and future graph category colors are centralized. Components should consume semantic variables rather than repeat literals.
+All authored styles live under `styles/`. `styles/main.scss` defines partial order and `tools/build-styles.mjs` generates `styles.css`. Palette, themes, semantic colors, interaction states and graph-category colors remain centralized.
 
 ## Pack preparation boundary
 
-Two preparation paths are supported:
-
 ```text
-reviewed manifest/documents/concepts/statements/relations
-  → deterministic compiler
-  → validated pack
-```
-
-or:
-
-```text
-Markdown / TXT / JSON
-  → deterministic parsing + provenance + abbreviation discovery
-  → optional local OpenAI-compatible or Replicate extraction
+reviewed records or Markdown/TXT/JSON
+  → deterministic parsing and provenance
+  → optional local/remote extraction proposals
   → exact-quote validation
-  → validated pack
+  → validated portable pack
 ```
 
-Arbitrary PDF/DOCX parsing, OCR, database exporters and domain ETL belong before the normalized authoring contract. The core invariant is provenance-first: a structured statement is publishable only when its exact quote resolves inside a supplied section. Model output is a proposal, never a silent replacement for source text.
+PDF/DOCX parsing, OCR, database exporters and domain ETL belong before the normalized authoring contract. A model may propose structure but never silently replace source text.
 
 ## Personal overlay
 
-Reference packs are immutable installed inputs. Notes live in another object store and may link to a stable statement using `observation`, `supports`, `refines`, `contradicts` or `supersedes`. Even `supersedes` changes only local ranking; both versions remain visible and traceable.
+Reference packs are immutable installed inputs. Notes remain physically separate and may link to a stable statement using `observation`, `supports`, `refines`, `contradicts` or `supersedes`. `supersedes` changes local ranking only; both versions remain visible and traceable.
 
-## Planned compatible layers
+## Next ordered work
 
-- typed public contracts and adapter ports;
-- SQLite/FTS and vector-index artifacts;
-- browser E2E routing coverage;
-- reusable UI components, `Text` typography and Phosphor icons;
-- internal PDF/source assets;
-- knowledge graph view;
-- persistent prioritized model/document download queue;
-- signed catalogs, dependencies, delta updates and rollback;
-- temporal statement validity and applicability conditions;
-- optional sync of the personal overlay;
-- Capacitor only after the web core stabilizes.
+1. Migrate the current web shell from direct adapter calls to the new ports.
+2. Add browser E2E coverage for direct links, refresh, nested Back and full-chain Close.
+3. Introduce the reusable component/Text/icon layer.
+4. Add the internal PDF asset path and knowledge graph after the component boundary is stable.
+5. Add SQLite/FTS5 without moving MiniMed rules into the shared core.
+
+Android and iOS remain deferred until the hosted web core is stable.
