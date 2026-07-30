@@ -4,7 +4,7 @@
       create('b', { text: `[${source.id}]` }),
       create('span', { text: `${source.result.documentTitle} — ${source.result.title}: ${source.result.body.slice(0, 340)}${source.result.body.length > 340 ? '…' : ''}` }),
     ]);
-    chip.addEventListener('click', () => openDocument(source.result));
+    chip.addEventListener('click', () => navigateResource('document', source.result.documentId, { sectionId: source.result.sectionId }));
     sourcePanel.append(chip);
   }
   if (!evidence.sources.length) sourcePanel.append(create('p', { text: 'Нет справочных источников для ответа.' }));
