@@ -1,0 +1,13 @@
+@import url("./vendor/phosphor/style.css");
+
+.icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  line-height: 1;
+}
+
+.icon[aria-hidden='true'] {
+  pointer-events: none;
+}
