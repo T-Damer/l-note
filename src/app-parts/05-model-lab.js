@@ -22,12 +22,16 @@ for (const profile of LOCAL_MODEL_PROFILES) {
 const localAiModelDetails = create('div', { className: 'storage-summary model-storage-summary' });
 const modelRunHistory = create('section', { className: 'answer-panel hidden', 'aria-live': 'polite' });
 const modelLab = create('section', { className: 'answer-panel model-lab' }, [
-  create('h2', { text: 'Локальные модели для сравнения' }),
-  create('p', {
+  create('div', { className: 'panel-title-row' }, [
+    Icon({ name: 'model', className: 'panel-title-icon', size: 22 }),
+    Text({ variant: 'title', text: 'Локальные модели для сравнения' }),
+  ]),
+  Text({
+    variant: 'muted',
     text: 'Три независимых семейства работают в браузере через WebGPU: лёгкая Gemma 3, рекомендуемый Qwen3 и более тяжёлая Phi-4 Mini. Первая загрузка требует сети; затем веса остаются в кэше браузера.',
   }),
   create('label', { className: 'model-selector' }, [
-    create('strong', { text: 'Выберите модель' }),
+    Text({ variant: 'label', text: 'Выберите модель' }),
     localAiModel,
   ]),
   localAiModelDetails,
@@ -66,8 +70,7 @@ function renderLocalModelDetails() {
     create('span', { text: `VRAM ≈ ${formatBytes(profile.vramRequiredMB * 1024 * 1024)}` }),
     create('span', { text: ready ? 'Загружена и готова' : 'Не загружена' }),
   );
-  const description = create('p', { className: 'muted', text: profile.description });
-  dom.localAiModelDetails.append(description);
+  dom.localAiModelDetails.append(Text({ variant: 'muted', text: profile.description }));
 }
 
 function syncLocalAiButton() {
@@ -79,12 +82,18 @@ function renderModelRunHistory() {
   dom.modelRunHistory.replaceChildren();
   dom.modelRunHistory.classList.toggle('hidden', state.localAiRuns.length === 0);
   if (!state.localAiRuns.length) return;
-  dom.modelRunHistory.append(create('h2', { text: 'Последние тесты моделей' }));
+  dom.modelRunHistory.append(
+    create('div', { className: 'panel-title-row' }, [
+      Icon({ name: 'model', className: 'panel-title-icon', size: 20 }),
+      Text({ variant: 'title', text: 'Последние тесты моделей' }),
+    ]),
+  );
   for (const run of state.localAiRuns.slice(0, 6)) {
     const profile = localModelProfile(run.modelId);
     const status = run.grounded ? 'ссылки валидны' : 'нужна ручная проверка';
     dom.modelRunHistory.append(
-      create('p', {
+      Text({
+        variant: 'muted',
         text: `${profile?.label ?? run.modelId}: загрузка ${formatModelDuration(run.loadMs)}, ответ ${formatModelDuration(run.durationMs)}, ${formatModelSpeed(run.tokensPerSecond)}, ${status}.`,
       }),
     );
