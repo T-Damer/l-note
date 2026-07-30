@@ -28,6 +28,15 @@ export function Card(options?: {
   [attribute: string]: unknown;
 }): HTMLElement;
 
+export function SourceCard(options?: {
+  sourceId?: string;
+  title?: string;
+  type?: string;
+  excerpt?: string;
+  actionText?: string;
+  onOpen?: (event: MouseEvent) => void;
+}): HTMLButtonElement;
+
 export function bindRoutedDialog(
   dialog: HTMLDialogElement,
   onFullClose: (reason: 'escape' | 'backdrop') => void,
