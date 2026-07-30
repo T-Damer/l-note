@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v14';
-const RUNTIME_CACHE = 'l-note-runtime-v14';
+const SHELL_CACHE = 'l-note-shell-v15';
+const RUNTIME_CACHE = 'l-note-runtime-v15';
 const SHELL = [
   './',
   './index.html',
@@ -30,6 +30,7 @@ const SHELL = [
   './src/ui/text.js',
   './src/ui/icons.js',
   './src/ui/components.js',
+  './src/ui/routed-dialog.js',
   './src/ui/knowledge-graph.js',
   './packs/catalog.json',
 ];
