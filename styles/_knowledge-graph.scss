@@ -7,7 +7,7 @@
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--paper-strong);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow);
 }
 
 .knowledge-graph-summary {
@@ -27,7 +27,7 @@
 
 .knowledge-graph-canvas {
   display: block;
-  min-width: 100%;
+  min-width: 64rem;
   background:
     linear-gradient(color-mix(in srgb, var(--line) 22%, transparent) 1px, transparent 1px),
     linear-gradient(90deg, color-mix(in srgb, var(--line) 22%, transparent) 1px, transparent 1px);
@@ -62,7 +62,7 @@
 }
 
 .knowledge-graph-node rect {
-  stroke: color-mix(in srgb, var(--ink) 20%, var(--line));
+  stroke: color-mix(in srgb, var(--palette-light-ink) 28%, var(--line));
   stroke-width: 1;
   filter: drop-shadow(0 5px 10px rgb(0 0 0 / 8%));
   transition: stroke-width .12s ease, filter .12s ease, opacity .12s ease;
@@ -71,7 +71,7 @@
 
 .knowledge-graph-node:hover rect,
 .knowledge-graph-node:focus-visible rect {
-  stroke: var(--ink);
+  stroke: var(--palette-light-ink);
   stroke-width: 2;
   filter: drop-shadow(0 8px 16px rgb(0 0 0 / 16%));
 }
@@ -84,11 +84,7 @@
 .knowledge-graph-node-label,
 .knowledge-graph-node-subtitle {
   pointer-events: none;
-  fill: var(--paper-strong);
-  paint-order: stroke;
-  stroke: rgb(0 0 0 / 20%);
-  stroke-width: 1.2px;
-  stroke-linejoin: round;
+  fill: var(--palette-light-ink);
 }
 
 .knowledge-graph-node-label {
@@ -99,7 +95,7 @@
 .knowledge-graph-node-subtitle {
   font-size: 9px;
   font-weight: 620;
-  opacity: .9;
+  opacity: .76;
 }
 
 @media (max-width: 680px) {
