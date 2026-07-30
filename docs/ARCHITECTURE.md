@@ -14,8 +14,9 @@ L-Note is a hosted, offline-first knowledge workspace with:
 - a model-first Ask page: compact name/parameters/size/power state, then progress/error/retry, then the question workspace;
 - shared `Text`, Icon, Card, Button, SourceCard and routed-dialog primitives;
 - list/graph views for packages, documents, sections, concepts and relations;
+- a downloadable mixed-domain graph example;
 - SCSS partials and a deterministic static-PWA build;
-- headless-Chrome E2E for direct links, reload, nested Back, full-chain Close and modal scrolling.
+- headless-Chrome E2E for direct links, reload, nested Back, full-chain Close, modal scrolling and graph installation/navigation.
 
 The outer dialog and its shell never scroll. `.dialog-body` is the only vertical scroll container; the document root and body are locked while a routed card is open. The header reserves Back, title and Close columns, so hiding Back cannot move Close away from the right edge.
 
@@ -135,7 +136,7 @@ Stable routes:
 
 Browser history owns nested card traversal. Back moves through the card chain; full Close returns to the recorded base page and removes forward card routes. A shared routed-dialog controller owns show/close, back visibility and dialog content surfaces; resource-specific body renderers are the remaining migration step.
 
-The package graph uses the same resource routes. Its data model contains available/installed package, document, section and concept nodes plus containment, mention and concept-relation edges. An uninstalled package node opens its normal routed installation card.
+The package graph uses the same resource routes. Its data model contains available/installed package, document, section and concept nodes plus containment, mention and concept-relation edges. An uninstalled package node opens its normal routed installation card. Browser E2E switches to the graph, verifies the mixed gradient, opens the routed demo package and installs it from that route.
 
 Category colors are SCSS variables. Explicit pack categories take priority; the generic projector may infer presentation categories from metadata without changing the knowledge contract. Multiple weighted categories render proportional gradients. A downloadable demonstration pack includes a 50/50 pediatrics/dentistry tooth-eruption node.
 
@@ -155,10 +156,9 @@ PDF/DOCX parsing, OCR and database exporters belong before this normalized contr
 
 1. Replace the three resource-specific body renderers with the shared routed-dialog renderer and split transitional app fragments into pages/services/helpers.
 2. Add shared field/switch primitives and finish interaction-state auditing.
-3. Add browser E2E for graph/list switching and node navigation.
-4. Add internal local PDF assets with exact anchors.
-5. Add cancellation and a persistent model/document download queue where runtimes allow it.
-6. Add SQLite/FTS5 behind `SearchPort`/`StoragePort`.
-7. Connect the adapter in MiniMed and require MiniMed’s existing retrieval/safety benchmarks before migration.
+3. Add internal local PDF assets with exact anchors.
+4. Add cancellation and a persistent model/document download queue where runtimes allow it.
+5. Add SQLite/FTS5 behind `SearchPort`/`StoragePort`.
+6. Connect the adapter in MiniMed and require MiniMed’s existing retrieval/safety benchmarks before migration.
 
 Android and iOS remain deferred until the hosted web core is stable.
