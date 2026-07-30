@@ -9,6 +9,7 @@ const ICONS = Object.freeze({
   download: 'download-simple',
   import: 'upload-simple',
   graph: 'share-network',
+  list: 'list-bullets',
   document: 'file-text',
   pdf: 'file-pdf',
   concept: 'circles-three-plus',
