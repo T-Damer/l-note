@@ -1,10 +1,9 @@
-const SHELL_CACHE = 'l-note-shell-v4';
-const RUNTIME_CACHE = 'l-note-runtime-v4';
+const SHELL_CACHE = 'l-note-shell-v5';
+const RUNTIME_CACHE = 'l-note-runtime-v5';
 const SHELL = [
   './',
   './index.html',
   './styles.css',
-  './src/routed-dialog.css',
   './manifest.webmanifest',
   './assets/icon.svg',
   './vendor/minisearch.js',
