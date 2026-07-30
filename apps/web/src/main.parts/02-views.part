@@ -1,0 +1,342 @@
+function renderApp() {
+  if (!state.ready) return;
+  const navItems = [
+    ['search', 'Поиск'],
+    ['packs', 'Пакеты'],
+    ['notes', `Заметки${state.notes.length ? ` · ${state.notes.length}` : ''}`],
+    ['ai', 'ИИ и проверка'],
+  ];
+
+  root.innerHTML = `
+    <div class="app-shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">L</div>
+          <div>
+            <h1>L-Note</h1>
+            <p>локальные знания, доказательства и личный опыт</p>
+          </div>
+        </div>
+        <span id="network-status" class="status-badge ${state.online ? '' : 'offline'}">
+          ${state.online ? 'сеть доступна' : 'оффлайн'}
+        </span>
+      </header>
+      <nav class="navigation" aria-label="Основные разделы">
+        ${navItems
+          .map(
+            ([id, label]) => `
+              <button class="nav-button ${state.view === id ? 'active' : ''}" data-action="navigate" data-view="${id}">
+                ${escapeHtml(label)}
+              </button>`,
+          )
+          .join('')}
+      </nav>
+      <main>${renderCurrentView()}</main>
+    </div>
+    <dialog id="detail-dialog"></dialog>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  `;
+}
+
+function renderCurrentView() {
+  switch (state.view) {
+    case 'packs':
+      return renderPacksView();
+    case 'notes':
+      return renderNotesView();
+    case 'ai':
+      return renderAiView();
+    default:
+      return renderSearchView();
+  }
+}
+
+function renderSearchView() {
+  const stats = state.engine.stats();
+  return `
+    <section class="page">
+      <div class="hero">
+        <h2>Ищите по своим знаниям, а не по чужому облаку.</h2>
+        <p>
+          Опечатки исправляются fuzzy-поиском, сокращения ведут к сущностям, а каждый вывод можно открыть в исходном фрагменте.
+        </p>
+        <form id="search-form" class="search-composer">
+          <label class="visually-hidden" for="search-input">Поисковый запрос</label>
+          <textarea id="search-input" name="query" rows="2" placeholder="Например: как PWA работает офлаин или что такое RAG">${escapeHtml(state.query)}</textarea>
+          <button class="primary-button" type="submit">Найти</button>
+        </form>
+        <div id="search-suggestions" class="suggestions">${renderSuggestions()}</div>
+        <div class="metrics">
+          <span class="pill">${stats.packs} пакетов</span>
+          <span class="pill">${stats.documents} документов</span>
+          <span class="pill">${stats.chunks} фрагментов</span>
+          <span class="pill">${stats.entities} сущностей</span>
+          <span class="pill">${stats.claims} утверждений</span>
+        </div>
+      </div>
+      <div id="search-results">${renderSearchResults()}</div>
+    </section>
+  `;
+}
+
+function renderSuggestions() {
+  if (!state.query.trim()) {
+    const examples = ['PWA офлайн', 'fuzzy search', 'RAG', 'проверка утверждений'];
+    return examples
+      .map(
+        (example) => `<button type="button" class="suggestion-button" data-action="suggestion" data-query="${escapeHtml(example)}">${escapeHtml(example)}</button>`,
+      )
+      .join('');
+  }
+  if (state.suggestions.length === 0) return '';
+  return state.suggestions
+    .map(
+      (suggestion) => `
+        <button type="button" class="suggestion-button" data-action="suggestion" data-query="${escapeHtml(suggestion.canonicalName)}">
+          ${escapeHtml(suggestion.matchedTerm)} → ${escapeHtml(suggestion.canonicalName)}
+        </button>`,
+    )
+    .join('');
+}
+
+function renderSearchResults() {
+  if (state.packs.length === 0) {
+    return `
+      <div class="empty-state">
+        <h3>Нет установленных знаний</h3>
+        <p>Откройте каталог, выберите пакет или импортируйте собственный JSON-пакет.</p>
+        <button class="primary-button" data-action="navigate" data-view="packs">Открыть пакеты</button>
+      </div>`;
+  }
+  if (!state.query.trim()) return '';
+  if (state.results.length === 0) {
+    return `<div class="empty-state"><h3>Ничего не найдено</h3><p>Попробуйте более короткий запрос или установите другой пакет знаний.</p></div>`;
+  }
+
+  return `
+    <section class="results">
+      <div class="results-header">
+        <strong>Найдено: ${state.results.length}</strong>
+        <span>справочные и личные результаты разделены</span>
+      </div>
+      ${state.results
+        .map(
+          (result) => `
+            <button class="result-card" type="button" data-action="open-result" data-result-id="${escapeHtml(result.id)}">
+              <div class="result-meta">
+                <span class="result-kind ${result.kind === 'note' ? 'personal' : 'reference'}">
+                  ${result.kind === 'note' ? 'личная заметка' : 'справочный источник'}
+                </span>
+                <span>${Math.round(result.score * 100)}%</span>
+              </div>
+              <h3>${escapeHtml(result.documentTitle)}</h3>
+              <p>${escapeHtml(result.sectionTitle)} · ${escapeHtml(result.packTitle)}</p>
+              <p style="margin-top: 10px">${escapeHtml(truncate(result.text))}</p>
+              ${
+                result.aliases.length
+                  ? `<div class="inline-list" style="margin-top: 12px">${result.aliases
+                      .slice(0, 5)
+                      .map((alias) => `<span class="tag">${escapeHtml(alias)}</span>`)
+                      .join('')}</div>`
+                  : ''
+              }
+            </button>`,
+        )
+        .join('')}
+    </section>
+  `;
+}
+
+function renderPacksView() {
+  const catalogPacks = state.catalog?.packs ?? [];
+  const catalogIds = new Set(catalogPacks.map((entry) => entry.id));
+  const imported = state.packs.filter((pack) => !catalogIds.has(pack.manifest.id));
+
+  return `
+    <section class="page">
+      <div class="page-heading">
+        <h2>Пакеты знаний</h2>
+        <p>
+          Устанавливайте только нужные темы. После загрузки пакет хранится в IndexedDB и участвует в поиске без сети.
+        </p>
+      </div>
+      <div class="form-card">
+        <div class="section-title" style="margin-top: 0">
+          <h3>Свой пакет</h3>
+          <span class="pill">JSON · schema v1</span>
+        </div>
+        <p class="help">Файл проверяется локально. Он не отправляется на сервер и сразу становится доступен в поиске.</p>
+        <label class="secondary-button" style="display: inline-flex; margin-top: 10px; cursor: pointer">
+          Импортировать JSON
+          <input id="pack-import" class="visually-hidden" type="file" accept="application/json,.json" />
+        </label>
+      </div>
+
+      <div class="section-title">
+        <h3>Каталог</h3>
+        <span class="pill">${catalogPacks.length} доступно</span>
+      </div>
+      ${
+        state.catalogError
+          ? `<div class="empty-state"><p>Каталог сейчас недоступен: ${escapeHtml(state.catalogError)}. Уже установленные пакеты продолжают работать.</p></div>`
+          : `<div class="grid">${catalogPacks.map(renderCatalogCard).join('')}</div>`
+      }
+
+      ${
+        imported.length
+          ? `
+            <div class="section-title"><h3>Импортированные</h3><span class="pill">${imported.length}</span></div>
+            <div class="grid">${imported.map(renderImportedPackCard).join('')}</div>`
+          : ''
+      }
+    </section>
+  `;
+}
+
+function renderCatalogCard(entry) {
+  const installed = installedPack(entry.id);
+  const updateAvailable = installed && installed.manifest.version !== entry.version;
+  const action = installed && !updateAvailable ? 'uninstall-pack' : 'install-pack';
+  const label = updateAvailable ? 'Обновить' : installed ? 'Удалить' : 'Установить';
+  const buttonClass = installed && !updateAvailable ? 'danger-button' : 'primary-button';
+
+  return `
+    <article class="pack-card ${installed ? 'installed' : ''}">
+      <div class="pack-meta">
+        <span class="tag">${escapeHtml(entry.language)}</span>
+        ${entry.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+      </div>
+      <h3>${escapeHtml(entry.title)}</h3>
+      <p>${escapeHtml(entry.description)}</p>
+      <div class="card-actions">
+        <span class="help">v${escapeHtml(entry.version)} · ${formatBytes(entry.sizeBytes)}</span>
+        <button class="${buttonClass}" data-action="${action}" data-pack-id="${escapeHtml(entry.id)}">${label}</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderImportedPackCard(pack) {
+  return `
+    <article class="pack-card installed">
+      <div class="pack-meta"><span class="tag">локальный импорт</span><span class="tag">${escapeHtml(pack.manifest.language)}</span></div>
+      <h3>${escapeHtml(pack.manifest.title)}</h3>
+      <p>${escapeHtml(pack.manifest.description)}</p>
+      <div class="card-actions">
+        <span class="help">v${escapeHtml(pack.manifest.version)}</span>
+        <button class="danger-button" data-action="uninstall-pack" data-pack-id="${escapeHtml(pack.manifest.id)}">Удалить</button>
+      </div>
+    </article>`;
+}
+
+function entityOptions(selected = []) {
+  const selectedKeys = new Set(selected.map((reference) => encodeReference(reference.packId, reference.itemId)));
+  return state.engine
+    .listEntityReferences()
+    .map((reference) => {
+      const value = encodeReference(reference.packId, reference.itemId);
+      return `<option value="${escapeHtml(value)}" ${selectedKeys.has(value) ? 'selected' : ''}>${escapeHtml(reference.title)} · ${escapeHtml(reference.packTitle)}</option>`;
+    })
+    .join('');
+}
+
+function claimOptions() {
+  return state.engine
+    .listClaimReferences()
+    .map(
+      (reference) => `<option value="${escapeHtml(encodeReference(reference.packId, reference.itemId))}">${escapeHtml(reference.title)}</option>`,
+    )
+    .join('');
+}
+
+function renderNotesView() {
+  return `
+    <section class="page">
+      <div class="page-heading">
+        <h2>Личные заметки</h2>
+        <p>
+          Заметка хранится отдельно от справочника. Она может ссылаться на сущности и явно поддерживать, уточнять или опровергать справочное утверждение.
+        </p>
+      </div>
+      <form id="note-form" class="form-card">
+        <div class="field-grid">
+          <div class="field">
+            <label for="note-title">Заголовок</label>
+            <input id="note-title" name="title" required maxlength="160" />
+          </div>
+          <div class="field">
+            <label for="note-tags">Теги через запятую</label>
+            <input id="note-tags" name="tags" placeholder="практика, уточнение" />
+          </div>
+          <div class="field-full">
+            <label for="note-body">Текст</label>
+            <textarea id="note-body" name="body" required></textarea>
+          </div>
+          <div class="field-full">
+            <label for="note-entities">Связанные сущности</label>
+            <select id="note-entities" name="entityLinks" multiple size="5">${entityOptions()}</select>
+            <span class="help">Ctrl/Cmd позволяет выбрать несколько сущностей.</span>
+          </div>
+        </div>
+        <details style="margin-top: 18px">
+          <summary><strong>Добавить личное утверждение</strong></summary>
+          <div class="field-grid" style="margin-top: 14px">
+            <div class="field">
+              <label for="claim-subject">Сущность</label>
+              <select id="claim-subject" name="claimSubject"><option value="">Не создавать утверждение</option>${entityOptions()}</select>
+            </div>
+            <div class="field">
+              <label for="claim-predicate">Тип связи / предикат</label>
+              <input id="claim-predicate" name="claimPredicate" placeholder="works_differently_when" />
+            </div>
+            <div class="field-full">
+              <label for="claim-value">Наблюдение</label>
+              <input id="claim-value" name="claimValue" placeholder="В моём случае результат отличался…" />
+            </div>
+            <div class="field">
+              <label for="claim-relation">Отношение к справочнику</label>
+              <select id="claim-relation" name="claimRelation">
+                <option value="refines">уточняет</option>
+                <option value="supports">поддерживает</option>
+                <option value="contradicts">противоречит</option>
+                <option value="supersedes">заменяет для моего режима</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="claim-target">Связанное утверждение</label>
+              <select id="claim-target" name="claimTarget"><option value="">Без прямой связи</option>${claimOptions()}</select>
+            </div>
+          </div>
+        </details>
+        <div class="card-actions" style="margin-top: 18px; justify-content: flex-end">
+          <button class="primary-button" type="submit">Сохранить заметку</button>
+        </div>
+      </form>
+
+      <div class="section-title"><h3>Сохранённые</h3><span class="pill">${state.notes.length}</span></div>
+      ${
+        state.notes.length
+          ? `<div class="grid">${state.notes.map(renderNoteCard).join('')}</div>`
+          : '<div class="empty-state"><p>Заметок пока нет. Создайте первую — она сразу появится в общем поиске.</p></div>'
+      }
+    </section>
+  `;
+}
+
+function renderNoteCard(note) {
+  return `
+    <article class="note-card">
+      <div class="inline-list"><span class="result-kind personal">личный источник</span>${note.tags.map((tag) => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>
+      <h3>${escapeHtml(note.title)}</h3>
+      <p>${escapeHtml(truncate(note.body, 220))}</p>
+      ${
+        note.personalClaim
+          ? `<div class="claim-item" style="margin-top: 14px"><strong>${escapeHtml(note.personalClaim.predicate)}</strong>: ${escapeHtml(String(note.personalClaim.value ?? ''))}</div>`
+          : ''
+      }
+      <div class="card-actions">
+        <span class="help">${new Date(note.updatedAt).toLocaleString('ru-RU')}</span>
+        <button class="danger-button" data-action="delete-note" data-note-id="${escapeHtml(note.id)}">Удалить</button>
+      </div>
+    </article>`;
+}
