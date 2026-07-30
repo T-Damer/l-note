@@ -1,5 +1,51 @@
 const WEBLLM_URL = 'https://esm.run/@mlc-ai/web-llm@0.2.84';
 
+export const LOCAL_MODEL_PROFILES = Object.freeze([
+  Object.freeze({
+    id: 'qwen3-0.6b',
+    modelId: 'Qwen3-0.6B-q4f16_1-MLC',
+    label: 'Qwen3 0.6B',
+    role: 'Быстрый baseline',
+    description: 'Минимальная задержка и загрузка. Нужен для проверки, насколько далеко можно зайти с самой компактной моделью.',
+    vramRequiredMB: 1403.34,
+  }),
+  Object.freeze({
+    id: 'qwen3-1.7b',
+    modelId: 'Qwen3-1.7B-q4f16_1-MLC',
+    label: 'Qwen3 1.7B',
+    role: 'Рекомендуемый баланс',
+    description: 'Основная тестовая модель: заметно сильнее 0.6B, но всё ещё достаточно компактна для browser-local inference.',
+    vramRequiredMB: 2036.66,
+  }),
+  Object.freeze({
+    id: 'qwen3-4b',
+    modelId: 'Qwen3-4B-q4f16_1-MLC',
+    label: 'Qwen3 4B',
+    role: 'Проверка качества',
+    description: 'Более тяжёлая модель для сравнения качества сводки, следования источникам и отказа при недостатке данных.',
+    vramRequiredMB: 3431.59,
+  }),
+]);
+
+export const DEFAULT_LOCAL_MODEL_ID = 'Qwen3-1.7B-q4f16_1-MLC';
+
+export function localModelProfile(modelId) {
+  return LOCAL_MODEL_PROFILES.find((profile) => profile.modelId === modelId) ?? null;
+}
+
+export function resolveLocalModelProfiles(modelList) {
+  const records = new Map((modelList ?? []).map((record) => [record.model_id, record]));
+  return LOCAL_MODEL_PROFILES.map((profile) => ({
+    ...profile,
+    available: records.has(profile.modelId),
+    record: records.get(profile.modelId) ?? null,
+  }));
+}
+
+function monotonicNow() {
+  return globalThis.performance?.now?.() ?? Date.now();
+}
+
 function evidenceId(index) {
   return `S${index + 1}`;
 }
@@ -39,25 +85,6 @@ export function evidencePrompt(evidence) {
   return [...blocks, ...notes].join('\n\n');
 }
 
-function rankModel(modelId) {
-  const id = String(modelId).toLowerCase();
-  let size = 100;
-  const match = id.match(/(\d+(?:\.\d+)?)b/u);
-  if (match) size = Number(match[1]);
-  const qwen = id.includes('qwen') ? -20 : 0;
-  const instruct = id.includes('instruct') ? -10 : 0;
-  const quantized = id.includes('q4') ? -5 : 0;
-  return size * 100 + qwen + instruct + quantized;
-}
-
-function pickSmallModel(modelList) {
-  const candidates = modelList
-    .map((record) => record.model_id)
-    .filter((id) => /instruct/iu.test(id) && /(0\.5b|0\.6b|0\.8b|1b|1\.5b|1\.7b)/iu.test(id));
-  const pool = candidates.length > 0 ? candidates : modelList.map((record) => record.model_id).filter((id) => /instruct/iu.test(id));
-  return pool.sort((a, b) => rankModel(a) - rankModel(b))[0];
-}
-
 export class BrowserLocalAi {
   constructor() {
     this.engine = null;
@@ -71,25 +98,49 @@ export class BrowserLocalAi {
 
   async inspectModels() {
     this.module ??= await import(WEBLLM_URL);
-    return this.module.prebuiltAppConfig?.model_list ?? [];
+    return resolveLocalModelProfiles(this.module.prebuiltAppConfig?.model_list ?? []);
   }
 
-  async load({ modelId, onProgress } = {}) {
+  async load({ modelId = DEFAULT_LOCAL_MODEL_ID, onProgress } = {}) {
     if (!this.available) throw new Error('WebGPU недоступен в этом браузере. Поиск и доказательная сводка продолжат работать без модели.');
     const webllm = (this.module ??= await import(WEBLLM_URL));
-    const selected = modelId || pickSmallModel(webllm.prebuiltAppConfig?.model_list ?? []);
-    if (!selected) throw new Error('В каталоге WebLLM не найдено компактной instruct-модели.');
-    this.modelId = selected;
-    this.engine = await webllm.CreateMLCEngine(selected, {
+    const modelList = webllm.prebuiltAppConfig?.model_list ?? [];
+    const selectedRecord = modelList.find((record) => record.model_id === modelId);
+    if (!selectedRecord) throw new Error(`Модель ${modelId} отсутствует в каталоге WebLLM ${WEBLLM_URL.split('@').at(-1)}.`);
+
+    const profile = localModelProfile(modelId);
+    if (this.engine && this.modelId === modelId) {
+      return { modelId, profile, loadMs: 0, reused: true };
+    }
+
+    if (this.engine && this.modelId !== modelId) {
+      try {
+        await this.engine.unload?.();
+      } catch {
+        // A failed unload must not prevent loading the selected model.
+      }
+      this.engine = null;
+      this.modelId = null;
+    }
+
+    const startedAt = monotonicNow();
+    this.engine = await webllm.CreateMLCEngine(modelId, {
       initProgressCallback: (progress) => onProgress?.(progress),
       appConfig: { ...webllm.prebuiltAppConfig, cacheBackend: 'cache' },
     });
-    return selected;
+    this.modelId = modelId;
+    return {
+      modelId,
+      profile,
+      loadMs: monotonicNow() - startedAt,
+      reused: false,
+    };
   }
 
   async answer(query, evidence) {
-    if (!this.engine) throw new Error('Локальная модель не загружена.');
+    if (!this.engine || !this.modelId) throw new Error('Локальная модель не загружена.');
     const context = evidencePrompt(evidence);
+    const startedAt = monotonicNow();
     const response = await this.engine.chat.completions.create({
       messages: [
         {
@@ -100,6 +151,7 @@ export class BrowserLocalAi {
             'Каждое содержательное утверждение подтверждай ссылкой вида [S1].',
             'Личные заметки обозначай отдельно и не выдавай их за официальный источник.',
             'При противоречии явно опиши его. Если данных недостаточно, так и скажи.',
+            'Не выводи внутренние рассуждения или скрытую цепочку мыслей.',
             'Отвечай по-русски, кратко и структурированно.',
           ].join(' '),
         },
@@ -110,10 +162,25 @@ export class BrowserLocalAi {
       ],
       temperature: 0.1,
       max_tokens: 650,
+      enable_thinking: false,
       stream: false,
     });
+    const durationMs = monotonicNow() - startedAt;
     const text = response.choices?.[0]?.message?.content?.trim() ?? '';
-    return validateGroundedAnswer(text, evidence.sources.map((source) => source.id));
+    const completionTokens = Number.isFinite(response.usage?.completion_tokens)
+      ? response.usage.completion_tokens
+      : null;
+    const tokensPerSecond = completionTokens && durationMs > 0
+      ? completionTokens / (durationMs / 1000)
+      : null;
+    return {
+      ...validateGroundedAnswer(text, evidence.sources.map((source) => source.id)),
+      modelId: this.modelId,
+      durationMs,
+      completionTokens,
+      tokensPerSecond,
+      usage: response.usage ?? null,
+    };
   }
 }
 
