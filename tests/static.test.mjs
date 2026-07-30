@@ -11,6 +11,12 @@ function buildStatic() {
   return spawnSync(process.execPath, ['tools/build-static.mjs'], { cwd: root, encoding: 'utf8' });
 }
 
+function numberedTail(source, count = 120) {
+  const lines = source.split('\n');
+  const start = Math.max(0, lines.length - count);
+  return lines.slice(start).map((line, index) => `${start + index + 1}: ${line}`).join('\n');
+}
+
 test('static build contains the complete offline shell', async () => {
   const result = buildStatic();
   assert.equal(result.status, 0, result.stderr);
@@ -35,6 +41,7 @@ test('static build contains the complete offline shell', async () => {
     'src/integrations/minimed-adapter.js',
     'src/services/model-action.js',
     'src/services/model-progress.js',
+    'src/services/welcome-note.js',
     'src/ui/text.js',
     'src/ui/icons.js',
     'src/ui/components.js',
@@ -52,6 +59,7 @@ test('static build contains the complete offline shell', async () => {
   assert.match(css, /\.source-card__action/u);
   assert.match(css, /\.model-progress-track/u);
   assert.match(css, /\.knowledge-graph-node/u);
+  assert.match(css, /\.ui-switch__track/u);
 
   const html = await readFile(path.join(root, 'dist', 'index.html'), 'utf8');
   assert.match(html, /ph-magnifying-glass/u);
@@ -65,12 +73,13 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /buildKnowledgeGraph/u);
   assert.match(app, /beginLocalModelLoad/u);
   assert.match(app, /createRoutedDialogController/u);
+  assert.match(app, /ensureWelcomeNote/u);
 
   const syntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
     cwd: root,
     encoding: 'utf8',
   });
-  assert.equal(syntax.status, 0, syntax.stderr);
+  assert.equal(syntax.status, 0, `${syntax.stderr}\n\nAssembled app tail:\n${numberedTail(app)}`);
 });
 
 test('static builder vendors the installed MiniSearch UMD file', async () => {
