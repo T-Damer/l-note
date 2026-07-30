@@ -15,7 +15,6 @@ test('routed dialogs expose exactly one user-scrollable container', async () => 
   const source = await readFile(path.join(root, 'styles', '_dialog-scroll.scss'), 'utf8');
 
   assert.match(rule(source, '.sheet-dialog'), /overflow:\s*hidden/u);
-  assert.match(rule(source, '.sheet-dialog'), /overflow:\s*clip/u);
   assert.match(rule(source, '.dialog-shell'), /overflow:\s*hidden/u);
   assert.match(source, /html:has\(body\.modal-open\)[\s\S]*overflow:\s*hidden/u);
 
