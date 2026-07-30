@@ -35,7 +35,6 @@
               <p class="eyebrow">Локальный поиск</p>
               <h1>Найдите факт, термин или источник</h1>
             </div>
-            <button class="ghost-button" type="button" data-action="open-library">Пакеты знаний</button>
           </header>
 
           <form id="search-form" class="search-box" role="search">
@@ -118,8 +117,9 @@
     <dialog id="document-dialog" class="sheet-dialog">
       <form method="dialog" class="dialog-shell">
         <header class="dialog-header">
-          <div id="document-dialog-heading"></div>
-          <button class="icon-button" value="close" aria-label="Закрыть">×</button>
+          <button class="icon-button dialog-back-button" type="button" data-action="resource-back" aria-label="Назад" hidden>←</button>
+          <div id="document-dialog-heading" class="dialog-heading"></div>
+          <button class="icon-button" type="button" data-action="close-resource-chain" aria-label="Закрыть">×</button>
         </header>
         <div id="document-dialog-body" class="dialog-body"></div>
       </form>
@@ -128,8 +128,9 @@
     <dialog id="entity-dialog" class="sheet-dialog narrow">
       <form method="dialog" class="dialog-shell">
         <header class="dialog-header">
-          <div id="entity-dialog-heading"></div>
-          <button class="icon-button" value="close" aria-label="Закрыть">×</button>
+          <button class="icon-button dialog-back-button" type="button" data-action="resource-back" aria-label="Назад" hidden>←</button>
+          <div id="entity-dialog-heading" class="dialog-heading"></div>
+          <button class="icon-button" type="button" data-action="close-resource-chain" aria-label="Закрыть">×</button>
         </header>
         <div id="entity-dialog-body" class="dialog-body"></div>
       </form>
@@ -138,8 +139,9 @@
     <dialog id="note-dialog" class="sheet-dialog narrow">
       <form id="note-form" class="dialog-shell">
         <header class="dialog-header">
-          <div><p class="eyebrow">Личная запись</p><h2 id="note-dialog-title">Новая заметка</h2></div>
-          <button class="icon-button" type="button" data-action="close-note-dialog" aria-label="Закрыть">×</button>
+          <button class="icon-button dialog-back-button" type="button" data-action="resource-back" aria-label="Назад" hidden>←</button>
+          <div class="dialog-heading"><p class="eyebrow">Личная запись</p><h2 id="note-dialog-title">Новая заметка</h2></div>
+          <button class="icon-button" type="button" data-action="close-resource-chain" aria-label="Закрыть">×</button>
         </header>
         <div class="dialog-body note-form-body">
           <input id="note-id" type="hidden" />
@@ -161,7 +163,7 @@
         <footer class="dialog-footer">
           <button type="button" class="danger-button hidden" id="delete-note-button">Удалить</button>
           <span></span>
-          <button type="button" class="secondary-button" data-action="close-note-dialog">Отмена</button>
+          <button type="button" class="secondary-button" data-action="close-resource-chain">Отмена</button>
           <button type="submit" class="primary-button">Сохранить</button>
         </footer>
       </form>
