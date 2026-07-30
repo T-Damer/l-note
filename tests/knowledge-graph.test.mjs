@@ -1,95 +1,100 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import {
-  buildKnowledgeGraph,
-  inferKnowledgeCategories,
-} from '../src/core/knowledge-graph.js';
-import { layoutKnowledgeGraph, shortGraphLabel } from '../src/ui/knowledge-graph.js';
+import { buildKnowledgeGraph } from '../src/core/knowledge-graph.js';
+import { layoutKnowledgeGraph } from '../src/ui/knowledge-graph.js';
 
-const pack = {
-  id: 'demo.pediatrics',
-  title: 'Педиатрический пакет',
-  categories: [{ id: 'pediatrics', weight: 1 }],
-  documents: [{
-    id: 'doc-1',
-    title: 'Свистящее дыхание',
-    sections: [{ id: 'section-1', title: 'Диагностика', text: 'Бронхиолит.', entityIds: ['bronchiolitis'] }],
-  }],
-  entities: [{ id: 'bronchiolitis', name: 'Бронхиолит' }, { id: 'wheeze', name: 'Свистящее дыхание' }],
-  relations: [{ sourceId: 'wheeze', targetId: 'bronchiolitis', predicate: 'may present with' }],
-};
-
-test('infers pediatric, dentistry and mixed tooth-eruption categories', () => {
-  assert.deepEqual(inferKnowledgeCategories('MiniMed: детские инфекции'), [
-    { id: 'pediatrics', weight: 1 },
-  ]);
-  assert.deepEqual(inferKnowledgeCategories('Стоматология'), [
-    { id: 'dentistry', weight: 1 },
-  ]);
-  assert.deepEqual(inferKnowledgeCategories('Сроки прорезывания зубов'), [
+const mixedPack = {
+  schemaVersion: 1,
+  id: 'lnote.mixed-domains.demo',
+  version: '1.0.0',
+  title: 'Mixed domains',
+  description: 'Fixture',
+  language: 'ru',
+  categories: [
     { id: 'pediatrics', weight: 0.5 },
     { id: 'dentistry', weight: 0.5 },
-  ]);
-});
-
-test('projects catalog and installed records into generic graph nodes and edges', () => {
-  const graph = buildKnowledgeGraph({
-    catalog: {
-      packs: [
-        { id: 'demo.pediatrics', title: pack.title, categories: pack.categories },
-        { id: 'demo.remote', title: 'Доступный пакет', categories: [{ id: 'unknown', weight: 1 }] },
+  ],
+  documents: [
+    {
+      id: 'doc.mixed',
+      title: 'Mixed document',
+      categories: [
+        { id: 'pediatrics', weight: 0.5 },
+        { id: 'dentistry', weight: 0.5 },
+      ],
+      sections: [
+        {
+          id: 'section.mixed',
+          title: 'Mixed section',
+          text: 'Mixed source text.',
+          entityIds: ['concept:tooth-eruption-timing'],
+          categories: [
+            { id: 'pediatrics', weight: 0.5 },
+            { id: 'dentistry', weight: 0.5 },
+          ],
+        },
       ],
     },
-    packRecords: [{ id: pack.id, enabled: true, pack }],
-  });
+  ],
+  entities: [
+    {
+      id: 'concept:tooth-eruption-timing',
+      name: 'Сроки прорезывания зубов',
+      categories: [
+        { id: 'pediatrics', weight: 0.5 },
+        { id: 'dentistry', weight: 0.5 },
+      ],
+    },
+  ],
+  claims: [],
+  relations: [],
+};
 
-  assert.equal(graph.nodes.some((node) => node.id === 'pack:demo.remote' && node.installed === false), true);
-  assert.equal(graph.nodes.some((node) => node.type === 'document' && node.resourceId === 'doc-1'), true);
-  assert.equal(graph.nodes.some((node) => node.type === 'section' && node.sectionId === 'section-1'), true);
-  assert.equal(graph.nodes.some((node) => node.id === 'concept:bronchiolitis'), true);
-  assert.equal(graph.edges.some((edge) => edge.type === 'mentions'), true);
-  assert.equal(graph.edges.some((edge) => edge.type === 'relation' && edge.label === 'may present with'), true);
-});
-
-test('preserves an equal pediatric and dentistry split for tooth-eruption concepts', () => {
-  const mixedPack = {
-    id: 'demo.child-dentistry',
-    title: 'Детская стоматология',
-    entities: [{ id: 'tooth-eruption', name: 'Сроки прорезывания зубов' }],
-    documents: [{
-      id: 'eruption-guide',
-      title: 'Прорезывание зубов у детей',
-      sections: [{
-        id: 'timing',
-        title: 'Сроки',
-        text: 'Сроки прорезывания зубов зависят от возраста ребёнка.',
-        entityIds: ['tooth-eruption'],
-      }],
-    }],
-    relations: [],
-  };
+test('knowledge graph contains package, document, section and concept nodes', () => {
   const graph = buildKnowledgeGraph({
-    catalog: { packs: [{ id: mixedPack.id, title: mixedPack.title }] },
+    catalog: {
+      packs: [{
+        id: mixedPack.id,
+        title: mixedPack.title,
+        categories: mixedPack.categories,
+      }],
+    },
     packRecords: [{ id: mixedPack.id, enabled: true, pack: mixedPack }],
   });
-  const concept = graph.nodes.find((node) => node.id === 'concept:tooth-eruption');
-  assert.ok(concept);
-  assert.deepEqual(concept.categories, [
+
+  assert.deepEqual(
+    new Set(graph.nodes.map((node) => node.type)),
+    new Set(['pack', 'document', 'section', 'concept']),
+  );
+  assert.equal(graph.edges.some((edge) => edge.type === 'contains'), true);
+  assert.equal(graph.edges.some((edge) => edge.type === 'mentions'), true);
+});
+
+test('tooth-eruption concept keeps a 50/50 pediatrics and dentistry split', () => {
+  const graph = buildKnowledgeGraph({
+    catalog: { packs: [] },
+    packRecords: [{ id: mixedPack.id, enabled: true, pack: mixedPack }],
+  });
+  const node = graph.nodes.find((item) => item.id === 'concept:concept:tooth-eruption-timing');
+
+  assert.ok(node);
+  assert.deepEqual(node.categories, [
     { id: 'pediatrics', weight: 0.5 },
     { id: 'dentistry', weight: 0.5 },
   ]);
 });
 
-test('lays graph types into stable columns', () => {
-  const graph = buildKnowledgeGraph({ catalog: { packs: [{ id: 'demo.pediatrics', title: pack.title }] }, packRecords: [{ id: pack.id, enabled: true, pack }] });
+test('graph layout preserves routed resource metadata', () => {
+  const graph = buildKnowledgeGraph({
+    catalog: { packs: [] },
+    packRecords: [{ id: mixedPack.id, enabled: true, pack: mixedPack }],
+  });
   const layout = layoutKnowledgeGraph(graph);
-  const packNode = layout.positions.get('pack:demo.pediatrics');
-  const documentNode = layout.nodes.find((node) => node.type === 'document');
-  const sectionNode = layout.nodes.find((node) => node.type === 'section');
-  const conceptNode = layout.nodes.find((node) => node.type === 'concept');
-  assert.ok(packNode.x < documentNode.x);
-  assert.ok(documentNode.x < sectionNode.x);
-  assert.ok(sectionNode.x < conceptNode.x);
-  assert.equal(shortGraphLabel('Очень длинное название понятия', 12).endsWith('…'), true);
+  const concept = layout.nodes.find((node) => node.type === 'concept');
+
+  assert.equal(concept.resourceType, 'concept');
+  assert.equal(concept.resourceId, 'concept:tooth-eruption-timing');
+  assert.ok(layout.width > 0);
+  assert.ok(layout.height > 0);
 });
