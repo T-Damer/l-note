@@ -36,7 +36,17 @@ function runSearch(query) {
   }
 
   for (const result of state.currentResults) {
-    const card = create('article', { className: `result-card${result.kind === 'note' ? ' personal' : ''}` });
+    const open = () => {
+      if (result.kind === 'note') navigateResource('note', result.noteId);
+      else navigateResource('document', result.documentId, { sectionId: result.sectionId });
+    };
+    const card = Card({
+      kind: 'result',
+      className: `result-card${result.kind === 'note' ? ' personal' : ''}`,
+      interactive: true,
+      ariaLabel: `Открыть ${result.title}`,
+      onActivate: open,
+    });
     const header = create('header');
     const titleGroup = create('div', {}, [
       Text({ variant: 'title', as: 'h2', text: result.title }),
@@ -63,19 +73,6 @@ function runSearch(query) {
       }),
     );
     card.append(header, snippet, footer);
-    card.tabIndex = 0;
-    card.setAttribute('role', 'button');
-    const open = () => {
-      if (result.kind === 'note') navigateResource('note', result.noteId);
-      else navigateResource('document', result.documentId, { sectionId: result.sectionId });
-    };
-    card.addEventListener('click', open);
-    card.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        open();
-      }
-    });
     dom.searchResults.append(card);
   }
   renderSuggestions();
