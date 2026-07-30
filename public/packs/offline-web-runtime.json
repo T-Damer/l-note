@@ -1,0 +1,319 @@
+{
+  "schemaVersion": 1,
+  "manifest": {
+    "id": "offline-web-runtime",
+    "version": "1.0.0",
+    "title": "Оффлайн web-runtime",
+    "description": "PWA, Service Worker, IndexedDB, WebGPU и перенос общего ядра в Android-обёртку.",
+    "language": "ru",
+    "license": "CC-BY-4.0",
+    "author": "L-Note project",
+    "builtAt": "2026-07-30T11:30:00Z",
+    "tags": ["PWA", "Android", "хранилище"],
+    "capabilities": ["search", "documents", "entities", "claims", "relations"],
+    "metadata": {
+      "demo": true
+    }
+  },
+  "documents": [
+    {
+      "id": "offline-web-client",
+      "title": "Оффлайн-клиент на web-платформе",
+      "sourceType": "authored-reference",
+      "version": {
+        "id": "offline-web-client-v1",
+        "label": "1.0"
+      },
+      "metadata": {},
+      "sections": [
+        {
+          "id": "pwa-shell",
+          "title": "PWA и оболочка приложения",
+          "anchor": "pwa-shell",
+          "orderIndex": 0,
+          "chunks": [
+            {
+              "id": "service-worker-cache",
+              "orderIndex": 0,
+              "anchor": "pwa-shell:service-worker-cache",
+              "text": "Service Worker может кэшировать оболочку PWA и ранее загруженные ресурсы. После первого успешного открытия интерфейс запускается без сети, если необходимые файлы уже присутствуют в кэше.",
+              "entityIds": ["pwa", "service-worker"],
+              "metadata": {}
+            },
+            {
+              "id": "first-install-network",
+              "orderIndex": 1,
+              "anchor": "pwa-shell:first-install-network",
+              "text": "Первичная установка hosted PWA и скачивание новых пакетов требуют доступного источника файлов. Оффлайн-режим относится к уже установленной оболочке и ранее сохранённым пакетам.",
+              "entityIds": ["pwa", "knowledge-download"],
+              "metadata": {}
+            }
+          ]
+        },
+        {
+          "id": "local-storage",
+          "title": "Локальное хранилище",
+          "anchor": "local-storage",
+          "orderIndex": 1,
+          "chunks": [
+            {
+              "id": "indexeddb-packs",
+              "orderIndex": 0,
+              "anchor": "local-storage:indexeddb-packs",
+              "text": "IndexedDB хранит структурированные объекты и двоичные данные внутри браузера. Web-клиент может сохранять в ней установленные пакеты знаний, настройки и личные заметки.",
+              "entityIds": ["indexeddb", "knowledge-download"],
+              "metadata": {}
+            },
+            {
+              "id": "separate-user-data",
+              "orderIndex": 1,
+              "anchor": "local-storage:separate-user-data",
+              "text": "Справочные пакеты и пользовательские записи следует хранить раздельно. Тогда обновление или удаление справочного пакета не уничтожает личные заметки.",
+              "entityIds": ["indexeddb", "user-data"],
+              "metadata": {}
+            }
+          ]
+        },
+        {
+          "id": "local-inference",
+          "title": "Локальный inference",
+          "anchor": "local-inference",
+          "orderIndex": 2,
+          "chunks": [
+            {
+              "id": "webgpu-model",
+              "orderIndex": 0,
+              "anchor": "local-inference:webgpu-model",
+              "text": "WebGPU позволяет некоторым браузерам выполнять локальный inference на GPU. Модель и её runtime должны загружаться отдельно, поэтому локальный ИИ остаётся опциональным модулем, а не условием работы поиска.",
+              "entityIds": ["webgpu", "browser-llm"],
+              "metadata": {}
+            },
+            {
+              "id": "openai-compatible-local",
+              "orderIndex": 1,
+              "anchor": "local-inference:openai-compatible-local",
+              "text": "Для web-прототипа можно подключить локальный OpenAI-compatible сервер, например runtime на компьютере пользователя. Клиент передаёт ему только собранный пакет доказательств и выполняет отдельный проход самопроверки.",
+              "entityIds": ["browser-llm", "openai-compatible-api"],
+              "metadata": {}
+            }
+          ]
+        },
+        {
+          "id": "android-path",
+          "title": "Путь к Android",
+          "anchor": "android-path",
+          "orderIndex": 3,
+          "chunks": [
+            {
+              "id": "shared-core",
+              "orderIndex": 0,
+              "anchor": "android-path:shared-core",
+              "text": "Контракты пакетов, поиск, граф и evidence bundle не должны зависеть от интерфейса. Android-клиент может повторно использовать это ядро, заменив браузерное хранилище и модельный adapter на нативные реализации.",
+              "entityIds": ["android-client", "portable-core"],
+              "metadata": {}
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "aliases": [
+    {
+      "id": "alias-pwa",
+      "canonicalTerm": "Progressive Web App",
+      "alias": "PWA",
+      "entityId": "pwa",
+      "weight": 1
+    },
+    {
+      "id": "alias-idb",
+      "canonicalTerm": "IndexedDB",
+      "alias": "IDB",
+      "entityId": "indexeddb",
+      "weight": 1
+    },
+    {
+      "id": "alias-sw",
+      "canonicalTerm": "Service Worker",
+      "alias": "SW",
+      "entityId": "service-worker",
+      "weight": 1
+    }
+  ],
+  "entities": [
+    {
+      "id": "pwa",
+      "type": "web-technology",
+      "canonicalName": "Progressive Web App",
+      "description": "Устанавливаемое web-приложение с возможностью оффлайн-работы.",
+      "aliases": ["PWA", "прогрессивное web-приложение"],
+      "externalIds": {},
+      "metadata": {}
+    },
+    {
+      "id": "service-worker",
+      "type": "web-technology",
+      "canonicalName": "Service Worker",
+      "description": "Фоновый web-worker, который может перехватывать запросы и управлять кэшем.",
+      "aliases": ["SW", "сервис-воркер"],
+      "externalIds": {},
+      "metadata": {}
+    },
+    {
+      "id": "knowledge-download",
+      "type": "operation",
+      "canonicalName": "Загрузка пакета знаний",
+      "description": "Получение и локальная установка выбранного пакета.",
+      "aliases": ["установка пакета", "download knowledge pack"],
+      "externalIds": {},
+      "metadata": {}
+    },
+    {
+      "id": "indexeddb",
+      "type": "web-technology",
+      "canonicalName": "IndexedDB",
+      "description": "Транзакционное локальное хранилище браузера.",
+      "aliases": ["IDB", "браузерная база данных"],
+      "externalIds": {},
+      "metadata": {}
+    },
+    {
+      "id": "user-data",
+      "type": "data-category",
+      "canonicalName": "Пользовательские данные",
+      "description": "Заметки, настройки и персональные утверждения.",
+      "aliases": ["личные данные приложения", "user notes"],
+      "externalIds": {},
+      "metadata": {}
+    },
+    {
+      "id": "webgpu",
+      "type": "web-technology",
+      "canonicalName": "WebGPU",
+      "description": "Web API для высокопроизводительных вычислений на GPU.",
+      "aliases": ["GPU в браузере"],
+      "externalIds": {},
+      "metadata": {}
+    },
+    {
+      "id": "browser-llm",
+      "type": "software-component",
+      "canonicalName": "Локальная модель в web-клиенте",
+      "description": "Опциональный inference runtime в браузере или локальном сервере.",
+      "aliases": ["browser LLM", "локальный ИИ"],
+      "externalIds": {},
+      "metadata": {}
+    },
+    {
+      "id": "openai-compatible-api",
+      "type": "api",
+      "canonicalName": "OpenAI-compatible API",
+      "description": "Совместимый формат chat completions для разных локальных runtime.",
+      "aliases": ["chat completions API"],
+      "externalIds": {},
+      "metadata": {}
+    },
+    {
+      "id": "android-client",
+      "type": "software-client",
+      "canonicalName": "Android-клиент",
+      "description": "Мобильное приложение, использующее те же пакеты знаний.",
+      "aliases": ["Android app"],
+      "externalIds": {},
+      "metadata": {}
+    },
+    {
+      "id": "portable-core",
+      "type": "software-component",
+      "canonicalName": "Переносимое ядро",
+      "description": "Независимые от интерфейса контракты, поиск и графовые операции.",
+      "aliases": ["shared core", "общее ядро"],
+      "externalIds": {},
+      "metadata": {}
+    }
+  ],
+  "claims": [
+    {
+      "id": "claim-pwa-offline-after-cache",
+      "subjectEntityId": "pwa",
+      "predicate": "works_offline_after",
+      "objectEntityId": "service-worker",
+      "qualifiers": { "condition": "required_files_cached" },
+      "sourceKind": "reference",
+      "authority": 0.85,
+      "confidence": 1,
+      "evidence": [{ "documentId": "offline-web-client", "sectionId": "pwa-shell", "chunkId": "service-worker-cache", "quote": "После первого успешного открытия интерфейс запускается без сети, если необходимые файлы уже присутствуют в кэше.", "anchor": "pwa-shell:service-worker-cache" }],
+      "metadata": {}
+    },
+    {
+      "id": "claim-first-download-needs-source",
+      "subjectEntityId": "knowledge-download",
+      "predicate": "requires",
+      "value": "доступный источник файлов",
+      "qualifiers": { "stage": "initial_install" },
+      "sourceKind": "reference",
+      "authority": 0.85,
+      "confidence": 1,
+      "evidence": [{ "documentId": "offline-web-client", "sectionId": "pwa-shell", "chunkId": "first-install-network", "quote": "Первичная установка hosted PWA и скачивание новых пакетов требуют доступного источника файлов.", "anchor": "pwa-shell:first-install-network" }],
+      "metadata": {}
+    },
+    {
+      "id": "claim-indexeddb-stores-packs",
+      "subjectEntityId": "indexeddb",
+      "predicate": "stores",
+      "objectEntityId": "knowledge-download",
+      "qualifiers": { "stored_form": "installed_pack" },
+      "sourceKind": "reference",
+      "authority": 0.85,
+      "confidence": 1,
+      "evidence": [{ "documentId": "offline-web-client", "sectionId": "local-storage", "chunkId": "indexeddb-packs", "quote": "Web-клиент может сохранять в ней установленные пакеты знаний, настройки и личные заметки.", "anchor": "local-storage:indexeddb-packs" }],
+      "metadata": {}
+    },
+    {
+      "id": "claim-user-data-separate",
+      "subjectEntityId": "user-data",
+      "predicate": "stored_separately_from",
+      "objectEntityId": "knowledge-download",
+      "qualifiers": {},
+      "sourceKind": "reference",
+      "authority": 0.9,
+      "confidence": 1,
+      "evidence": [{ "documentId": "offline-web-client", "sectionId": "local-storage", "chunkId": "separate-user-data", "quote": "Справочные пакеты и пользовательские записи следует хранить раздельно.", "anchor": "local-storage:separate-user-data" }],
+      "metadata": {}
+    },
+    {
+      "id": "claim-webgpu-local-inference",
+      "subjectEntityId": "webgpu",
+      "predicate": "may_accelerate",
+      "objectEntityId": "browser-llm",
+      "qualifiers": { "device_support": "required" },
+      "sourceKind": "reference",
+      "authority": 0.8,
+      "confidence": 0.95,
+      "evidence": [{ "documentId": "offline-web-client", "sectionId": "local-inference", "chunkId": "webgpu-model", "quote": "WebGPU позволяет некоторым браузерам выполнять локальный inference на GPU.", "anchor": "local-inference:webgpu-model" }],
+      "metadata": {}
+    },
+    {
+      "id": "claim-core-reused-android",
+      "subjectEntityId": "android-client",
+      "predicate": "reuses",
+      "objectEntityId": "portable-core",
+      "qualifiers": {},
+      "sourceKind": "reference",
+      "authority": 0.9,
+      "confidence": 1,
+      "evidence": [{ "documentId": "offline-web-client", "sectionId": "android-path", "chunkId": "shared-core", "quote": "Android-клиент может повторно использовать это ядро, заменив браузерное хранилище и модельный adapter на нативные реализации.", "anchor": "android-path:shared-core" }],
+      "metadata": {}
+    }
+  ],
+  "relations": [
+    { "id": "relation-pwa-uses-service-worker", "sourceEntityId": "pwa", "predicate": "uses", "targetEntityId": "service-worker", "weight": 1, "evidence": [], "metadata": {} },
+    { "id": "relation-webgpu-runs-browser-llm", "sourceEntityId": "webgpu", "predicate": "accelerates", "targetEntityId": "browser-llm", "weight": 0.8, "evidence": [], "metadata": {} },
+    { "id": "relation-android-reuses-core", "sourceEntityId": "android-client", "predicate": "reuses", "targetEntityId": "portable-core", "weight": 1, "evidence": [], "metadata": {} },
+    { "id": "relation-local-server-api", "sourceEntityId": "browser-llm", "predicate": "may_expose", "targetEntityId": "openai-compatible-api", "weight": 0.8, "evidence": [], "metadata": {} }
+  ],
+  "claimLinks": [
+    { "fromClaimId": "claim-first-download-needs-source", "relation": "refines", "toClaimId": "claim-pwa-offline-after-cache", "reason": "Оффлайн-работа начинается после первичной загрузки и кэширования ресурсов." },
+    { "fromClaimId": "claim-user-data-separate", "relation": "supports", "toClaimId": "claim-indexeddb-stores-packs", "reason": "IndexedDB может хранить оба класса данных в разных object stores." }
+  ]
+}
