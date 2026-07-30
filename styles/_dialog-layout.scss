@@ -1,0 +1,40 @@
+.sheet-dialog {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.dialog-shell {
+  width: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.dialog-header,
+.dialog-footer {
+  flex: 0 0 auto;
+}
+
+.dialog-back-button {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.dialog-heading {
+  grid-column: 2;
+}
+
+.dialog-header > [data-action='close-resource-chain'] {
+  grid-column: 3;
+  justify-self: end;
+  align-self: start;
+}
+
+.dialog-body {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
