@@ -32,13 +32,7 @@ async function importNotesFile(file) {
 }
 
 function bindDialogCloseBehavior(dialog) {
-  dialog.addEventListener('cancel', (event) => {
-    event.preventDefault();
-    closeResourceChain();
-  });
-  dialog.addEventListener('click', (event) => {
-    if (event.target === dialog) closeResourceChain();
-  });
+  return bindRoutedDialog(dialog, () => closeResourceChain());
 }
 
 function bindEvents() {
