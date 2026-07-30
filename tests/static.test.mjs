@@ -7,8 +7,12 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+function buildStatic() {
+  return spawnSync(process.execPath, ['tools/build-static.mjs'], { cwd: root, encoding: 'utf8' });
+}
+
 test('static build contains the complete offline shell', async () => {
-  const result = spawnSync(process.execPath, ['tools/build-static.mjs'], { cwd: root, encoding: 'utf8' });
+  const result = buildStatic();
   assert.equal(result.status, 0, result.stderr);
   for (const relative of [
     'index.html',
@@ -19,6 +23,10 @@ test('static build contains the complete offline shell', async () => {
     'src/app.js',
     'src/router.js',
     'src/relations.js',
+    'src/core/contracts.js',
+    'src/core/ports.js',
+    'src/core/runtime.js',
+    'src/adapters/runtime-adapters.js',
     'src/domain-plugins/minimed.js',
   ]) {
     await access(path.join(root, 'dist', relative));
@@ -26,6 +34,12 @@ test('static build contains the complete offline shell', async () => {
   const css = await readFile(path.join(root, 'dist', 'styles.css'), 'utf8');
   assert.match(css, /Generated from styles\/main\.scss/u);
   assert.match(css, /--palette-dark-paper/u);
+
+  const syntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+  assert.equal(syntax.status, 0, syntax.stderr);
 });
 
 test('static builder vendors the installed MiniSearch UMD file', async () => {
@@ -36,7 +50,7 @@ test('static builder vendors the installed MiniSearch UMD file', async () => {
   await mkdir(target, { recursive: true });
   await writeFile(path.join(target, 'index.js'), 'globalThis.MiniSearch = class TestMiniSearch {};\n');
   try {
-    const result = spawnSync(process.execPath, ['tools/build-static.mjs'], { cwd: root, encoding: 'utf8' });
+    const result = buildStatic();
     assert.equal(result.status, 0, result.stderr);
     assert.match(await readFile(path.join(root, 'dist', 'vendor', 'minisearch.js'), 'utf8'), /TestMiniSearch/u);
   } finally {
