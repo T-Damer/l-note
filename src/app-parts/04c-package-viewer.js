@@ -35,7 +35,7 @@ function renderPackageDialog(packId) {
   if (!installed.enabled) {
     const enable = create('button', { className: 'primary-button', type: 'button', text: 'Включить пакет' });
     enable.addEventListener('click', async () => {
-      await putOne('packs', { ...installed, enabled: true });
+      await storagePort.putOne('packs', { ...installed, enabled: true });
       await refreshState();
     });
     dom.documentDialogBody.append(enable);
