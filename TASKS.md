@@ -1,225 +1,137 @@
 # L-Note implementation backlog
 
-Single source of future work. Completed items reflect code in the active branch; browser/device verification remains explicit where it is still needed.
+This is the single source of future work. Completed items describe the active branch; unfinished browser/device verification remains explicit.
 
-**Current focus:** browser routing E2E, followed by decomposition of the transitional web shell into page/services modules and completion of the routed-dialog/source-card component layer. Android/iOS remain deferred.
+**Current focus:** finish the reusable routed-dialog/page-service split, then add local source assets and the knowledge graph. Android/iOS remain deferred.
 
-## Phase 0 — shared-core boundary and correctness
+## Phase 0 — universal core and MiniMed boundary
 
-### Architecture
+- [x] Keep L-Note domain-neutral; medicine is the primary demonstration domain, not a core assumption.
+- [x] Add versioned contracts for packs, documents, sections, concepts, statements, relations, notes, search results and evidence.
+- [x] Add `SearchPort`, `StoragePort`, `DomainQueryPlannerPort`, `LocalModelPort` and evidence-verification boundaries.
+- [x] Add MiniSearch, IndexedDB/memory and WebLLM browser adapters.
+- [x] Add a UI-independent runtime composer and route the active web shell through the ports.
+- [x] Add a versioned application-adapter contract.
+- [x] Add a MiniMed compatibility adapter that requires medical query planning, clinical ranking, dose verification, abstention and benchmark ownership to remain in MiniMed.
+- [ ] Remove the remaining transitional direct imports/functions while splitting the shell into pages, services and components.
+- [ ] Add a SQLite/FTS5 adapter for large packs and MiniMed without moving medical policy into L-Note.
+- [ ] Add an optional neural/vector adapter behind the same search contract.
 
-- [x] Define L-Note as a domain-neutral knowledge runtime rather than a medical-only application.
-- [x] Record the boundary between reusable L-Note capabilities and MiniMed-owned medical adapters.
-- [x] Extract typed, versioned contracts for packs, documents, sections, concepts, statements, relations and evidence.
-- [x] Introduce explicit storage, search, domain-query-planner and local-model ports.
-- [x] Add tested MiniSearch, IndexedDB/memory and WebLLM browser adapters.
-- [x] Add a UI-independent runtime composer for enabled packs, notes, knowledge state and search.
-- [x] Route active web-shell search, storage, domain-planner and local-model behavior through shared ports.
-- [ ] Remove transitional direct adapter imports/functions while splitting the shell into services and components.
-- [x] Keep MiniSearch as the first web search adapter.
-- [ ] Add a SQLite/FTS5 adapter suitable for large packs and later MiniMed integration.
-- [x] Keep clinical parsing, medical ranking, dose validation and clinical safeguards outside the generic core.
+## Phase 1 — retrieval and routing correctness
 
-### Search
-
-- [x] Remove the “Пакеты знаний” control from the search header.
-- [x] Add a regression fixture for `грудничок свистит при дыхании`.
-- [x] Rank wheezing, bronchiolitis, bronchial obstruction and differential-diagnosis material ahead of unrelated medication registry entries.
-- [ ] Add broader non-demo query regression cases.
-- [x] Normalize displayed relevance to an integer `0–100%`.
-- [x] Describe relevance as retrieval relevance, not diagnostic probability.
 - [x] Keep ordinary search fully functional without a model.
-- [x] Add a generic domain-expansion hook without hard-coding medical synonyms in the search engine.
-- [x] Expose the MiniMed demo expander through `DomainQueryPlannerPort`.
-- [x] Add centralized category-icon selection for search results with a neutral fallback.
+- [x] Support exact, prefix, alias and fuzzy retrieval with deterministic fallback.
+- [x] Normalize displayed relevance to an integer `0–100%`; never present it as diagnostic probability.
+- [x] Isolate MiniMed query expansion behind `DomainQueryPlannerPort`.
+- [x] Add the `грудничок свистит при дыхании` regression and rank respiratory/differential material above unrelated medication registry records.
+- [ ] Add broader non-demo and large-corpus retrieval regressions.
 
-### Hash routing and resource cards
+### Hash routes and cards
 
-- [x] Make the hash route the source of truth for the active page and opened card.
-- [x] Add stable routes for `concept`, `statement`, `package`, `note` and `document` resources.
-- [x] Restore an opened resource after refresh or direct-link navigation.
-- [x] Push nested card transitions into browser history.
-- [x] Add an explicit Back button when a previous card exists in the current chain.
-- [x] Make browser Back traverse nested cards before returning to the base page.
-- [x] Record the base page that opened the first card.
-- [x] Use one full-chain close operation for Close, cross, Escape, backdrop and programmatic close.
-- [x] Truncate the forward card chain after full close so the next Back action does not reopen it.
-- [x] Add unit tests for parsing, direct links, base routes and nested depth.
-- [ ] Add browser E2E coverage for Back, full close, refresh and direct links.
+- [x] Use stable hash routes for pages, packages, documents, concepts, statements and notes.
+- [x] Restore direct links and opened cards after reload.
+- [x] Store nested card traversal in browser history.
+- [x] Provide Back within a card chain and one full-chain Close operation.
+- [x] Prevent closed card routes from reopening on the next browser Back.
+- [x] Add browser E2E for direct links, reload, nested Back and full-chain Close.
 
-## Phase 1 — maintainable web UI foundation
+## Phase 2 — UI foundation
 
-### SCSS and themes
+### SCSS, themes and interaction states
 
-- [x] Move all authored project styles to SCSS partials.
-- [x] Create partials for base palette, light theme, dark theme, semantic colors, graph categories and interaction states.
-- [x] Move shared animations and repeated UI patterns into common partials.
-- [x] Preserve the current light theme direction.
-- [x] Replace the green-heavy dark theme with a neutral dark base and warm Solarized-like accents.
-- [x] Generate `styles.css` deterministically before local and production builds.
-- [ ] Finish auditing remaining non-palette literal colors in component styles.
-- [ ] Replace the transitional CSS-compatible SCSS builder with a full Sass compiler only when Sass-only syntax is needed.
+- [x] Keep authored styles in SCSS partials and generate `styles.css` deterministically.
+- [x] Centralize palette, light/dark themes, semantic states and graph-category colors.
+- [x] Use a neutral dark base with warm Solarized-like accents.
+- [x] Add pointer/not-allowed cursors and visible keyboard focus to the current interactive surfaces.
+- [ ] Finish auditing literal colors, control sizing, hover/active/disabled states and click targets.
+- [ ] Add a full Sass compiler only when Sass-only syntax is actually introduced.
 
-### Component architecture
+### Shared components
 
-- [x] Add framework-neutral UI primitives without coupling them to the headless core.
-- [x] Add a shared `Text` component with predefined typography variants and no raw-HTML path.
-- [x] Add a centralized Phosphor icon catalog and category resolver.
-- [x] Add one centrally configured placeholder icon for unknown categories.
-- [x] Pin and vendor Phosphor assets locally for offline use.
-- [x] Add shared `Card`, `Button` and routed-dialog close-binding primitives.
-- [x] Use `Card` in search results, package cards and note cards.
-- [x] Use `Button` for package download/update/enable/remove actions.
-- [x] Use shared typography/icons in the model lab, search results and primary navigation.
-- [ ] Split remaining page logic into reusable fields, source cards and one routed-dialog renderer.
-- [ ] Move reusable logic into `helpers`, `hooks` and `services`.
-- [ ] Keep components and files within the limits described in `AGENTS.md`.
-- [ ] Audit remaining legacy glyphs and enforce Phosphor as the only application icon family.
+- [x] Add framework-neutral `Text`, Icon, Card and Button primitives.
+- [x] Pin and vendor Phosphor locally with centralized category mapping and a placeholder icon.
+- [x] Use shared cards in search, packages and notes.
+- [x] Add a reusable SourceCard with separate ID, title, source type, excerpt and open action.
+- [ ] Add shared field/switch primitives.
+- [ ] Replace the three resource renderers with one reusable routed-dialog renderer.
+- [ ] Split remaining large app fragments into page, component, helper and service modules.
+- [ ] Remove remaining legacy glyphs and use Phosphor everywhere.
 
-### Interaction consistency
+## Phase 3 — dialogs and internal readers
 
-- [x] Add pointer cursors to the current clickable cards, notes, sources, relations and resource links.
-- [x] Add `cursor: not-allowed` to disabled controls.
-- [ ] Audit all controls for consistent hover, focus-visible, active and disabled states.
-- [ ] Increase clickable areas where controls remain too small.
-- [ ] Ensure hover is never the only discoverability signal.
-- [ ] Normalize spacing, radii, typography, control heights and icon sizing through shared components.
-
-## Phase 2 — dialogs, resource navigation and readers
-
-### Dialog behavior
-
-- [x] Centralize Escape and backdrop closing through `bindRoutedDialog`.
-- [ ] Replace the three native dialog renderers with one reusable routed-dialog component.
-- [ ] Add open and close animations through the future component layer.
-- [x] Make current dialogs full-width on mobile while respecting safe-area insets.
-- [x] Keep bounded desktop widths.
-- [x] Use one primary scroll container per current dialog.
-- [x] Lock body scrolling while a dialog is open.
-- [ ] Add browser regression coverage for double scrolling, including the rotavirus document card.
-- [x] Use a sticky header with Back, title and Close controls.
-
-### Internal source reader
-
-- [x] Open installed text documents in an internal routed reader.
-- [ ] Add a PDF reader path for PDF-backed resources.
-- [x] Preserve document and section navigation for current JSON packs.
-- [x] Route search results and Ask-page sources through the shared hash-navigation contract.
-- [ ] Prefer the internal PDF/document reader whenever a local source asset exists.
-
-### Concepts and relations
-
-- [x] Centralize Russian translations for relation predicates.
-- [x] Translate `may present with` as `может проявляться`.
-- [x] Display relation strength as a percentage plus weak/medium/strong category.
-- [x] Put relations inside a collapsible accordion.
-- [x] Open related concepts through browser history.
-- [x] Preserve Back and full-chain Close semantics through relation traversal.
-
-## Phase 3 — knowledge packages and graph
-
-### Package page
-
-- [x] Allow package cards to open and show package contents.
-- [x] Preserve JSON package import.
-- [ ] Add a “Посмотреть граф” control beside import.
-- [ ] Add list/graph view switching.
-- [x] Route opened package cards through hash history.
-- [ ] Make the language switch horizontal when localization controls are introduced.
-
-### Knowledge graph
-
-- [ ] Show packages, categories, documents, sections, concepts and their relations.
-- [ ] Open packages, documents and concepts from graph nodes.
-- [ ] Allow installation of a package from its graph node.
-- [ ] Color nodes by category using centralized SCSS variables.
-- [ ] Start with pediatrics = pink and dentistry = blue.
-- [ ] Render proportional mixed-category nodes, including tooth-eruption timing as approximately 50/50 pediatrics/dentistry.
-- [ ] Keep graph navigation on the same hash-history contract as the rest of the app.
+- [x] Make route state the source of truth for opened dialogs.
+- [x] Use one handler for cross, Close, Escape, backdrop and programmatic full close.
+- [x] Keep the Close icon in the rightmost header column even when Back is hidden.
+- [x] Keep Back on the left and the title in the center column.
+- [x] Make current dialogs full-width on mobile with safe-area handling and bounded on desktop.
+- [x] Lock both the document root and body while a modal is open.
+- [x] Keep `.dialog-body` as the only vertical scroll container.
+- [x] Add browser regression coverage for the Rotavirus card, single-scroll behavior and close-chain navigation.
+- [ ] Add open/close animations through the reusable dialog layer.
+- [x] Open installed text sources in the internal routed reader.
+- [ ] Add an internal PDF asset path and preserve exact page/section anchors.
+- [ ] Prefer local document/PDF assets over external URLs whenever available.
 
 ## Phase 4 — Ask page and local models
 
-### Model comparison block
-
-- [x] Ensure the local-model comparison block has exactly one instance.
-- [x] Ensure repeated evidence collection does not duplicate the block.
-- [x] Add consistent padding and label/select spacing to the current block.
-- [x] Migrate model headings, descriptions and history to the shared `Text` component.
-- [x] Keep exactly three test candidates unless benchmark results justify another matrix.
-- [x] Keep Qwen3 1.7B as the preferred MiniMed-oriented candidate until tests show otherwise.
-
-### Model installation and downloads
-
-- [x] Do not present a model as ready until the WebLLM engine is loaded.
-- [x] Use the current action as “Загрузить выбранную модель” before the model is ready.
-- [x] Make the selected-model load action invoke WebLLM and report basic progress.
-- [ ] Display speed, downloaded bytes, total bytes, remaining bytes, queue state and structured errors.
+- [x] Keep exactly one model-comparison block.
+- [x] Keep Gemma 3 1B, preferred Qwen3 1.7B and Phi-4 Mini as the current test matrix.
+- [x] Keep deterministic retrieval before generation and pass a versioned evidence envelope to the model.
+- [x] Allow the selected model to download with an empty question field and no collected evidence.
+- [x] Require a question/evidence only when a loaded model is asked to generate an answer.
+- [x] Report basic WebLLM loading progress and keep search usable when WebGPU is unavailable.
+- [ ] Show downloaded/total/remaining bytes, speed, queue state and structured errors when the runtime exposes them.
 - [ ] Add retry and cancellation.
-- [ ] Support at most four parallel model/document downloads.
-- [ ] Prioritize the current query’s model, then the last opened document, then other models/documents.
-- [ ] Persist queue and download state across refresh.
-- [ ] Resume interrupted downloads when the storage/runtime API supports it.
+- [ ] Support a persisted priority queue with at most four concurrent model/document downloads.
+- [ ] Resume interrupted downloads where the browser/runtime API supports it.
+- [ ] Improve verification from citation-ID validity to statement-to-evidence support.
+- [x] Use reusable source cards and route them into the internal reader.
 
-### Grounded answers and sources
+## Phase 5 — packages and knowledge graph
 
-- [x] Keep deterministic evidence collection before generation.
-- [x] Version the evidence envelope passed across the local-model boundary.
-- [x] Limit generated answers to retrieved evidence.
-- [ ] Improve citation validation from ID existence toward statement-to-evidence support checks.
-- [ ] Redesign source cards with clearer title/type/excerpt/action hierarchy.
-- [x] Add softer source-card radii, larger click targets, hover and pointer behavior.
-- [x] Route current sources into the internal document reader.
+- [x] Install, disable, update, remove, import and inspect independent knowledge packs.
+- [x] Preserve personal notes when a reference pack is removed or updated.
+- [ ] Add “View graph” beside JSON import and switch between list/graph modes.
+- [ ] Show packages, categories, documents, sections, concepts and relations.
+- [ ] Open/install graph nodes through the same hash-history contract.
+- [ ] Use centralized category colors: pediatrics pink, dentistry blue and proportional mixed nodes.
+- [ ] Add the mixed tooth-eruption timing example.
 
-## Phase 5 — notes and personal knowledge
+## Phase 6 — notes and personal knowledge
 
-- [x] Make the current new-note dialog full-width on mobile.
-- [ ] Add dialog open/close animation through the component layer.
-- [ ] Add a default “Привет, коллега” note.
-- [x] Show note creation date and optional modification date.
-- [x] Add pointer and keyboard interaction to note cards through shared `Card`.
-- [x] Route notes as `#/note/:id` and new notes as `#/note/new`.
-- [ ] Expose routed links from a note to its related reference concepts.
-- [ ] Use a local model to propose note-to-reference links.
-- [ ] Let the user confirm, remove or edit proposed links before saving.
-- [x] Preserve explicit `supports`, `refines`, `contradicts` and `supersedes` semantics.
-- [x] Keep personal experience visibly separate from reference sources.
+- [x] Keep notes physically separate from immutable reference packs.
+- [x] Support `observation`, `supports`, `refines`, `contradicts` and local `supersedes` links.
+- [x] Route notes and show creation/modification dates.
+- [ ] Add the default “Привет, коллега” note.
+- [ ] Expose routed links from notes to related concepts/statements.
+- [ ] Let a local model propose note links, then require user confirmation/edit/removal before saving.
 
-## Phase 6 — navigation shell
+## Phase 7 — navigation shell
 
-- [ ] Make the desktop sidebar collapsible.
-- [ ] Keep logo plus Search, Ask, Packages and Notes icons in collapsed mode.
-- [x] Replace primary desktop/mobile navigation glyphs with local Phosphor icons.
-- [x] Remove the search-record count from the sidebar status.
-- [ ] Add tooltips to collapsed navigation icons.
-- [x] Derive the active item from the current hash route.
-- [ ] Complete keyboard and focus-state audit of navigation controls.
+- [x] Use local Phosphor icons and derive the active item from the hash route.
+- [x] Remove search-record counts from the sidebar status.
+- [ ] Make the desktop sidebar collapsible while retaining logo and four primary icons.
+- [ ] Add tooltips and complete keyboard/focus auditing for collapsed navigation.
 
-## Phase 7 — universal ingestion
+## Phase 8 — universal preparation
 
-- [x] Keep the architecture independent of medicine.
-- [x] Keep medicine and pediatrics as the primary demonstration scenario.
-- [x] Accept normalized packs created from documents, reference catalogs and notes.
-- [ ] Add PDF/DOCX parsing before the normalized pack contract.
-- [ ] Add reviewed OCR as an optional preparation stage.
-- [ ] Add database export adapters.
-- [x] Keep preparation possible with local scripts and a local/server LLM.
-- [x] Preserve the user-facing names `понятие` and `утверждение` for now.
-- [ ] Add user-facing explanations for those entity types later.
+- [x] Compile reviewed JSON or Markdown/TXT/JSON into portable packs with provenance.
+- [x] Allow optional local OpenAI-compatible or Replicate extraction proposals.
+- [x] Require exact evidence quotes before proposed statements enter a pack.
+- [ ] Add PDF/DOCX preparation before the normalized contract.
+- [ ] Add reviewed OCR and database export adapters.
+- [ ] Add user-facing explanations for “concept” and “statement”.
 
-## Phase 8 — Capacitor after the web core stabilizes
+## Phase 9 — mobile after web stabilization
 
-- [ ] Build Android and iOS shells with Capacitor, using MiniMed as a reference.
-- [ ] Respect safe areas, status bar, keyboard and mobile navigation.
-- [ ] Integrate system Back with hash history.
-- [ ] Traverse nested cards before leaving a page or minimizing the app.
-- [ ] Restore routes after process restart.
-- [ ] Keep mobile dialogs full-width and the overall structure comparable with the web application.
+- [ ] Add Capacitor shells using MiniMed as the reference implementation.
+- [ ] Integrate safe areas, status bar, keyboard and system Back with hash history.
+- [ ] Restore routes after process restart and keep mobile dialogs full-width.
 
 ## Documentation discipline
 
-- [x] Keep `TASKS.md` as the single Markdown backlog.
-- [x] Keep development rules in `AGENTS.md`.
-- [x] Keep current architecture and implementation state in `docs/ARCHITECTURE.md`.
-- [x] Update documentation in the same development line as behavior changes.
-- [ ] Use LLM Wiki as an optional generated navigation layer, not as another competing source of project truth.
-- [x] Avoid creating additional status documents unless strictly necessary.
+- [x] Keep setup/product use in `README.md`.
+- [x] Keep current architecture and invariants in `docs/ARCHITECTURE.md`.
+- [x] Keep this file as the only implementation backlog.
+- [x] Update docs in the same development line as behavior changes.
+- [ ] Use LLM Wiki only as an optional generated navigation layer, not a competing source of truth.
