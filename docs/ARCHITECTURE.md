@@ -2,28 +2,20 @@
 
 ## Current state
 
-The active web prototype provides:
+The hosted web prototype currently provides:
 
 - installable, checksummed JSON knowledge packs persisted in IndexedDB;
 - MiniSearch full-text, prefix, alias and fuzzy retrieval with a deterministic fallback;
-- optional domain query planning isolated from the generic search engine;
+- optional domain query planners isolated from the generic search engine;
 - normalized `0–100%` retrieval relevance;
 - routed packages, documents, concepts, statements and notes using hash URLs and browser history;
 - exact source-linked statements, relations, backlinks and a separate personal-note overlay;
 - optional browser-local WebLLM over retrieved evidence only;
 - versioned evidence envelopes and deterministic citation-ID validation;
-- SCSS source partials and deterministic static-PWA builds.
+- SCSS source partials and deterministic static-PWA builds;
+- a first shared UI layer with `Text`, centralized Phosphor icons and one unknown-category placeholder.
 
-The shared-core foundation now exists as UI-independent modules:
-
-```text
-src/core/contracts.js + .d.ts   versioned pack, resource, note, search and evidence contracts
-src/core/ports.js + .d.ts       SearchPort, StoragePort, DomainQueryPlannerPort, LocalModelPort
-src/core/runtime.js + .d.ts     installed-pack composition and headless runtime state
-src/adapters/runtime-adapters   MiniSearch, IndexedDB/memory and WebLLM browser adapters
-```
-
-These ports are covered by Node tests and cached by the offline shell. The current PWA still contains a small amount of direct legacy adapter usage; migrating the shell completely to the port objects remains the next core task. The complete future backlog lives only in `TASKS.md`.
+The active shell now composes its search, storage, domain planner and local-model behavior through shared ports. Transitional legacy functions remain in the concatenated prototype files until the page/component split removes them, but they are no longer the active runtime path.
 
 ## Product and MiniMed boundary
 
@@ -39,6 +31,7 @@ concepts, statements, relations and backlinks
 personal overlay
 versioned evidence collection
 provider-independent local-model boundary
+shared routing and UI primitives
 ```
 
 MiniMed-owned responsibilities:
@@ -54,40 +47,19 @@ medical benchmarks and source policies
 
 MiniMed should later consume L-Note through adapters. Medicine must not leak into the universal contracts, and L-Note must not weaken MiniMed into a lowest-common-denominator generic search application.
 
-## Runtime
-
-Current browser path:
+## Shared core
 
 ```text
-static PWA shell
-  ├─ catalog and selected JSON packs
-  ├─ checksum verification
-  ├─ IndexedDB with in-memory fallback
-  ├─ pack composition into documents/concepts/statements/relations
-  ├─ MiniSearch or deterministic fuzzy fallback
-  ├─ optional domain query planners
-  ├─ separate personal-note overlay
-  └─ optional WebLLM over retrieved evidence only
+src/core/contracts.js + .d.ts   versioned pack, resource, note, search and evidence contracts
+src/core/ports.js + .d.ts       SearchPort, StoragePort, DomainQueryPlannerPort, LocalModelPort
+src/core/runtime.js + .d.ts     installed-pack composition and headless runtime state
+src/adapters/runtime-adapters   MiniSearch, IndexedDB/memory and WebLLM browser adapters
+src/domain-plugins/minimed.js   optional MiniMed query planner adapter
 ```
-
-Target shared path:
-
-```text
-application shell
-  → KnowledgeRuntime
-  → StoragePort
-  → SearchPort
-  → optional DomainQueryPlannerPort(s)
-  → optional LocalModelPort
-```
-
-Search, linked reading, notes and deterministic evidence must remain useful when no model is installed.
-
-## Contracts and compatibility
 
 `LNOTE_CONTRACT_VERSION` versions runtime-facing evidence and public contracts. `KNOWLEDGE_PACK_SCHEMA_VERSION` versions portable pack payloads. Runtime guards reject malformed boundary objects; the existing pack validator remains responsible for referential integrity and exact-evidence checks.
 
-The first typed concepts intentionally map onto the current serialized names:
+The serialized names remain compatible with the current pack format:
 
 ```text
 concept   ↔ pack.entities[]
@@ -96,6 +68,29 @@ relation  ↔ pack.relations[]
 ```
 
 Changing user-facing terminology does not require changing stable serialized IDs.
+
+## Runtime
+
+```text
+application shell
+  → KnowledgeRuntime
+  → StoragePort
+  → SearchPort
+  → optional DomainQueryPlannerPort(s)
+  → versioned EvidenceEnvelope
+  → optional LocalModelPort
+```
+
+Browser adapters currently resolve to:
+
+```text
+StoragePort     → IndexedDB with in-memory fallback
+SearchPort      → MiniSearch with Damerau–Levenshtein fallback
+Domain planner  → optional MiniMed vocabulary plugin
+LocalModelPort  → WebLLM
+```
+
+Search, linked reading, notes and deterministic evidence must remain useful when no model is installed.
 
 ## Storage and search boundary
 
@@ -144,9 +139,20 @@ The URL is the source of truth for opened resources. Browser history owns nested
 
 Routing belongs to the application shell. Stable resource IDs and resolvers belong to the core contract.
 
-## Styling boundary
+## UI and styling boundary
 
 All authored styles live under `styles/`. `styles/main.scss` defines partial order and `tools/build-styles.mjs` generates `styles.css`. Palette, themes, semantic colors, interaction states and graph-category colors remain centralized.
+
+The framework-free shell now has reusable primitives:
+
+```text
+src/ui/text.js + .d.ts    predefined typography variants without raw HTML
+src/ui/icons.js + .d.ts   centralized Phosphor names, category mapping and placeholder
+```
+
+`@phosphor-icons/web` is pinned and copied into `vendor/phosphor` during local and static builds. The font, CSS and UI modules are part of the offline shell; the application does not depend on an icon CDN.
+
+This is a foundation, not the completed component migration. Shared cards, buttons, fields and one routed-dialog component still need to replace repeated page code.
 
 ## Pack preparation boundary
 
@@ -166,9 +172,9 @@ Reference packs are immutable installed inputs. Notes remain physically separate
 
 ## Next ordered work
 
-1. Migrate the current web shell from direct adapter calls to the new ports.
+1. Remove transitional direct adapter imports while splitting the shell into page/services/components.
 2. Add browser E2E coverage for direct links, refresh, nested Back and full-chain Close.
-3. Introduce the reusable component/Text/icon layer.
+3. Extract shared cards, buttons, fields and a routed-dialog component around the new `Text`/Icon primitives.
 4. Add the internal PDF asset path and knowledge graph after the component boundary is stable.
 5. Add SQLite/FTS5 without moving MiniMed rules into the shared core.
 
