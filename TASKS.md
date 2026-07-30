@@ -2,7 +2,7 @@
 
 This is the single source of future work. Completed items describe the active branch; unfinished browser/device verification remains explicit.
 
-**Current focus:** finish the reusable routed-dialog/page-service split, then add local source assets and the knowledge graph. Android/iOS remain deferred.
+**Current focus:** split the transitional shell into pages/services and finish the reusable routed-dialog layer. Next are local PDF assets and SQLite/FTS5 behind the same adapter contracts. Android/iOS remain deferred.
 
 ## Phase 0 — universal core and MiniMed boundary
 
@@ -11,8 +11,8 @@ This is the single source of future work. Completed items describe the active br
 - [x] Add `SearchPort`, `StoragePort`, `DomainQueryPlannerPort`, `LocalModelPort` and evidence-verification boundaries.
 - [x] Add MiniSearch, IndexedDB/memory and WebLLM browser adapters.
 - [x] Add a UI-independent runtime composer and route the active web shell through the ports.
-- [x] Add a versioned application-adapter contract.
-- [x] Add a MiniMed compatibility adapter that requires medical query planning, clinical ranking, dose verification, abstention and benchmark ownership to remain in MiniMed.
+- [x] Add a versioned `KnowledgeApplicationAdapter` contract and run the web shell through it.
+- [x] Add a MiniMed compatibility adapter that keeps medical query analysis, clinical ranking, dose verification, abstention and benchmark ownership in MiniMed.
 - [ ] Remove the remaining transitional direct imports/functions while splitting the shell into pages, services and components.
 - [ ] Add a SQLite/FTS5 adapter for large packs and MiniMed without moving medical policy into L-Note.
 - [ ] Add an optional neural/vector adapter behind the same search contract.
@@ -79,9 +79,9 @@ This is the single source of future work. Completed items describe the active br
 - [x] Keep deterministic retrieval before generation and pass a versioned evidence envelope to the model.
 - [x] Allow the selected model to download with an empty question field and no collected evidence.
 - [x] Require a question/evidence only when a loaded model is asked to generate an answer.
-- [x] Report basic WebLLM loading progress and keep search usable when WebGPU is unavailable.
-- [ ] Show downloaded/total/remaining bytes, speed, queue state and structured errors when the runtime exposes them.
-- [ ] Add retry and cancellation.
+- [x] Keep the question workspace hidden until the selected model is loaded.
+- [x] Display estimated percent, loaded/total/remaining size, speed and retry state from WebLLM progress events.
+- [ ] Add explicit cancellation and a structured download-error view.
 - [ ] Support a persisted priority queue with at most four concurrent model/document downloads.
 - [ ] Resume interrupted downloads where the browser/runtime API supports it.
 - [ ] Improve verification from citation-ID validity to statement-to-evidence support.
@@ -91,11 +91,14 @@ This is the single source of future work. Completed items describe the active br
 
 - [x] Install, disable, update, remove, import and inspect independent knowledge packs.
 - [x] Preserve personal notes when a reference pack is removed or updated.
-- [ ] Add “View graph” beside JSON import and switch between list/graph modes.
-- [ ] Show packages, categories, documents, sections, concepts and relations.
-- [ ] Open/install graph nodes through the same hash-history contract.
-- [ ] Use centralized category colors: pediatrics pink, dentistry blue and proportional mixed nodes.
-- [ ] Add the mixed tooth-eruption timing example.
+- [x] Add a graph/list switch beside JSON import.
+- [x] Show available and installed packages plus documents, sections, concepts and relations.
+- [x] Open package/document/concept nodes through the same hash-history contract; an uninstalled package opens its routed install card.
+- [x] Use centralized category colors: pediatrics pink, dentistry blue and proportional mixed-node gradients.
+- [x] Infer common package categories without hard-coding medicine into the graph contract.
+- [x] Add regression coverage for a 50/50 pediatric/dentistry tooth-eruption concept.
+- [ ] Add a visible downloadable demo pack containing the tooth-eruption mixed node.
+- [ ] Add browser E2E for graph/list switching and node navigation.
 
 ## Phase 6 — notes and personal knowledge
 
