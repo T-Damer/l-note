@@ -108,8 +108,8 @@ This is the single source of future work. Completed items describe the active br
 - [x] Keep notes physically separate from immutable reference packs.
 - [x] Support `observation`, `supports`, `refines`, `contradicts` and local `supersedes` links.
 - [x] Route notes and show creation/modification dates.
-- [ ] Add the default “Привет, коллега” note.
-- [ ] Expose routed links from notes to related concepts/statements.
+- [x] Add the one-time default “Привет, коллега” note without recreating it after user deletion.
+- [x] Expose routed links from saved notes to related concepts.
 - [ ] Let a local model propose note links, then require user confirmation/edit/removal before saving.
 
 ## Phase 7 — navigation shell
