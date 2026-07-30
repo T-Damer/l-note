@@ -1,0 +1,175 @@
+function renderAiView() {
+  const bundle = state.currentBundle ? JSON.stringify(state.currentBundle, null, 2) : '';
+  return `
+    <section class="page">
+      <div class="page-heading">
+        <h2>Ответ и факт-проверка</h2>
+        <p>
+          L-Note сначала собирает источники, утверждения и противоречия. Затем один OpenAI-compatible локальный сервер делает черновик, а вторым проходом проверяет его по тому же пакету доказательств.
+        </p>
+      </div>
+      <form id="ai-form" class="form-card">
+        <div class="field-grid">
+          <div class="field-full">
+            <label for="ai-question">Вопрос</label>
+            <textarea id="ai-question" name="question" required>${escapeHtml(state.aiQuestion || state.query)}</textarea>
+          </div>
+          <div class="field">
+            <label for="ai-base-url">OpenAI-compatible URL</label>
+            <input id="ai-base-url" name="baseUrl" value="${escapeHtml(state.aiSettings.baseUrl)}" required />
+          </div>
+          <div class="field">
+            <label for="ai-model">Модель</label>
+            <input id="ai-model" name="model" value="${escapeHtml(state.aiSettings.model)}" required />
+          </div>
+          <div class="field-full">
+            <label for="ai-api-key">API key, если нужен</label>
+            <input id="ai-api-key" name="apiKey" type="password" autocomplete="off" />
+            <span class="help">Ключ не сохраняется. Для Ollama обычно не требуется. Сервер должен разрешать CORS для этой страницы.</span>
+          </div>
+        </div>
+        <div class="card-actions" style="margin-top: 18px; justify-content: flex-end">
+          <button class="secondary-button" type="button" data-action="build-ai-bundle">Только собрать доказательства</button>
+          <button class="primary-button" type="submit" ${state.aiRunning ? 'disabled' : ''}>${state.aiRunning ? 'Проверяю…' : 'Ответить и проверить'}</button>
+        </div>
+      </form>
+
+      ${state.aiError ? `<div class="empty-state"><strong>Ошибка</strong><p>${escapeHtml(state.aiError)}</p></div>` : ''}
+      ${
+        state.aiAnswer
+          ? `<div class="section-title"><h3>Проверенный ответ</h3><button class="secondary-button" data-action="copy-answer">Копировать</button></div><div class="ai-answer">${paragraph(state.aiAnswer)}</div>`
+          : ''
+      }
+      ${
+        state.aiDraft
+          ? `<details style="margin-top: 18px"><summary>Показать непроверенный черновик</summary><div class="ai-answer" style="margin-top: 12px">${paragraph(state.aiDraft)}</div></details>`
+          : ''
+      }
+      ${
+        bundle
+          ? `<div class="section-title"><h3>Пакет доказательств</h3><button class="secondary-button" data-action="copy-bundle">Копировать JSON</button></div><pre>${escapeHtml(bundle)}</pre>`
+          : ''
+      }
+    </section>
+  `;
+}
+
+function executeSearch() {
+  if (!state.query.trim()) {
+    state.results = [];
+    state.suggestions = [];
+    return;
+  }
+  state.results = state.engine.search(state.query, { limit: 20 });
+  state.suggestions = state.engine.suggest(state.query, { limit: 6 });
+}
+
+function renderSearchDynamic() {
+  const suggestions = document.querySelector('#search-suggestions');
+  const results = document.querySelector('#search-results');
+  if (suggestions) suggestions.innerHTML = renderSuggestions();
+  if (results) results.innerHTML = renderSearchResults();
+}
+
+function openDialog(content) {
+  const dialog = document.querySelector('#detail-dialog');
+  dialog.innerHTML = content;
+  if (!dialog.open) dialog.showModal();
+}
+
+function closeDialog() {
+  const dialog = document.querySelector('#detail-dialog');
+  if (dialog?.open) dialog.close();
+}
+
+function openResult(resultId) {
+  const result = state.results.find((candidate) => candidate.id === resultId);
+  if (!result) return;
+  const resolved = state.engine.resolveResult(result);
+  if (!resolved) return;
+
+  if (resolved.kind === 'note') {
+    openDialog(`
+      <div class="dialog-header"><div><span class="result-kind personal">личная заметка</span><h2>${escapeHtml(resolved.note.title)}</h2></div><button class="icon-button" data-action="close-dialog" aria-label="Закрыть">×</button></div>
+      <div class="dialog-body"><p>${paragraph(resolved.note.body)}</p></div>`);
+    return;
+  }
+
+  openDialog(`
+    <div class="dialog-header">
+      <div><span class="result-kind reference">справочный источник</span><h2>${escapeHtml(resolved.document.title)}</h2><p class="help">${escapeHtml(resolved.pack.manifest.title)} · ${escapeHtml(resolved.section.title)}</p></div>
+      <button class="icon-button" data-action="close-dialog" aria-label="Закрыть">×</button>
+    </div>
+    <div class="dialog-body">
+      <div class="source-quote">${paragraph(resolved.chunk.text)}</div>
+      ${
+        resolved.entities.length
+          ? `<h3>Сущности</h3><div class="inline-list">${resolved.entities
+              .map(
+                (entity) => `<button class="entity-chip" data-action="open-entity" data-ref="${escapeHtml(encodeReference(resolved.pack.manifest.id, entity.id))}">${escapeHtml(entity.canonicalName)}</button>`,
+              )
+              .join('')}</div>`
+          : ''
+      }
+      ${
+        resolved.claims.length
+          ? `<h3>Утверждения из этого фрагмента</h3><ul class="claim-list">${resolved.claims
+              .map(
+                (claim) => `<li class="claim-item"><button class="secondary-button" data-action="open-claim" data-ref="${escapeHtml(encodeReference(resolved.pack.manifest.id, claim.id))}">${escapeHtml(state.engine.formatClaim(resolved.pack.manifest.id, claim))}</button></li>`,
+              )
+              .join('')}</ul>`
+          : ''
+      }
+      <div class="card-actions" style="justify-content: flex-end; margin-top: 20px"><button class="primary-button" data-action="bundle-result" data-result-id="${escapeHtml(result.id)}">Проверить вопрос по этим данным</button></div>
+    </div>`);
+}
+
+function openEntity(reference) {
+  const context = state.engine.getEntityContext(reference);
+  if (!context) return;
+  const relationMarkup = [...context.outgoing, ...context.incoming]
+    .map((relation) => {
+      const outgoing = relation.sourceEntityId === context.entity.id;
+      const otherId = outgoing ? relation.targetEntityId : relation.sourceEntityId;
+      const other = context.pack.entities.find((entity) => entity.id === otherId);
+      return `<li class="relation-item">${outgoing ? '→' : '←'} <strong>${escapeHtml(relation.predicate)}</strong> ${escapeHtml(other?.canonicalName ?? otherId)}</li>`;
+    })
+    .join('');
+
+  openDialog(`
+    <div class="dialog-header"><div><span class="tag">${escapeHtml(context.entity.type)}</span><h2>${escapeHtml(context.entity.canonicalName)}</h2></div><button class="icon-button" data-action="close-dialog">×</button></div>
+    <div class="dialog-body">
+      ${context.entity.description ? `<p>${escapeHtml(context.entity.description)}</p>` : ''}
+      ${context.entity.aliases.length ? `<div class="inline-list">${context.entity.aliases.map((alias) => `<span class="tag">${escapeHtml(alias)}</span>`).join('')}</div>` : ''}
+      <h3>Утверждения</h3>
+      <ul class="claim-list">${context.claims
+        .map(
+          (claim) => `<li class="claim-item"><button class="secondary-button" data-action="open-claim" data-ref="${escapeHtml(encodeReference(reference.packId, claim.id))}">${escapeHtml(state.engine.formatClaim(reference.packId, claim))}</button></li>`,
+        )
+        .join('') || '<li class="help">Нет структурированных утверждений.</li>'}</ul>
+      ${relationMarkup ? `<h3>Связи</h3><ul class="relation-list">${relationMarkup}</ul>` : ''}
+      <p class="help">Упоминаний в источниках: ${context.mentions.length}. Связанных личных заметок: ${context.linkedNotes.length}.</p>
+    </div>`);
+}
+
+function openClaim(reference) {
+  const context = state.engine.getClaimContext(reference);
+  if (!context) return;
+  openDialog(`
+    <div class="dialog-header"><div><span class="tag">${escapeHtml(context.claim.sourceKind)}</span><h2>Утверждение</h2></div><button class="icon-button" data-action="close-dialog">×</button></div>
+    <div class="dialog-body">
+      <div class="claim-item"><strong>${escapeHtml(state.engine.formatClaim(reference.packId, context.claim))}</strong></div>
+      <p class="help">Авторитетность ${Math.round(context.claim.authority * 100)}% · уверенность ${Math.round(context.claim.confidence * 100)}%</p>
+      <h3>Доказательства</h3>
+      ${context.evidence.map((item) => `<div class="source-quote"><strong>${escapeHtml(item.document.title)} · ${escapeHtml(item.section.title)}</strong><br />${escapeHtml(item.evidence.quote)}</div>`).join('')}
+      ${
+        context.links.length
+          ? `<h3>Связи с другими утверждениями</h3><ul class="claim-list">${context.links
+              .map(
+                (link) => `<li class="claim-item"><strong>${escapeHtml(link.relation)}</strong>: ${escapeHtml(link.otherClaim ? state.engine.formatClaim(reference.packId, link.otherClaim) : 'не найдено')}${link.reason ? `<br /><span class="help">${escapeHtml(link.reason)}</span>` : ''}</li>`,
+              )
+              .join('')}</ul>`
+          : ''
+      }
+    </div>`);
+}
