@@ -72,6 +72,7 @@ refreshState = async function refreshStateThroughApplicationAdapter() {
   dom.notesCount.textContent = state.notes.length ? String(state.notes.length) : '';
   renderSidebarStatus();
   await Promise.all([renderCatalog(), renderNotes(), renderStorageSummary()]);
+  renderLibraryGraph();
   renderSearchEmpty();
   renderSuggestions();
   if (state.currentQuery) runSearch(state.currentQuery);
