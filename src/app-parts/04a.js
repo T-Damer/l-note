@@ -41,9 +41,11 @@ async function handleAsk(event) {
   }
   const evidence = buildEvidenceForQuestion(query);
   renderEvidence(evidence);
-  dom.aiStatus.textContent = state.localAiReady
-    ? `Модель ${state.localAi.modelId} готова. Нажмите «Подключить локальный WebLLM» ещё раз, чтобы получить ответ.`
-    : 'Доказательства собраны без модели. Локальный WebLLM можно подключить отдельно.';
+  const profile = selectedLocalModelProfile();
+  const ready = state.localAiReady && state.localAi.modelId === profile.modelId;
+  dom.aiStatus.textContent = ready
+    ? `${profile.label} готова. Нажмите «Ответить локальной моделью».`
+    : `Доказательства собраны без модели. Для генерации загрузите ${profile.label}.`;
 }
 
 async function loadOrRunLocalAi(button) {
@@ -59,36 +61,53 @@ async function loadOrRunLocalAi(button) {
     toast('WebGPU недоступен. Доказательная сводка остаётся полностью рабочей.', 'error');
     return;
   }
-  if (!state.localAiReady) {
+
+  const selectedModelId = dom.localAiModel.value;
+  const selectedProfile = selectedLocalModelProfile();
+  const selectedReady = state.localAiReady && state.localAi.modelId === selectedModelId;
+  if (!selectedReady) {
     button.disabled = true;
-    button.textContent = 'Загрузка модели…';
+    button.textContent = `Загрузка ${selectedProfile.label}…`;
     try {
-      const model = await state.localAi.load({
+      const loaded = await state.localAi.load({
+        modelId: selectedModelId,
         onProgress: (progress) => {
           dom.aiStatus.textContent = progress.text ?? `Загрузка: ${Math.round(Number(progress.progress ?? 0) * 100)}%`;
         },
       });
+      state.lastModelLoad = loaded;
       state.localAiReady = true;
-      button.textContent = 'Ответить локальной моделью';
-      dom.aiStatus.textContent = `Модель ${model} закэширована в браузере и готова.`;
-      toast('Локальная модель готова. Повторное открытие будет использовать кэш.');
+      renderLocalModelDetails();
+      syncLocalAiButton();
+      dom.aiStatus.textContent = `${selectedProfile.label} готова; загрузка заняла ${formatModelDuration(loaded.loadMs)}${loaded.reused ? ' (использован текущий экземпляр)' : ''}.`;
+      toast(`${selectedProfile.label} готова. Повторное открытие использует браузерный кэш.`);
     } catch (error) {
-      button.textContent = 'Подключить локальный WebLLM';
+      state.localAiReady = false;
       toast(error instanceof Error ? error.message : String(error), 'error');
     } finally {
       button.disabled = false;
+      syncLocalAiButton();
     }
     return;
   }
 
   button.disabled = true;
-  button.textContent = 'Факт-чекинг…';
+  button.textContent = 'Генерация и проверка ссылок…';
   try {
     const answer = await state.localAi.answer(state.currentEvidence.query, state.currentEvidence);
+    const profile = localModelProfile(answer.modelId);
     const panel = create('article', { className: 'answer-panel' });
-    panel.append(create('h2', { text: 'Ответ локальной модели' }));
+    panel.append(create('h2', { text: `Ответ ${profile?.label ?? answer.modelId}` }));
     const body = create('p', { className: 'ai-answer', text: answer.text || 'Модель вернула пустой ответ.' });
     panel.append(body);
+    const metrics = create('div', { className: 'storage-summary' });
+    metrics.append(
+      create('span', { text: `Ответ: ${formatModelDuration(answer.durationMs)}` }),
+      create('span', { text: formatModelSpeed(answer.tokensPerSecond) }),
+      create('span', { text: answer.completionTokens ? `${answer.completionTokens} токенов` : 'Токены не сообщены' }),
+      create('span', { text: answer.grounded ? 'Ссылки прошли проверку' : 'Ссылки не подтверждены' }),
+    );
+    panel.append(metrics);
     if (!answer.grounded) {
       panel.append(create('div', {
         className: 'conflict-box',
@@ -98,11 +117,23 @@ async function loadOrRunLocalAi(button) {
       }));
     }
     dom.answerOutput.prepend(panel);
+    state.localAiRuns.unshift({
+      modelId: answer.modelId,
+      loadMs: state.lastModelLoad?.modelId === answer.modelId ? state.lastModelLoad.loadMs : null,
+      durationMs: answer.durationMs,
+      tokensPerSecond: answer.tokensPerSecond,
+      completionTokens: answer.completionTokens,
+      grounded: answer.grounded,
+      createdAt: new Date().toISOString(),
+    });
+    state.localAiRuns = state.localAiRuns.slice(0, 6);
+    renderModelRunHistory();
+    dom.aiStatus.textContent = `${profile?.label ?? answer.modelId}: ответ за ${formatModelDuration(answer.durationMs)}, ${formatModelSpeed(answer.tokensPerSecond)}.`;
   } catch (error) {
     toast(error instanceof Error ? error.message : String(error), 'error');
   } finally {
     button.disabled = false;
-    button.textContent = 'Ответить локальной моделью';
+    syncLocalAiButton();
   }
 }
 
