@@ -30,6 +30,7 @@ test('static build contains the complete offline shell', async () => {
     'src/core/runtime.js',
     'src/adapters/runtime-adapters.js',
     'src/domain-plugins/minimed.js',
+    'src/services/model-action.js',
     'src/ui/text.js',
     'src/ui/icons.js',
     'src/ui/components.js',
@@ -40,6 +41,8 @@ test('static build contains the complete offline shell', async () => {
   assert.match(css, /Generated from styles\/main\.scss/u);
   assert.match(css, /--palette-dark-paper/u);
   assert.match(css, /vendor\/phosphor\/style\.css/u);
+  assert.match(css, /html:has\(body\.modal-open\)/u);
+  assert.match(css, /grid-column:\s*3/u);
 
   const html = await readFile(path.join(root, 'dist', 'index.html'), 'utf8');
   assert.match(html, /ph-magnifying-glass/u);
