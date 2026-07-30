@@ -1,10 +1,9 @@
-name: Deploy web demo
+name: Web demo
 
 on:
   push:
     branches:
       - main
-      - agent/offline-knowledge-core
   pull_request:
     branches:
       - main
@@ -27,9 +26,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      - name: Configure Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
       - run: npm install --ignore-scripts
       - run: npm run check
       - uses: actions/upload-pages-artifact@v3
@@ -37,6 +36,7 @@ jobs:
           path: dist
 
   deploy:
+    if: github.event_name != 'pull_request'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
