@@ -1,0 +1,257 @@
+{
+  "format": "l-note-pack",
+  "schemaVersion": 1,
+  "manifest": {
+    "id": "demo.minimed.bronchiolitis.ru",
+    "title": "MiniMed: острый бронхиолит",
+    "description": "Карточка по острому бронхиолиту у детей из публичного source-linked пилота MiniMed.",
+    "version": "2026.07.30-demo1",
+    "language": "ru",
+    "domains": [
+      "medicine",
+      "pediatrics"
+    ],
+    "tags": [
+      "педиатрия",
+      "клинические рекомендации",
+      "демо",
+      "русский",
+      "bronchiolitis"
+    ],
+    "license": "Public source-linked paraphrases; see each document source and MiniMed repository boundary.",
+    "createdAt": "2026-07-30T12:00:00+03:00",
+    "source": {
+      "name": "T-Damer/MiniMed public pilot",
+      "repository": "https://github.com/T-Damer/MiniMed",
+      "commit": "20c67c6e3b0233a3ec39a6580bf559290eda97da",
+      "note": "Cards are concise paraphrases and do not replace full official recommendations."
+    }
+  },
+  "documents": [
+    {
+      "id": "kr.rf.360_3.bronchiolitis",
+      "title": "Острый бронхиолит у детей",
+      "summary": "Source-linked карточка по рекомендации 360_3, 2024.",
+      "authority": "official-guideline-paraphrase",
+      "source": {
+        "title": "Клиническая рекомендация Минздрава России 360_3",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/360_3",
+        "year": 2024,
+        "contentMode": "source_linked_paraphrase"
+      },
+      "sections": [
+        {
+          "id": "bronchiolitis.general",
+          "title": "Общая информация",
+          "chunks": [
+            {
+              "id": "bronchiolitis.general.1",
+              "text": "Острый бронхиолит — вирусное воспалительное заболевание мелких дыхательных путей у детей младше двух лет, чаще первого года жизни. Карточка представляет краткую поисковую выжимку из рекомендации 2024 года.",
+              "entityIds": [
+                "condition.bronchiolitis"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bronchiolitis.clinical",
+          "title": "Клиническая картина",
+          "chunks": [
+            {
+              "id": "bronchiolitis.clinical.1",
+              "text": "Болезнь обычно развивается через несколько дней после инфекции верхних дыхательных путей. Для нее характерны нарастающие кашель и одышка, тахипноэ, двусторонние мелкопузырчатые или свистящие хрипы, удлиненный выдох, участие вспомогательных мышц и втяжение межреберий. У недоношенного ребенка первым проявлением может быть апноэ.",
+              "entityIds": [
+                "condition.bronchiolitis",
+                "finding.wheeze",
+                "finding.retractions"
+              ]
+            },
+            {
+              "id": "bronchiolitis.clinical.2",
+              "text": "Из-за частого дыхания, затруднения кормления, лихорадки или рвоты возможно обезвоживание. Состояние динамично и иногда ухудшается после нескольких суток болезни, поэтому важна повторная оценка дыхания, сатурации и способности пить.",
+              "entityIds": [
+                "condition.bronchiolitis",
+                "measurement.spo2",
+                "condition.dehydration"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bronchiolitis.diagnosis",
+          "title": "Диагностика",
+          "chunks": [
+            {
+              "id": "bronchiolitis.diagnosis.1",
+              "text": "Диагноз в большинстве случаев клинический: первый эпизод поражения нижних дыхательных путей у ребенка до двух лет оценивают по дыхательным симптомам, кормлению, гидратации и пульсоксиметрии. Объем исследований определяется тяжестью и необходимостью исключить пневмонию, инородное тело, сердечную патологию и другие состояния.",
+              "entityIds": [
+                "condition.bronchiolitis",
+                "condition.pneumonia",
+                "measurement.spo2",
+                "condition.dehydration"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bronchiolitis.treatment",
+          "title": "Лечение",
+          "chunks": [
+            {
+              "id": "bronchiolitis.treatment.1",
+              "text": "Лечение преимущественно поддерживающее: обеспечение проходимости верхних дыхательных путей, адекватное поступление жидкости и респираторная поддержка по показаниям. Антибиотики не применяются рутинно и рассматриваются при подозрении на бактериальное осложнение. Вибрационный и перкуссионный массаж не относится к стандартной рутинной терапии.",
+              "entityIds": [
+                "condition.bronchiolitis",
+                "treatment.antibiotics",
+                "condition.dehydration"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "bronchiolitis.redflags",
+          "title": "Маршрутизация и красные флаги",
+          "chunks": [
+            {
+              "id": "bronchiolitis.redflags.1",
+              "text": "Госпитализация показана при апноэ, выраженной дыхательной недостаточности, дегидратации или затрудненном кормлении, сонливости, пониженном питании, а также у некоторых недоношенных детей младше шести месяцев. Для выписки ожидают стабильную сатурацию выше 94% на комнатном воздухе, отсутствие респираторного дистресса и возможность принимать не менее примерно трех четвертей обычного объема питания и жидкости.",
+              "entityIds": [
+                "condition.bronchiolitis",
+                "measurement.spo2",
+                "condition.dehydration",
+                "finding.retractions"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "entities": [
+    {
+      "id": "condition.bronchiolitis",
+      "type": "condition",
+      "name": "Острый бронхиолит",
+      "aliases": [
+        "бронхиолит",
+        "грудничок свистит при дыхании"
+      ],
+      "description": "Вирусное поражение мелких дыхательных путей у детей младше двух лет."
+    },
+    {
+      "id": "condition.dehydration",
+      "type": "condition",
+      "name": "Обезвоживание",
+      "aliases": [
+        "дегидратация",
+        "не может пить"
+      ],
+      "description": "Дефицит жидкости, учитываемый при маршрутизации ребенка."
+    },
+    {
+      "id": "condition.pneumonia",
+      "type": "condition",
+      "name": "Внебольничная пневмония у детей",
+      "aliases": [
+        "пневмония",
+        "пневмония у ребенка",
+        "пневмания"
+      ],
+      "description": "Острое инфекционное поражение легочной паренхимы вне стационара."
+    },
+    {
+      "id": "finding.retractions",
+      "type": "finding",
+      "name": "Втяжение уступчивых мест грудной клетки",
+      "aliases": [
+        "втяжение межреберий",
+        "втягивает ребра при дыхании",
+        "втягивает межреберья"
+      ],
+      "description": "Признак повышенной работы дыхания."
+    },
+    {
+      "id": "finding.wheeze",
+      "type": "finding",
+      "name": "Свистящее дыхание",
+      "aliases": [
+        "свисты",
+        "визинг",
+        "wheezing",
+        "грудничок свистит"
+      ],
+      "description": "Аускультативный или слышимый дистанционно свистящий дыхательный шум."
+    },
+    {
+      "id": "measurement.spo2",
+      "type": "measurement",
+      "name": "Периферическая сатурация кислорода",
+      "aliases": [
+        "SpO2",
+        "сатурация",
+        "пульсоксиметрия",
+        "низкая сатурация"
+      ],
+      "description": "Показатель насыщения гемоглобина кислородом по данным пульсоксиметра."
+    },
+    {
+      "id": "treatment.antibiotics",
+      "type": "treatment",
+      "name": "Антибактериальная терапия",
+      "aliases": [
+        "антибиотики",
+        "антибактериальные препараты"
+      ],
+      "description": "Лечение бактериальных инфекций; не применяется рутинно против вирусных заболеваний."
+    }
+  ],
+  "relations": [
+    {
+      "id": "relation.bronchiolitis-differential-pneumonia",
+      "from": "condition.bronchiolitis",
+      "predicate": "differential-with",
+      "to": "condition.pneumonia",
+      "status": "source-linked",
+      "confidence": 0.9,
+      "evidence": [
+        {
+          "chunkId": "bronchiolitis.diagnosis.1",
+          "quote": "необходимостью исключить пневмонию"
+        }
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "id": "claim.bronchiolitis-antibiotics-not-routine",
+      "text": "При бронхиолите антибиотики не применяются рутинно и рассматриваются при подозрении на бактериальное осложнение.",
+      "subjectEntityIds": [
+        "condition.bronchiolitis",
+        "treatment.antibiotics"
+      ],
+      "authority": "official-guideline-paraphrase",
+      "status": "active",
+      "evidence": [
+        {
+          "chunkId": "bronchiolitis.treatment.1",
+          "quote": "Антибиотики не применяются рутинно"
+        }
+      ]
+    }
+  ],
+  "glossary": [
+    {
+      "id": "glossary.spo2",
+      "term": "SpO2",
+      "expansion": "периферическая сатурация кислорода пульсоксиметрия",
+      "entityId": "measurement.spo2",
+      "category": "measurement"
+    },
+    {
+      "id": "glossary.rr",
+      "term": "ЧДД",
+      "expansion": "частота дыхательных движений",
+      "category": "measurement"
+    }
+  ]
+}
