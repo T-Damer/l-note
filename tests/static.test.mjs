@@ -10,7 +10,17 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 test('static build contains the complete offline shell', async () => {
   const result = spawnSync(process.execPath, ['tools/build-static.mjs'], { cwd: root, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
-  for (const relative of ['index.html', 'service-worker.js', 'vendor/minisearch.js', 'packs/catalog.json', 'src/app.js']) {
+  for (const relative of [
+    'index.html',
+    'service-worker.js',
+    'vendor/minisearch.js',
+    'packs/catalog.json',
+    'src/app.js',
+    'src/router.js',
+    'src/relations.js',
+    'src/domain-plugins/minimed.js',
+    'src/routed-dialog.css',
+  ]) {
     await access(path.join(root, 'dist', relative));
   }
 });
