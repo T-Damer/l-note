@@ -1,13 +1,14 @@
-  sourcePanel.append(create('h2', { text: 'Источники' }));
+  sourcePanel.append(Text({ variant: 'title', as: 'h2', text: 'Источники' }));
   for (const source of evidence.sources) {
-    const chip = create('button', { className: 'source-chip', type: 'button' }, [
-      create('b', { text: `[${source.id}]` }),
-      create('span', { text: `${source.result.documentTitle} — ${source.result.title}: ${source.result.body.slice(0, 340)}${source.result.body.length > 340 ? '…' : ''}` }),
-    ]);
-    chip.addEventListener('click', () => navigateResource('document', source.result.documentId, { sectionId: source.result.sectionId }));
-    sourcePanel.append(chip);
+    sourcePanel.append(SourceCard({
+      sourceId: source.id,
+      title: `${source.result.documentTitle} — ${source.result.title}`,
+      type: source.document?.source?.title ?? source.result.packTitle ?? 'Справочный источник',
+      excerpt: `${source.result.body.slice(0, 340)}${source.result.body.length > 340 ? '…' : ''}`,
+      onOpen: () => navigateResource('document', source.result.documentId, { sectionId: source.result.sectionId }),
+    }));
   }
-  if (!evidence.sources.length) sourcePanel.append(create('p', { text: 'Нет справочных источников для ответа.' }));
+  if (!evidence.sources.length) sourcePanel.append(Text({ variant: 'muted', text: 'Нет справочных источников для ответа.' }));
   dom.answerOutput.append(sourcePanel);
 
   if (evidence.relatedNotes.length) {
