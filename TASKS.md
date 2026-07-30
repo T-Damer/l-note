@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items reflect code in the active branch; browser/device verification remains explicit where it is still needed.
 
-**Current focus:** finish migrating the web shell onto the new ports and add browser routing E2E; then introduce the reusable component/typography/icon layer. Android/iOS remain deferred.
+**Current focus:** browser routing E2E and decomposition of the transitional web shell into services, shared cards/controls and one routed-dialog component. Android/iOS remain deferred.
 
 ## Phase 0 — shared-core boundary and correctness
 
@@ -14,7 +14,8 @@ Single source of future work. Completed items reflect code in the active branch;
 - [x] Introduce explicit storage, search, domain-query-planner and local-model ports.
 - [x] Add tested MiniSearch, IndexedDB/memory and WebLLM browser adapters.
 - [x] Add a UI-independent runtime composer for enabled packs, notes, knowledge state and search.
-- [ ] Migrate the remaining web-shell direct adapter calls to the shared ports.
+- [x] Route active web-shell search, storage, domain-planner and local-model behavior through shared ports.
+- [ ] Remove transitional direct adapter imports/functions while splitting the shell into services and components.
 - [x] Keep MiniSearch as the first web search adapter.
 - [ ] Add a SQLite/FTS5 adapter suitable for large packs and later MiniMed integration.
 - [x] Keep clinical parsing, medical ranking, dose validation and clinical safeguards outside the generic core.
@@ -30,6 +31,7 @@ Single source of future work. Completed items reflect code in the active branch;
 - [x] Keep ordinary search fully functional without a model.
 - [x] Add a generic domain-expansion hook without hard-coding medical synonyms in the search engine.
 - [x] Expose the MiniMed demo expander through `DomainQueryPlannerPort`.
+- [x] Add centralized category-icon selection for search results with a neutral fallback.
 
 ### Hash routing and resource cards
 
@@ -60,13 +62,16 @@ Single source of future work. Completed items reflect code in the active branch;
 
 ### Component architecture
 
-- [ ] Introduce a component-based UI layer without coupling the headless core to it.
-- [ ] Split large page logic into reusable cards, buttons, switches, fields, dialogs, typography and icon components.
-- [ ] Add a `Text` component with predefined typography variants.
+- [x] Add the first framework-neutral UI primitives without coupling them to the headless core.
+- [x] Add a shared `Text` component with predefined typography variants and no raw-HTML path.
+- [x] Add a centralized Phosphor icon catalog and category resolver.
+- [x] Add one centrally configured placeholder icon for unknown categories.
+- [x] Pin and vendor Phosphor assets locally for offline use.
+- [x] Use shared typography/icons in the model lab, search results and primary navigation.
+- [ ] Split large page logic into reusable cards, buttons, switches, fields and dialogs.
 - [ ] Move reusable logic into `helpers`, `hooks` and `services`.
 - [ ] Keep components and files within the limits described in `AGENTS.md`.
-- [ ] Use Phosphor as the only icon family.
-- [ ] Add a centrally configured placeholder icon for unknown categories.
+- [ ] Audit remaining legacy glyphs and enforce Phosphor as the only application icon family.
 
 ### Interaction consistency
 
@@ -135,7 +140,7 @@ Single source of future work. Completed items reflect code in the active branch;
 - [x] Ensure the local-model comparison block has exactly one instance.
 - [x] Ensure repeated evidence collection does not duplicate the block.
 - [x] Add consistent padding and label/select spacing to the current block.
-- [ ] Migrate model typography to the shared `Text` component.
+- [x] Migrate model headings, descriptions and history to the shared `Text` component.
 - [x] Keep exactly three test candidates unless benchmark results justify another matrix.
 - [x] Keep Qwen3 1.7B as the preferred MiniMed-oriented candidate until tests show otherwise.
 
@@ -179,6 +184,7 @@ Single source of future work. Completed items reflect code in the active branch;
 
 - [ ] Make the desktop sidebar collapsible.
 - [ ] Keep logo plus Search, Ask, Packages and Notes icons in collapsed mode.
+- [x] Replace primary desktop/mobile navigation glyphs with local Phosphor icons.
 - [x] Remove the search-record count from the sidebar status.
 - [ ] Add tooltips to collapsed navigation icons.
 - [x] Derive the active item from the current hash route.
