@@ -95,13 +95,19 @@ function snippetAround(text, terms, length = 260) {
   return `${start > 0 ? '…' : ''}${source.slice(start, end).trim()}${end < source.length ? '…' : ''}`;
 }
 
-function expandQuery(query, entities) {
+function expandQuery(query, entities, queryExpanders = []) {
   const normalized = normalizeText(query);
   const additions = new Set();
   for (const entity of entities ?? []) {
     const names = [entity.name, ...(entity.aliases ?? [])].filter(Boolean);
     if (!names.some((name) => normalized.includes(normalizeText(name)))) continue;
     for (const name of names) additions.add(name);
+  }
+  for (const expander of queryExpanders) {
+    if (typeof expander !== 'function') continue;
+    for (const addition of expander(query) ?? []) {
+      if (typeof addition === 'string' && addition.trim()) additions.add(addition.trim());
+    }
   }
   return additions.size > 0 ? `${query} ${[...additions].join(' ')}` : query;
 }
@@ -113,8 +119,16 @@ function getMiniSearchConstructor() {
   return null;
 }
 
-export function createSearchEngine(records, entities = []) {
+export function normalizeRelevance(score, maximumScore) {
+  if (!Number.isFinite(score) || !Number.isFinite(maximumScore) || score <= 0 || maximumScore <= 0) return 0;
+  const relative = Math.max(0, Math.min(1, score / maximumScore));
+  const softened = relative * 0.72 + Math.sqrt(relative) * 0.28;
+  return Math.max(0, Math.min(100, Math.round(softened * 100)));
+}
+
+export function createSearchEngine(records, entities = [], options = {}) {
   const MiniSearchConstructor = getMiniSearchConstructor();
+  const queryExpanders = Array.isArray(options.queryExpanders) ? options.queryExpanders : [];
   let miniSearch;
   if (MiniSearchConstructor) {
     miniSearch = new MiniSearchConstructor({
@@ -135,10 +149,10 @@ export function createSearchEngine(records, entities = []) {
     miniSearch.addAll(records);
   }
 
-  function search(query, options = {}) {
+  function search(query, searchOptions = {}) {
     const cleanQuery = String(query ?? '').trim();
     if (!cleanQuery) return [];
-    const expanded = expandQuery(cleanQuery, entities);
+    const expanded = expandQuery(cleanQuery, entities, queryExpanders);
     const terms = tokenize(cleanQuery);
     let results;
 
@@ -154,15 +168,15 @@ export function createSearchEngine(records, entities = []) {
         combineWith: 'OR',
       });
     } else {
-      const normalizedQuery = normalizeText(cleanQuery);
+      const normalizedQuery = normalizeText(expanded);
       results = records
-        .map((record) => ({ ...record, score: fallbackScore(record, terms, normalizedQuery) }))
+        .map((record) => ({ ...record, score: fallbackScore(record, tokenize(expanded), normalizedQuery) }))
         .filter((record) => record.score > 0)
         .sort((left, right) => right.score - left.score);
     }
 
-    const personalPriority = Boolean(options.personalPriority);
-    return results
+    const personalPriority = Boolean(searchOptions.personalPriority);
+    const ranked = results
       .map((result) => {
         const record = miniSearch ? { ...result } : result;
         const relationMultiplier = record.kind === 'note'
@@ -181,10 +195,16 @@ export function createSearchEngine(records, entities = []) {
           score: Number(record.score ?? 0) * relationMultiplier * personalMultiplier * authorityMultiplier,
           snippet: snippetAround(record.body, terms),
           queryTerms: terms,
+          expandedQuery: expanded,
         };
       })
       .sort((left, right) => right.score - left.score)
-      .slice(0, options.limit ?? 40);
+      .slice(0, searchOptions.limit ?? 40);
+    const maximumScore = Math.max(0, ...ranked.map((result) => result.score));
+    return ranked.map((result) => ({
+      ...result,
+      relevance: normalizeRelevance(result.score, maximumScore),
+    }));
   }
 
   function suggest(query, limit = 5) {
