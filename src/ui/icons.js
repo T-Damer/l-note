@@ -27,6 +27,13 @@ const ICONS = Object.freeze({
   placeholder: 'placeholder',
 });
 
+const LEGACY_ICON_ALIASES = Object.freeze({
+  'download-simple': 'download',
+  'arrow-clockwise': 'retry',
+  brain: 'model',
+  'arrow-right': 'forward',
+});
+
 const CATEGORY_ALIASES = Object.freeze({
   respiratory: 'respiratory',
   pulmonology: 'respiratory',
@@ -57,7 +64,8 @@ function normalizedCategory(value) {
 }
 
 export function iconName(name) {
-  return ICONS[name] ?? ICONS.placeholder;
+  const key = LEGACY_ICON_ALIASES[name] ?? name;
+  return ICONS[key] ?? ICONS.placeholder;
 }
 
 export function iconNameForCategory(category) {
