@@ -13,9 +13,11 @@ The active web prototype currently provides:
 - exact source-linked statements, relations, backlinks and a separate personal-note overlay;
 - optional browser-local WebLLM over retrieved evidence only;
 - one model comparison block with Gemma 3 1B, preferred Qwen3 1.7B and Phi-4 Mini;
+- SCSS source partials for palette, themes, base, layout, components, dialogs and utilities;
+- a deterministic style builder that generates `styles.css` before local and production builds;
 - static PWA hosting through GitHub Pages.
 
-The next implementation slice is the maintainable UI foundation: SCSS themes, a component layer, shared typography/icons and browser E2E tests for routed dialogs. The complete future backlog lives only in `TASKS.md`.
+The next implementation slice is typed core ports, browser E2E coverage for routed dialogs, and a reusable component/typography/icon layer. The complete future backlog lives only in `TASKS.md`.
 
 ## Product and shared-core boundary
 
@@ -108,6 +110,12 @@ The URL is the source of truth for opened resources. Browser history owns nested
 
 Routing belongs to the application shell rather than the headless knowledge core. Stable IDs and resource resolvers belong to the core contract.
 
+## Styling boundary
+
+All authored style source lives under `styles/`. `styles/main.scss` defines partial order; `tools/build-styles.mjs` generates `styles.css`. The current builder intentionally supports CSS-compatible SCSS plus deterministic `@use` ordering without adding a new runtime dependency. Sass-only features require adding an explicit compiler and lockfile update.
+
+Palette values, light/dark semantic assignments and future graph category colors are centralized. Components should consume semantic variables rather than repeat literals.
+
 ## Pack preparation boundary
 
 Two preparation paths are supported:
@@ -139,7 +147,7 @@ Reference packs are immutable installed inputs. Notes live in another object sto
 - typed public contracts and adapter ports;
 - SQLite/FTS and vector-index artifacts;
 - browser E2E routing coverage;
-- SCSS themes and a reusable component layer;
+- reusable UI components, `Text` typography and Phosphor icons;
 - internal PDF/source assets;
 - knowledge graph view;
 - persistent prioritized model/document download queue;
