@@ -58,20 +58,23 @@
           <header class="page-header">
             <div>
               <p class="eyebrow">Retrieval-first</p>
-              <h1>Ответ по установленным данным</h1>
-              <p>Сначала L-Note собирает доказательства и противоречия. Локальная модель подключается только после поиска.</p>
+              <h1>Локальная модель и ваши знания</h1>
+              <p>Сначала выберите и включите модель. После этого откроется форма вопроса, а ответ будет строиться только по установленным источникам.</p>
             </div>
           </header>
 
           <form id="ask-form" class="ask-composer">
-            <textarea id="ask-input" rows="4" placeholder="Сформулируйте комплексный вопрос…"></textarea>
-            <div class="composer-actions">
-              <button type="submit" class="primary-button button-with-icon"><i class="ph ph-magnifying-glass icon" aria-hidden="true"></i>Собрать доказательства</button>
-              <button type="button" class="secondary-button button-with-icon" data-action="load-local-ai"><i class="ph ph-brain icon" aria-hidden="true"></i>Подключить локальный WebLLM</button>
+            <section id="model-control-slot" aria-live="polite"></section>
+            <div id="model-workspace" class="model-workspace hidden">
+              <textarea id="ask-input" rows="4" placeholder="Сформулируйте комплексный вопрос…"></textarea>
+              <div class="composer-actions">
+                <button type="submit" class="primary-button button-with-icon"><i class="ph ph-magnifying-glass icon" aria-hidden="true"></i>Собрать доказательства</button>
+                <button type="button" class="secondary-button button-with-icon" data-action="load-local-ai"><i class="ph ph-brain icon" aria-hidden="true"></i>Ответить локальной моделью</button>
+              </div>
+              <p id="ai-status" class="muted">Модель включена. Сначала соберите источники или сразу запросите ответ.</p>
             </div>
-            <p id="ai-status" class="muted">ИИ необязателен: сводка источников работает полностью офлайн без модели.</p>
           </form>
-          <section id="answer-output" class="answer-output"></section>
+          <section id="answer-output" class="answer-output hidden"></section>
         </section>
 
         <section class="page" data-page="library">
@@ -82,11 +85,13 @@
               <p>Каждый пакет хранится локально и удаляется независимо. После установки поиск не обращается к серверу.</p>
             </div>
             <div class="header-actions">
+              <button class="secondary-button button-with-icon" type="button" data-action="toggle-library-view" aria-pressed="false"><i class="ph ph-share-network icon" aria-hidden="true"></i>Граф</button>
               <label class="secondary-button file-button file-button-with-icon"><i class="ph ph-upload-simple icon" aria-hidden="true"></i>Импортировать .json<input id="pack-file-input" type="file" accept="application/json,.json" /></label>
             </div>
           </header>
           <div id="storage-summary" class="storage-summary"></div>
           <section id="catalog-grid" class="catalog-grid" aria-live="polite"></section>
+          <section id="knowledge-graph-view" class="knowledge-graph-view hidden" aria-live="polite"></section>
         </section>
 
         <section class="page" data-page="notes">
@@ -119,7 +124,7 @@
         <header class="dialog-header">
           <button class="icon-button dialog-back-button" type="button" data-action="resource-back" aria-label="Назад" hidden><i class="ph ph-arrow-left icon" aria-hidden="true"></i></button>
           <div id="document-dialog-heading" class="dialog-heading"></div>
-          <button class="icon-button" type="button" data-action="close-resource-chain" aria-label="Закрыть"><i class="ph ph-x icon" aria-hidden="true"></i></button>
+          <button class="icon-button dialog-close-button" type="button" data-action="close-resource-chain" aria-label="Закрыть"><i class="ph ph-x icon" aria-hidden="true"></i></button>
         </header>
         <div id="document-dialog-body" class="dialog-body"></div>
       </form>
@@ -130,7 +135,7 @@
         <header class="dialog-header">
           <button class="icon-button dialog-back-button" type="button" data-action="resource-back" aria-label="Назад" hidden><i class="ph ph-arrow-left icon" aria-hidden="true"></i></button>
           <div id="entity-dialog-heading" class="dialog-heading"></div>
-          <button class="icon-button" type="button" data-action="close-resource-chain" aria-label="Закрыть"><i class="ph ph-x icon" aria-hidden="true"></i></button>
+          <button class="icon-button dialog-close-button" type="button" data-action="close-resource-chain" aria-label="Закрыть"><i class="ph ph-x icon" aria-hidden="true"></i></button>
         </header>
         <div id="entity-dialog-body" class="dialog-body"></div>
       </form>
@@ -141,7 +146,7 @@
         <header class="dialog-header">
           <button class="icon-button dialog-back-button" type="button" data-action="resource-back" aria-label="Назад" hidden><i class="ph ph-arrow-left icon" aria-hidden="true"></i></button>
           <div class="dialog-heading"><p class="eyebrow">Личная запись</p><h2 id="note-dialog-title">Новая заметка</h2></div>
-          <button class="icon-button" type="button" data-action="close-resource-chain" aria-label="Закрыть"><i class="ph ph-x icon" aria-hidden="true"></i></button>
+          <button class="icon-button dialog-close-button" type="button" data-action="close-resource-chain" aria-label="Закрыть"><i class="ph ph-x icon" aria-hidden="true"></i></button>
         </header>
         <div class="dialog-body note-form-body">
           <input id="note-id" type="hidden" />
