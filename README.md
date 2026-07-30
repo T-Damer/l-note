@@ -2,7 +2,7 @@
 
 L-Note is an offline-first web knowledge workspace built around **installable knowledge packs**. A user selects only the domains they need, downloads them once, and then searches, follows links, writes notes, and assembles source-grounded answers without a backend.
 
-The current repository is a working browser/PWA prototype. Its runtime and pack format are domain-neutral; the first demonstration catalog uses several independently installable MiniMed-derived packs.
+The current repository is a working browser/PWA prototype. Its runtime and pack format are domain-neutral; the first demonstration catalog uses several independently installable MiniMed-derived packs. The current product phase deliberately focuses on hosted web search and browser-local LLM experiments. Native Android work is deferred until the search and grounded-answer workflow is stable.
 
 ## What works
 
@@ -13,7 +13,8 @@ The current repository is a working browser/PWA prototype. Its runtime and pack 
 - entities, relations, exact evidence quotes, and backlinks;
 - personal notes that can support, refine, contradict, or locally supersede a reference claim;
 - deterministic evidence collection before any generation;
-- optional browser-local WebLLM, loaded only on explicit request;
+- three selectable browser-local Qwen3 profiles through WebLLM, loaded only on explicit request;
+- load and generation timing, completion-token throughput when reported, and deterministic citation-ID validation;
 - import/export of arbitrary compatible packs and personal notes;
 - pack updates without deleting the user's personal layer;
 - a zero-dependency CLI for reviewed authoring JSON or direct Markdown/TXT/JSON preparation;
@@ -35,6 +36,20 @@ npm run serve
 Open `http://127.0.0.1:4173/`, go to **Packs**, and install only the domains you want. Once installed, pack contents are read from IndexedDB rather than fetched for every query.
 
 `npm ci` installs only the pinned MiniSearch runtime. The static build vendors it into the application shell, so installed search does not depend on a CDN. The built-in fuzzy fallback remains available when developing without dependencies. WebLLM is optional and downloaded only after the user activates it.
+
+## Browser-local model test matrix
+
+The **Ask** page exposes three deliberately comparable WebLLM profiles from the same Qwen3 family and the same `q4f16_1` quantization:
+
+| Profile | WebLLM model ID | Test role | WebLLM VRAM estimate |
+| --- | --- | --- | ---: |
+| Qwen3 0.6B | `Qwen3-0.6B-q4f16_1-MLC` | fast baseline | about 1.4 GB |
+| Qwen3 1.7B | `Qwen3-1.7B-q4f16_1-MLC` | recommended balance and default | about 2.0 GB |
+| Qwen3 4B | `Qwen3-4B-q4f16_1-MLC` | quality comparison | about 3.4 GB |
+
+The first load requires network access to fetch the selected model. WebLLM then keeps model assets in the browser cache. Search, evidence collection, source reading, and notes remain usable without loading a model.
+
+For each run the UI records the model, load time, answer time, completion-token count and tokens per second when WebLLM reports usage. Generated answers receive only retrieved evidence, run with model thinking output disabled, and are checked for invented or missing `[S…]` source identifiers. These checks measure contract compliance; they do not establish that any candidate is clinically or generally reliable.
 
 ## Build a custom pack
 
@@ -115,8 +130,8 @@ The browser app deliberately uses a small open-source stack:
 
 - MiniSearch for the primary text index;
 - IndexedDB and Service Worker browser primitives for persistence and offline operation;
-- WebLLM for optional on-device generation;
-- plain ES modules, so the application can be hosted statically and wrapped later with Capacitor or an Android WebView.
+- WebLLM for optional browser-local generation;
+- plain ES modules, so the application can be hosted statically.
 
 ## Repository map
 
@@ -136,7 +151,7 @@ docs/                        pack and architecture contracts
 
 The four MiniMed-derived domains currently contain source-linked cards for urinary tract infection, acute bronchiolitis, community-acquired pneumonia, measles, rotavirus gastroenteritis, meningococcal infection, and one structured medication-registry record. They retain source metadata used by MiniMed and intentionally omit patient-specific prescribing.
 
-The web prototype does not yet include PDF/DOCX parsing, OCR, vector embeddings, signed publisher catalogs, delta updates, cross-device sync, or a native Android inference backend. The pack boundary is designed so those can be added without replacing the installed-content model.
+The web prototype does not yet include PDF/DOCX parsing, OCR, vector embeddings, signed publisher catalogs, delta updates, cross-device sync, or encrypted personal notes. Native Android inference is intentionally outside the current phase rather than an immediate release target.
 
 ## Privacy and integrity
 
