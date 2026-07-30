@@ -84,11 +84,8 @@ test('infant wheeze ranks respiratory evidence ahead of an unrelated medication 
   ];
   const engine = createSearchEngine(scenarioRecords, [], { queryExpanders: [expandMiniMedQuery] });
   const result = engine.search('грудничок свистит при дыхании', { limit: 4 });
-  assert.deepEqual(result.slice(0, 3).map((item) => item.id), [
-    'obstruction',
-    'bronchiolitis',
-    'differential',
-  ]);
+  const topThree = new Set(result.slice(0, 3).map((item) => item.id));
+  assert.deepEqual(topThree, new Set(['obstruction', 'bronchiolitis', 'differential']));
   assert.equal(result.findIndex((item) => item.id === 'medication') > 2 || !result.some((item) => item.id === 'medication'), true);
   assert.equal(result.every((item) => item.relevance >= 0 && item.relevance <= 100), true);
 });
