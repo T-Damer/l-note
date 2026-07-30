@@ -1,3 +1,4 @@
+import { defineDomainQueryPlannerPort } from '../core/ports.js';
 import { normalizeText, tokenize } from '../search.js';
 
 const QUERY_EXPANSIONS = Object.freeze([
@@ -39,5 +40,13 @@ export function expandMiniMedQuery(query) {
   }
   return [...additions];
 }
+
+export const minimedDomainQueryPlanner = defineDomainQueryPlannerPort({
+  id: 'minimed.query-expansion.v1',
+  appliesToPack(pack) {
+    return typeof pack?.id === 'string' && pack.id.startsWith('minimed.');
+  },
+  expandQuery: expandMiniMedQuery,
+});
 
 export const minimedQueryExpansions = QUERY_EXPANSIONS;
