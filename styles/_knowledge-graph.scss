@@ -1,0 +1,109 @@
+.knowledge-graph-view {
+  min-width: 0;
+}
+
+.knowledge-graph-shell {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-strong);
+  box-shadow: var(--shadow-soft);
+}
+
+.knowledge-graph-summary {
+  padding: .85rem 1rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 680;
+}
+
+.knowledge-graph-viewport {
+  max-height: min(70vh, 52rem);
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.knowledge-graph-canvas {
+  display: block;
+  min-width: 100%;
+  background:
+    linear-gradient(color-mix(in srgb, var(--line) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--line) 22%, transparent) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.knowledge-graph-column-label {
+  fill: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.knowledge-graph-edge {
+  fill: none;
+  stroke: var(--line-strong);
+  stroke-width: 1.25;
+  opacity: .58;
+  vector-effect: non-scaling-stroke;
+}
+
+.knowledge-graph-edge--relation {
+  stroke: var(--accent);
+  stroke-dasharray: 5 4;
+  opacity: .72;
+}
+
+.knowledge-graph-node {
+  cursor: pointer;
+  outline: none;
+}
+
+.knowledge-graph-node rect {
+  stroke: color-mix(in srgb, var(--ink) 20%, var(--line));
+  stroke-width: 1;
+  filter: drop-shadow(0 5px 10px rgb(0 0 0 / 8%));
+  transition: stroke-width .12s ease, filter .12s ease, opacity .12s ease;
+  vector-effect: non-scaling-stroke;
+}
+
+.knowledge-graph-node:hover rect,
+.knowledge-graph-node:focus-visible rect {
+  stroke: var(--ink);
+  stroke-width: 2;
+  filter: drop-shadow(0 8px 16px rgb(0 0 0 / 16%));
+}
+
+.knowledge-graph-node.is-uninstalled rect {
+  opacity: .62;
+  stroke-dasharray: 5 3;
+}
+
+.knowledge-graph-node-label,
+.knowledge-graph-node-subtitle {
+  pointer-events: none;
+  fill: var(--paper-strong);
+  paint-order: stroke;
+  stroke: rgb(0 0 0 / 20%);
+  stroke-width: 1.2px;
+  stroke-linejoin: round;
+}
+
+.knowledge-graph-node-label {
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.knowledge-graph-node-subtitle {
+  font-size: 9px;
+  font-weight: 620;
+  opacity: .9;
+}
+
+@media (max-width: 680px) {
+  .knowledge-graph-viewport {
+    max-height: 68dvh;
+  }
+}
