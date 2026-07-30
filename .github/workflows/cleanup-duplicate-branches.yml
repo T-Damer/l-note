@@ -1,0 +1,33 @@
+name: Cleanup duplicate development branches
+
+on:
+  push:
+    branches:
+      - agent/universal-offline-kb
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Remove superseded branches
+        shell: bash
+        run: |
+          set -euo pipefail
+          for branch in \
+            agent/universal-knowledge-packs \
+            agent/offline-knowledge-packs \
+            agent/offline-knowledge-core
+          do
+            if git ls-remote --exit-code --heads origin "refs/heads/${branch}" >/dev/null 2>&1; then
+              git push origin --delete "${branch}"
+            else
+              echo "Already absent: ${branch}"
+            fi
+          done
