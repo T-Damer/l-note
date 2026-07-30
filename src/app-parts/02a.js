@@ -29,8 +29,8 @@ function runSearch(query) {
   dom.searchEmpty.replaceChildren();
   if (!state.currentResults.length) {
     dom.searchEmpty.append(
-      create('h2', { text: 'Ничего не найдено' }),
-      create('p', { text: 'Попробуйте сократить запрос, использовать сокращение или установить дополнительный пакет знаний.' }),
+      Text({ variant: 'title', text: 'Ничего не найдено' }),
+      Text({ variant: 'muted', text: 'Попробуйте сократить запрос, использовать сокращение или установить дополнительный пакет знаний.' }),
     );
     return [];
   }
@@ -39,13 +39,18 @@ function runSearch(query) {
     const card = create('article', { className: `result-card${result.kind === 'note' ? ' personal' : ''}` });
     const header = create('header');
     const titleGroup = create('div', {}, [
-      create('h2', { text: result.title }),
+      Text({ variant: 'title', as: 'h2', text: result.title }),
       create('div', { className: 'document-name', text: result.documentTitle || result.packTitle }),
     ]);
-    const typePill = create('span', {
-      className: `pill ${result.kind === 'note' ? 'accent' : 'blue'}`,
-      text: result.kind === 'note' ? relationLabel(result.relation) : result.packTitle,
-    });
+    const typeLabel = result.kind === 'note' ? relationLabel(result.relation) : result.packTitle;
+    const typePill = create(
+      'span',
+      { className: `pill result-type-pill ${result.kind === 'note' ? 'accent' : 'blue'}` },
+      [
+        Icon({ name: iconNameForSearchResult(result), className: 'result-type-icon' }),
+        document.createTextNode(typeLabel),
+      ],
+    );
     header.append(titleGroup, typePill);
     const snippet = create('p');
     appendHighlighted(snippet, result.snippet ?? result.body, result.queryTerms ?? []);
@@ -117,9 +122,9 @@ function renderDocumentDialog(record) {
   const documentRecord = findDocumentForSection(state.knowledge, record);
   if (!documentRecord) return false;
   dom.documentDialogHeading.replaceChildren(
-    create('p', { className: 'eyebrow', text: documentRecord.packTitle }),
-    create('h2', { text: documentRecord.title }),
-    create('p', { text: documentRecord.source?.title ?? 'Локальный источник' }),
+    Text({ variant: 'eyebrow', text: documentRecord.packTitle }),
+    Text({ variant: 'title', as: 'h2', text: documentRecord.title }),
+    Text({ variant: 'muted', text: documentRecord.source?.title ?? 'Локальный источник' }),
   );
   dom.documentDialogBody.replaceChildren();
   if (documentRecord.summary) dom.documentDialogBody.append(create('p', { className: 'document-summary', text: documentRecord.summary }));
