@@ -158,7 +158,7 @@ export class FuzzyKnowledgeSearch {
       includeScore: true,
       includeMatches: true,
       ignoreLocation: true,
-      threshold: 0.38,
+      threshold: 0.42,
       minMatchCharLength: 2,
       useTokenSearch: true,
       tokenMatch: 'all',
@@ -181,30 +181,65 @@ export class FuzzyKnowledgeSearch {
     const normalizedQuery = normalizeSearchText(query);
     if (!normalizedQuery) return [];
 
-    let found = this.index.search(query, { limit: Math.max(limit * 3, 30) });
-    if (found.length === 0) {
-      found = this.index.search(query, {
-        limit: Math.max(limit * 3, 30),
-        useTokenSearch: true,
-        tokenMatch: 'any',
-        threshold: 0.5,
-      });
+    const queryTokens = tokenizeSearchText(query);
+    const candidateLimit = Math.max(limit * 3, 30);
+    const candidates = new Map();
+
+    const collect = (result, { token = null, fullQuery = false } = {}) => {
+      const previous = candidates.get(result.item.id);
+      const score = 1 - (result.score ?? 1);
+      if (!previous) {
+        candidates.set(result.item.id, {
+          result,
+          bestScore: score,
+          fullQuery,
+          matchedTokens: new Set(token ? [token] : []),
+        });
+        return;
+      }
+      previous.bestScore = Math.max(previous.bestScore, score);
+      previous.fullQuery ||= fullQuery;
+      if (token) previous.matchedTokens.add(token);
+      if ((result.matches?.length ?? 0) > (previous.result.matches?.length ?? 0)) {
+        previous.result = result;
+      }
+    };
+
+    for (const result of this.index.search(query, { limit: candidateLimit })) {
+      collect(result, { fullQuery: true });
+    }
+
+    // Fuse search options cannot switch tokenMatch for one call. Querying each token separately
+    // provides a deterministic broad fallback while Fuse still owns typo scoring for every token.
+    for (const token of queryTokens) {
+      for (const result of this.index.search(token, { limit: candidateLimit })) {
+        collect(result, { token });
+      }
     }
 
     const allowedKinds = new Set(kinds);
-    return found
-      .filter((result) => allowedKinds.has(result.item.kind))
-      .map((result) => {
+    return [...candidates.values()]
+      .filter(({ result }) => allowedKinds.has(result.item.kind))
+      .map(({ result, bestScore, fullQuery, matchedTokens }) => {
         const exact = result.item.searchText.includes(normalizedQuery);
-        const baseScore = 1 - (result.score ?? 1);
+        const coverage = queryTokens.length > 0 ? matchedTokens.size / queryTokens.length : 0;
         const kindBoost = result.item.kind === 'source' ? 0.02 : 0;
         return {
           ...result.item,
-          score: Math.min(1, baseScore + (exact ? 0.22 : 0) + kindBoost),
+          score: Math.min(
+            1,
+            bestScore + coverage * 0.28 + (fullQuery ? 0.08 : 0) + (exact ? 0.22 : 0) + kindBoost,
+          ),
           matches: result.matches ?? [],
+          matchedTokenCount: matchedTokens.size,
         };
       })
-      .sort((left, right) => right.score - left.score)
+      .sort(
+        (left, right) =>
+          right.matchedTokenCount - left.matchedTokenCount ||
+          right.score - left.score ||
+          left.id.localeCompare(right.id),
+      )
       .slice(0, limit);
   }
 
