@@ -2,11 +2,13 @@
 import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildPhosphorIcons } from './lib/icons-builder.mjs';
 import { buildStyles } from './lib/styles-builder.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dist = path.join(root, 'dist');
 await buildStyles(root);
+await buildPhosphorIcons(root);
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
 for (const item of ['index.html', 'styles.css', 'manifest.webmanifest', 'service-worker.js', 'assets', 'src', 'packs', 'vendor']) {
