@@ -20,7 +20,7 @@ function updateNoteRelatedPreview() {
   for (const entity of entities) dom.noteRelatedPreview.append(create('span', { className: 'pill', text: entity.name }));
 }
 
-function openNoteDialog(note = null, targetClaimId = null) {
+function renderNoteDialog(note = null, targetClaimId = null) {
   const editing = Boolean(note);
   dom.noteDialogTitle.textContent = editing ? 'Редактировать заметку' : 'Новая заметка';
   dom.noteId.value = note?.id ?? '';
@@ -31,13 +31,14 @@ function openNoteDialog(note = null, targetClaimId = null) {
   dom.deleteNoteButton.classList.toggle('hidden', !editing);
   renderNoteTarget(dom.noteTargetClaim.value);
   updateNoteRelatedPreview();
-  if (dom.documentDialog.open) dom.documentDialog.close();
-  dom.noteDialog.showModal();
+  showRoutedDialog(dom.noteDialog);
+  return true;
 }
 
-function openNoteById(id) {
-  const note = state.notes.find((item) => item.id === id);
-  if (note) openNoteDialog(note);
+function renderNoteRoute(route) {
+  if (route.resourceId === 'new') return renderNoteDialog(null, route.claimId);
+  const note = state.notes.find((item) => item.id === route.resourceId);
+  return note ? renderNoteDialog(note) : false;
 }
 
 async function saveCurrentNote(event) {
@@ -57,8 +58,8 @@ async function saveCurrentNote(event) {
     updatedAt: now,
   };
   await putOne('notes', note);
-  dom.noteDialog.close();
   await refreshState();
+  closeResourceChain();
   toast('Заметка сохранена и добавлена в локальный поиск.');
 }
 
@@ -73,17 +74,25 @@ async function renderNotes() {
   }
   for (const note of state.notes) {
     const card = create('article', { className: 'note-card' });
+    const createdAt = new Date(note.createdAt ?? note.updatedAt).toLocaleString('ru-RU');
+    const updated = note.updatedAt && note.createdAt && note.updatedAt !== note.createdAt
+      ? ` · изменено ${new Date(note.updatedAt).toLocaleString('ru-RU')}`
+      : '';
     card.append(
       create('span', { className: 'pill accent', text: relationLabel(note.relation) }),
       create('h2', { text: note.title }),
       create('p', { text: note.body.length > 420 ? `${note.body.slice(0, 420)}…` : note.body }),
-      create('footer', { text: `${new Date(note.updatedAt).toLocaleString('ru-RU')} · ${note.relatedEntityIds?.length ?? 0} связей` }),
+      create('footer', { text: `создано ${createdAt}${updated} · ${note.relatedEntityIds?.length ?? 0} связей` }),
     );
     card.tabIndex = 0;
     card.setAttribute('role', 'button');
-    card.addEventListener('click', () => openNoteDialog(note));
+    const open = () => navigateResource('note', note.id);
+    card.addEventListener('click', open);
     card.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') openNoteDialog(note);
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        open();
+      }
     });
     dom.notesGrid.append(card);
   }
