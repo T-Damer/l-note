@@ -29,6 +29,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cp .github/workflows/bootstrap.yml /tmp/bootstrap.yml
           cp bootstrap/fix-search.patch /tmp/fix-search.patch
           cp bootstrap/fix-pwa.patch /tmp/fix-pwa.patch
           cat bootstrap/stream-* | base64 --decode > /tmp/l-note.tar.gz
@@ -37,6 +38,9 @@ jobs:
           tar -xzf /tmp/l-note.tar.gz -C .
           git apply /tmp/fix-search.patch
           git apply /tmp/fix-pwa.patch
+          rm -rf .github/workflows
+          mkdir -p .github/workflows
+          cp /tmp/bootstrap.yml .github/workflows/bootstrap.yml
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
