@@ -16,7 +16,7 @@ function syncLibraryView() {
   dom.knowledgeGraphView?.classList.toggle('hidden', !graphActive);
   if (dom.libraryViewToggle) {
     dom.libraryViewToggle.replaceChildren(
-      Icon({ name: graphActive ? 'list-bullets' : 'share-network', className: 'icon' }),
+      Icon({ name: graphActive ? 'list' : 'graph', className: 'icon' }),
       document.createTextNode(graphActive ? 'Список' : 'Граф'),
     );
     dom.libraryViewToggle.setAttribute('aria-pressed', String(graphActive));
