@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "manifest": {
+    "id": "l-note-foundations",
+    "version": "1.0.0",
+    "title": "Основы локальной базы знаний",
+    "description": "Пакеты знаний, fuzzy-поиск, сущности, утверждения, доказательства и retrieval-first ИИ.",
+    "language": "ru",
+    "license": "CC-BY-4.0",
+    "author": "L-Note project",
+    "builtAt": "2026-07-30T11:30:00Z",
+    "tags": ["архитектура", "поиск", "ИИ"],
+    "capabilities": ["search", "documents", "entities", "claims", "relations"],
+    "metadata": { "demo": true }
+  },
+  "documents": [{
+    "id": "local-knowledge-architecture",
+    "title": "Архитектура локальной базы знаний",
+    "sourceType": "authored-reference",
+    "version": { "id": "local-knowledge-architecture-v1", "label": "1.0" },
+    "metadata": {},
+    "sections": [
+      {
+        "id": "knowledge-packs",
+        "title": "Пакеты знаний",
+        "anchor": "knowledge-packs",
+        "orderIndex": 0,
+        "chunks": [
+          {
+            "id": "pack-unit",
+            "orderIndex": 0,
+            "anchor": "knowledge-packs:pack-unit",
+            "text": "Пакет знаний — это независимо устанавливаемая версия документов, сущностей, утверждений, связей и поисковых данных. Пользователь скачивает только нужные темы, а приложение проверяет версию и контрольную сумму до установки.",
+            "entityIds": ["knowledge-pack", "checksum"],
+            "metadata": {}
+          },
+          {
+            "id": "pack-user-build",
+            "orderIndex": 1,
+            "anchor": "knowledge-packs:user-build",
+            "text": "Официальный и пользовательский пакет используют один формат. Подготовка может выполняться на компьютере или сервере, а мобильное устройство получает уже собранный read-only пакет.",
+            "entityIds": ["knowledge-pack", "pack-compiler"],
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "id": "hybrid-search",
+        "title": "Поиск и исправление опечаток",
+        "anchor": "hybrid-search",
+        "orderIndex": 1,
+        "chunks": [
+          {
+            "id": "fuzzy-and-fulltext",
+            "orderIndex": 0,
+            "anchor": "hybrid-search:fuzzy-and-fulltext",
+            "text": "Полнотекстовый поиск ранжирует совпадения по словам и полям, а fuzzy-поиск находит близкие написания. Поэтому запрос «офлаин база» может найти текст про офлайн-базу, не меняя исходные документы.",
+            "entityIds": ["full-text-search", "fuzzy-search"],
+            "metadata": {}
+          },
+          {
+            "id": "aliases",
+            "orderIndex": 1,
+            "anchor": "hybrid-search:aliases",
+            "text": "Словарь алиасов связывает сокращения и варианты написания с канонической сущностью. Например, БЗ ведёт к сущности «база знаний», а RAG — к retrieval-augmented generation.",
+            "entityIds": ["entity", "rag"],
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "id": "claims-and-evidence",
+        "title": "Утверждения, связи и доказательства",
+        "anchor": "claims-and-evidence",
+        "orderIndex": 2,
+        "chunks": [
+          {
+            "id": "atomic-claims",
+            "orderIndex": 0,
+            "anchor": "claims-and-evidence:atomic-claims",
+            "text": "Структурированное утверждение хранит субъект, предикат, объект или значение, условия применимости и источник. Каждое справочное утверждение обязано ссылаться на точную цитату из конкретного фрагмента.",
+            "entityIds": ["claim", "evidence", "entity"],
+            "metadata": {}
+          },
+          {
+            "id": "personal-claims",
+            "orderIndex": 1,
+            "anchor": "claims-and-evidence:personal-claims",
+            "text": "Личная заметка не перезаписывает справочник. Она создаёт отдельное личное утверждение и может явно поддерживать, уточнять, заменять для выбранного режима или опровергать справочное утверждение.",
+            "entityIds": ["claim", "personal-note"],
+            "metadata": {}
+          },
+          {
+            "id": "graph-links",
+            "orderIndex": 2,
+            "anchor": "claims-and-evidence:graph-links",
+            "text": "Граф знаний связывает сущности и позволяет открыть обратные ссылки: где термин упомянут, где расшифрован и какие утверждения используют эту сущность.",
+            "entityIds": ["knowledge-graph", "entity"],
+            "metadata": {}
+          }
+        ]
+      },
+      {
+        "id": "retrieval-first-ai",
+        "title": "Retrieval-first ИИ",
+        "anchor": "retrieval-first-ai",
+        "orderIndex": 3,
+        "chunks": [
+          {
+            "id": "search-before-generation",
+            "orderIndex": 0,
+            "anchor": "retrieval-first-ai:search-before-generation",
+            "text": "Retrieval-first ассистент сначала ищет источники и противоречия, затем формирует ответ и отдельным проходом проверяет каждое утверждение. Неподтверждённые выводы должны удаляться или помечаться как неопределённые.",
+            "entityIds": ["rag", "local-llm", "evidence"],
+            "metadata": {}
+          },
+          {
+            "id": "llm-optional",
+            "orderIndex": 1,
+            "anchor": "retrieval-first-ai:llm-optional",
+            "text": "Локальная языковая модель не нужна для обычного поиска и чтения источников. Если модель отсутствует или ошибается, детерминированный поиск и точные ссылки продолжают работать.",
+            "entityIds": ["local-llm", "full-text-search"],
+            "metadata": {}
+          }
+        ]
+      }
+    ]
+  }],
+  "aliases": [
+    { "id": "alias-kb", "canonicalTerm": "база знаний", "alias": "БЗ", "entityId": "knowledge-pack", "weight": 1 },
+    { "id": "alias-fts", "canonicalTerm": "полнотекстовый поиск", "alias": "FTS", "entityId": "full-text-search", "weight": 1 },
+    { "id": "alias-llm", "canonicalTerm": "локальная языковая модель", "alias": "LLM", "entityId": "local-llm", "weight": 1 },
+    { "id": "alias-rag", "canonicalTerm": "retrieval-augmented generation", "alias": "RAG", "entityId": "rag", "weight": 1 }
+  ],
+  "entities": [
+    { "id": "knowledge-pack", "type": "concept", "canonicalName": "Пакет знаний", "description": "Переносимая и независимо устанавливаемая единица справочных данных.", "aliases": ["база знаний", "БЗ", "knowledge pack"], "externalIds": {}, "metadata": {} },
+    { "id": "checksum", "type": "concept", "canonicalName": "Контрольная сумма", "description": "Криптографический отпечаток файла для проверки целостности.", "aliases": ["checksum", "SHA-256"], "externalIds": {}, "metadata": {} },
+    { "id": "pack-compiler", "type": "software-component", "canonicalName": "Компилятор пакетов", "description": "Инструмент подготовки и проверки knowledge pack вне мобильного устройства.", "aliases": ["pack builder", "сборщик знаний"], "externalIds": {}, "metadata": {} },
+    { "id": "full-text-search", "type": "search-method", "canonicalName": "Полнотекстовый поиск", "description": "Поиск и ранжирование по словам и полям документа.", "aliases": ["FTS", "full-text search"], "externalIds": {}, "metadata": {} },
+    { "id": "fuzzy-search", "type": "search-method", "canonicalName": "Fuzzy-поиск", "description": "Поиск близких строк, устойчивый к опечаткам.", "aliases": ["нечёткий поиск", "поиск с опечатками"], "externalIds": {}, "metadata": {} },
+    { "id": "entity", "type": "data-model", "canonicalName": "Сущность", "description": "Каноническое понятие с алиасами и связями.", "aliases": ["entity", "концепт"], "externalIds": {}, "metadata": {} },
+    { "id": "claim", "type": "data-model", "canonicalName": "Утверждение", "description": "Атомарный факт или наблюдение с условиями и происхождением.", "aliases": ["claim", "факт"], "externalIds": {}, "metadata": {} },
+    { "id": "evidence", "type": "data-model", "canonicalName": "Доказательство", "description": "Точная цитата и адрес исходного фрагмента.", "aliases": ["evidence", "источник"], "externalIds": {}, "metadata": {} },
+    { "id": "personal-note", "type": "content", "canonicalName": "Личная заметка", "description": "Пользовательский источник, хранящийся отдельно от справочного пакета.", "aliases": ["заметка", "личный опыт"], "externalIds": {}, "metadata": {} },
+    { "id": "knowledge-graph", "type": "data-model", "canonicalName": "Граф знаний", "description": "Сеть сущностей, утверждений и типизированных связей.", "aliases": ["knowledge graph", "KG"], "externalIds": {}, "metadata": {} },
+    { "id": "local-llm", "type": "software-component", "canonicalName": "Локальная языковая модель", "description": "Модель, выполняющая генерацию на пользовательском устройстве или локальном сервере.", "aliases": ["LLM", "локальный ИИ"], "externalIds": {}, "metadata": {} },
+    { "id": "rag", "type": "method", "canonicalName": "Retrieval-augmented generation", "description": "Генерация ответа с предварительным поиском релевантных источников.", "aliases": ["RAG", "генерация с поиском"], "externalIds": {}, "metadata": {} }
+  ],
+  "claims": [
+    {
+      "id": "claim-pack-installable", "subjectEntityId": "knowledge-pack", "predicate": "is_independently_installable", "value": true, "qualifiers": {}, "sourceKind": "reference", "authority": 0.9, "confidence": 1,
+      "evidence": [{ "documentId": "local-knowledge-architecture", "sectionId": "knowledge-packs", "chunkId": "pack-unit", "quote": "Пакет знаний — это независимо устанавливаемая версия документов, сущностей, утверждений, связей и поисковых данных.", "anchor": "knowledge-packs:pack-unit" }], "metadata": {}
+    },
+    {
+      "id": "claim-checksum-before-install", "subjectEntityId": "knowledge-pack", "predicate": "is_verified_by", "objectEntityId": "checksum", "qualifiers": { "stage": "before_install" }, "sourceKind": "reference", "authority": 0.9, "confidence": 1,
+      "evidence": [{ "documentId": "local-knowledge-architecture", "sectionId": "knowledge-packs", "chunkId": "pack-unit", "quote": "приложение проверяет версию и контрольную сумму до установки", "anchor": "knowledge-packs:pack-unit" }], "metadata": {}
+    },
+    {
+      "id": "claim-fuzzy-corrects-typos", "subjectEntityId": "fuzzy-search", "predicate": "finds", "value": "близкие написания и опечатки", "qualifiers": {}, "sourceKind": "reference", "authority": 0.9, "confidence": 1,
+      "evidence": [{ "documentId": "local-knowledge-architecture", "sectionId": "hybrid-search", "chunkId": "fuzzy-and-fulltext", "quote": "fuzzy-поиск находит близкие написания", "anchor": "hybrid-search:fuzzy-and-fulltext" }], "metadata": {}
+    },
+    {
+      "id": "claim-evidence-required", "subjectEntityId": "claim", "predicate": "requires", "objectEntityId": "evidence", "qualifiers": { "claim_kind": "reference" }, "sourceKind": "reference", "authority": 1, "confidence": 1,
+      "evidence": [{ "documentId": "local-knowledge-architecture", "sectionId": "claims-and-evidence", "chunkId": "atomic-claims", "quote": "Каждое справочное утверждение обязано ссылаться на точную цитату из конкретного фрагмента.", "anchor": "claims-and-evidence:atomic-claims" }], "metadata": {}
+    },
+    {
+      "id": "claim-notes-do-not-overwrite", "subjectEntityId": "personal-note", "predicate": "does_not_overwrite", "objectEntityId": "claim", "qualifiers": { "target": "reference_claim" }, "sourceKind": "reference", "authority": 0.9, "confidence": 1,
+      "evidence": [{ "documentId": "local-knowledge-architecture", "sectionId": "claims-and-evidence", "chunkId": "personal-claims", "quote": "Личная заметка не перезаписывает справочник.", "anchor": "claims-and-evidence:personal-claims" }], "metadata": {}
+    },
+    {
+      "id": "claim-rag-search-first", "subjectEntityId": "rag", "predicate": "performs_before_generation", "value": "поиск источников и противоречий", "qualifiers": {}, "sourceKind": "reference", "authority": 0.9, "confidence": 1,
+      "evidence": [{ "documentId": "local-knowledge-architecture", "sectionId": "retrieval-first-ai", "chunkId": "search-before-generation", "quote": "сначала ищет источники и противоречия, затем формирует ответ", "anchor": "retrieval-first-ai:search-before-generation" }], "metadata": {}
+    },
+    {
+      "id": "claim-llm-optional-for-search", "subjectEntityId": "local-llm", "predicate": "is_not_required_for", "objectEntityId": "full-text-search", "qualifiers": {}, "sourceKind": "reference", "authority": 0.9, "confidence": 1,
+      "evidence": [{ "documentId": "local-knowledge-architecture", "sectionId": "retrieval-first-ai", "chunkId": "llm-optional", "quote": "Локальная языковая модель не нужна для обычного поиска и чтения источников.", "anchor": "retrieval-first-ai:llm-optional" }], "metadata": {}
+    }
+  ],
+  "relations": [
+    { "id": "relation-pack-verified-checksum", "sourceEntityId": "knowledge-pack", "predicate": "verified_by", "targetEntityId": "checksum", "weight": 1, "evidence": [], "metadata": {} },
+    { "id": "relation-rag-uses-llm", "sourceEntityId": "rag", "predicate": "may_use", "targetEntityId": "local-llm", "weight": 0.8, "evidence": [], "metadata": {} },
+    { "id": "relation-claim-supported-evidence", "sourceEntityId": "claim", "predicate": "supported_by", "targetEntityId": "evidence", "weight": 1, "evidence": [], "metadata": {} },
+    { "id": "relation-graph-connects-entities", "sourceEntityId": "knowledge-graph", "predicate": "connects", "targetEntityId": "entity", "weight": 1, "evidence": [], "metadata": {} }
+  ],
+  "claimLinks": [
+    { "fromClaimId": "claim-rag-search-first", "relation": "supports", "toClaimId": "claim-llm-optional-for-search", "reason": "Поиск является самостоятельным этапом и остаётся доступным без генерации." },
+    { "fromClaimId": "claim-checksum-before-install", "relation": "refines", "toClaimId": "claim-pack-installable", "reason": "Независимая установка включает проверку целостности перед активацией." }
+  ]
+}
