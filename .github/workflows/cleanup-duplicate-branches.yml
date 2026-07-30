@@ -1,9 +1,6 @@
 name: Cleanup duplicate development branches
 
 on:
-  push:
-    branches:
-      - agent/universal-offline-kb
   workflow_dispatch:
 
 permissions:
