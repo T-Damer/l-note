@@ -1,23 +1,27 @@
-html:has(body.modal-open) {
+html:has(body.modal-open),
+body.modal-open {
   overflow: hidden;
   overscroll-behavior: none;
 }
 
 .sheet-dialog {
-  overflow: hidden;
+  overflow: hidden !important;
   overscroll-behavior: contain;
 }
 
 .dialog-shell {
+  display: grid;
   width: 100%;
-  max-height: inherit;
+  max-height: min(88dvh, 58rem);
   min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  margin: 0;
   overflow: hidden;
 }
 
 .dialog-header,
 .dialog-footer {
-  flex: 0 0 auto;
+  min-width: 0;
 }
 
 .dialog-back-button {
@@ -29,16 +33,17 @@ html:has(body.modal-open) {
   grid-column: 2;
 }
 
+.dialog-close-button,
 .dialog-header > [data-action='close-resource-chain'] {
   grid-column: 3;
   align-self: start;
   justify-self: end;
+  margin-left: auto;
 }
 
 .dialog-body {
   min-width: 0;
   min-height: 0;
-  flex: 1 1 auto;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -51,5 +56,10 @@ html:has(body.modal-open) {
   .sheet-dialog.narrow {
     height: calc(100dvh - env(safe-area-inset-top));
     max-height: calc(100dvh - env(safe-area-inset-top));
+  }
+
+  .dialog-shell {
+    height: 100%;
+    max-height: 100%;
   }
 }
