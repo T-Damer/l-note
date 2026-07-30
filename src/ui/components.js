@@ -117,7 +117,7 @@ export function SourceCard({
   action.className = 'source-card__action';
   action.append(
     Text({ variant: 'label', as: 'span', text: actionText }),
-    Icon({ name: 'arrow-right', className: 'source-card__action-icon' }),
+    Icon({ name: 'forward', className: 'source-card__action-icon' }),
   );
 
   node.append(
