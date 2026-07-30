@@ -43,15 +43,12 @@ async function handleAsk(event) {
   const evidence = buildEvidenceForQuestion(query);
   renderEvidence(evidence);
   const profile = selectedLocalModelProfile();
-  const ready = state.localAiReady && state.localAi.modelId === profile.modelId;
-  dom.aiStatus.textContent = ready
-    ? `${profile.label} готова. Нажмите «Ответить локальной моделью».`
-    : `Доказательства собраны без модели. Для генерации загрузите ${profile.label}.`;
+  dom.aiStatus.textContent = `${profile.label} ${profile.parameters}: источники собраны. Можно запустить локальный ответ.`;
 }
 
 async function loadOrRunLocalAi(button) {
   if (!state.localAi.available) {
-    toast('WebGPU недоступен. Доказательная сводка остаётся полностью рабочей.', 'error');
+    toast('WebGPU недоступен. Поиск по базе остаётся рабочим на странице «Поиск».', 'error');
     return;
   }
 
@@ -69,33 +66,29 @@ async function loadOrRunLocalAi(button) {
   });
 
   if (action === LOCAL_MODEL_ACTION.LOAD) {
-    button.disabled = true;
-    button.textContent = `Загрузка ${selectedProfile.label}…`;
+    beginLocalModelLoad(selectedProfile);
     try {
       const loaded = await state.localAi.load({
         modelId: selectedModelId,
-        onProgress: (progress) => {
-          dom.aiStatus.textContent = progress.text ?? `Загрузка: ${Math.round(Number(progress.progress ?? 0) * 100)}%`;
-        },
+        onProgress: reportLocalModelProgress,
       });
       state.lastModelLoad = loaded;
       state.localAiReady = true;
-      renderLocalModelDetails();
-      syncLocalAiButton();
-      dom.aiStatus.textContent = `${selectedProfile.label} готова; загрузка заняла ${formatModelDuration(loaded.loadMs)}${loaded.reused ? ' (использован текущий экземпляр)' : ''}. Можно вводить вопрос позже.`;
-      toast(`${selectedProfile.label} готова. Вопрос для скачивания модели не требуется.`);
+      finishLocalModelLoad();
+      dom.aiStatus.textContent = `${selectedProfile.label} ${selectedProfile.parameters} включена. Загрузка заняла ${formatModelDuration(loaded.loadMs)}${loaded.reused ? '; использован браузерный кэш' : ''}.`;
+      toast(`${selectedProfile.label} включена. Теперь доступна форма вопроса.`);
     } catch (error) {
       state.localAiReady = false;
+      rejectLocalModelLoad(error);
       toast(error instanceof Error ? error.message : String(error), 'error');
     } finally {
-      button.disabled = false;
-      syncLocalAiButton();
+      renderModelPageState();
     }
     return;
   }
 
   if (action === LOCAL_MODEL_ACTION.NEEDS_QUESTION) {
-    toast('Модель уже загружена. Введите вопрос, чтобы собрать источники и получить ответ.', 'error');
+    toast('Введите вопрос, чтобы собрать источники и получить ответ.', 'error');
     return;
   }
 
@@ -104,7 +97,10 @@ async function loadOrRunLocalAi(button) {
   }
 
   button.disabled = true;
-  button.textContent = 'Генерация и проверка ссылок…';
+  button.replaceChildren(
+    Icon({ name: 'spinner-gap', className: 'icon model-spinner' }),
+    document.createTextNode('Генерация и проверка ссылок…'),
+  );
   try {
     const answer = await state.localAi.answer(state.currentEvidence.query, state.currentEvidence);
     const profile = localModelProfile(answer.modelId);
@@ -115,7 +111,7 @@ async function loadOrRunLocalAi(button) {
     const metrics = create('div', { className: 'storage-summary' });
     metrics.append(
       create('span', { text: `Ответ: ${formatModelDuration(answer.durationMs)}` }),
-      create('span', { text: formatModelSpeed(answer.tokensPerSecond) }),
+      create('span', { text: formatGenerationSpeed(answer.tokensPerSecond) }),
       create('span', { text: answer.completionTokens ? `${answer.completionTokens} токенов` : 'Токены не сообщены' }),
       create('span', { text: answer.grounded ? 'Ссылки прошли проверку' : 'Ссылки не подтверждены' }),
     );
@@ -140,7 +136,7 @@ async function loadOrRunLocalAi(button) {
     });
     state.localAiRuns = state.localAiRuns.slice(0, 6);
     renderModelRunHistory();
-    dom.aiStatus.textContent = `${profile?.label ?? answer.modelId}: ответ за ${formatModelDuration(answer.durationMs)}, ${formatModelSpeed(answer.tokensPerSecond)}.`;
+    dom.aiStatus.textContent = `${profile?.label ?? answer.modelId}: ответ за ${formatModelDuration(answer.durationMs)}, ${formatGenerationSpeed(answer.tokensPerSecond)}.`;
   } catch (error) {
     toast(error instanceof Error ? error.message : String(error), 'error');
   } finally {
