@@ -15,7 +15,9 @@ test('routed dialogs expose exactly one user-scrollable container', async () => 
   const source = await readFile(path.join(root, 'styles', '_dialog-scroll.scss'), 'utf8');
 
   assert.match(rule(source, '.sheet-dialog'), /overflow:\s*hidden/u);
+  assert.match(rule(source, '.sheet-dialog'), /overflow:\s*clip/u);
   assert.match(rule(source, '.dialog-shell'), /overflow:\s*hidden/u);
+  assert.match(source, /html:has\(body\.modal-open\)[\s\S]*overflow:\s*hidden/u);
 
   const bodyRule = rule(source, '.dialog-body');
   assert.match(bodyRule, /flex:\s*1\s+1\s+auto/u);
@@ -23,6 +25,14 @@ test('routed dialogs expose exactly one user-scrollable container', async () => 
   assert.match(bodyRule, /overflow-x:\s*hidden/u);
   assert.match(bodyRule, /overflow-y:\s*auto/u);
   assert.doesNotMatch(bodyRule, /overflow:\s*auto/u);
+});
+
+test('modal close controls stay in the right header column', async () => {
+  const source = await readFile(path.join(root, 'styles', '_dialog-scroll.scss'), 'utf8');
+  const closeRule = rule(source, ".dialog-header > [data-action='close-resource-chain']");
+  assert.match(closeRule, /grid-column:\s*3/u);
+  assert.match(closeRule, /justify-self:\s*end/u);
+  assert.match(rule(source, '.dialog-heading'), /grid-column:\s*2/u);
 });
 
 test('mobile routed dialogs occupy the available viewport without delegating scroll to dialog', async () => {
