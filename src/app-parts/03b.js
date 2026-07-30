@@ -3,9 +3,9 @@
   }
   const documentRecord = state.knowledge.documents.get(claim.source?.documentId);
   dom.noteTargetSummary.append(
-    create('strong', { text: 'Связанное утверждение' }),
-    create('div', { text: claim.text }),
-    create('small', { text: `${documentRecord?.title ?? claim.source?.documentId} — ${claim.source?.sectionId}` }),
+    Text({ variant: 'label', text: 'Связанное утверждение' }),
+    Text({ variant: 'body', as: 'div', text: claim.text }),
+    Text({ variant: 'caption', text: `${documentRecord?.title ?? claim.source?.documentId} — ${claim.source?.sectionId}` }),
   );
 }
 
@@ -16,7 +16,7 @@ function updateNoteRelatedPreview() {
     dom.noteRelatedPreview.textContent = 'Автоматические связи с понятиями появятся, когда в заметке встретятся термины из установленных пакетов.';
     return;
   }
-  dom.noteRelatedPreview.append(create('strong', { text: 'Будут связаны понятия: ' }));
+  dom.noteRelatedPreview.append(Text({ variant: 'label', text: 'Будут связаны понятия: ' }));
   for (const entity of entities) dom.noteRelatedPreview.append(create('span', { className: 'pill', text: entity.name }));
 }
 
@@ -67,33 +67,30 @@ async function renderNotes() {
   dom.notesGrid.replaceChildren();
   if (!state.notes.length) {
     dom.notesGrid.append(create('section', { className: 'empty-state' }, [
-      create('h2', { text: 'Заметок пока нет' }),
-      create('p', { text: 'Добавьте наблюдение самостоятельно или откройте утверждение в документе и свяжите заметку с ним.' }),
+      Text({ variant: 'title', text: 'Заметок пока нет' }),
+      Text({ variant: 'muted', text: 'Добавьте наблюдение самостоятельно или откройте утверждение в документе и свяжите заметку с ним.' }),
     ]));
     return;
   }
   for (const note of state.notes) {
-    const card = create('article', { className: 'note-card' });
+    const open = () => navigateResource('note', note.id);
+    const card = Card({
+      kind: 'note',
+      className: 'note-card',
+      interactive: true,
+      ariaLabel: `Открыть заметку ${note.title}`,
+      onActivate: open,
+    });
     const createdAt = new Date(note.createdAt ?? note.updatedAt).toLocaleString('ru-RU');
     const updated = note.updatedAt && note.createdAt && note.updatedAt !== note.createdAt
       ? ` · изменено ${new Date(note.updatedAt).toLocaleString('ru-RU')}`
       : '';
     card.append(
       create('span', { className: 'pill accent', text: relationLabel(note.relation) }),
-      create('h2', { text: note.title }),
-      create('p', { text: note.body.length > 420 ? `${note.body.slice(0, 420)}…` : note.body }),
-      create('footer', { text: `создано ${createdAt}${updated} · ${note.relatedEntityIds?.length ?? 0} связей` }),
+      Text({ variant: 'title', as: 'h2', text: note.title }),
+      Text({ variant: 'muted', text: note.body.length > 420 ? `${note.body.slice(0, 420)}…` : note.body }),
+      Text({ variant: 'caption', as: 'footer', text: `создано ${createdAt}${updated} · ${note.relatedEntityIds?.length ?? 0} связей` }),
     );
-    card.tabIndex = 0;
-    card.setAttribute('role', 'button');
-    const open = () => navigateResource('note', note.id);
-    card.addEventListener('click', open);
-    card.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        open();
-      }
-    });
     dom.notesGrid.append(card);
   }
 }
@@ -110,7 +107,8 @@ function renderEvidence(evidence) {
   dom.answerOutput.replaceChildren();
   const overview = create('article', { className: 'answer-panel' });
   overview.append(
-    create('h2', { text: 'Доказательная сводка' }),
-    create('p', {
+    Text({ variant: 'title', text: 'Доказательная сводка' }),
+    Text({
+      variant: 'muted',
       text: evidence.sources.length
         ? `Найдено ${evidence.sources.length} справочных фрагментов и ${evidence.relatedNotes.length} личных заметок. Генеративная модель пока не использовалась.`
