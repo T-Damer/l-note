@@ -2,28 +2,28 @@ const WEBLLM_URL = 'https://esm.run/@mlc-ai/web-llm@0.2.84';
 
 export const LOCAL_MODEL_PROFILES = Object.freeze([
   Object.freeze({
-    id: 'qwen3-0.6b',
-    modelId: 'Qwen3-0.6B-q4f16_1-MLC',
-    label: 'Qwen3 0.6B',
-    role: 'Быстрый baseline',
-    description: 'Минимальная задержка и загрузка. Нужен для проверки, насколько далеко можно зайти с самой компактной моделью.',
-    vramRequiredMB: 1403.34,
+    id: 'gemma3-1b',
+    modelId: 'gemma3-1b-it-q4f16_1-MLC',
+    label: 'Gemma 3 1B',
+    role: 'Лёгкий baseline',
+    description: 'Самая компактная независимая архитектура в тесте. Нужна для сравнения скорости, русского ответа и дисциплины цитирования при минимальном расходе памяти.',
+    vramRequiredMB: 711.07,
   }),
   Object.freeze({
     id: 'qwen3-1.7b',
     modelId: 'Qwen3-1.7B-q4f16_1-MLC',
     label: 'Qwen3 1.7B',
-    role: 'Рекомендуемый баланс',
-    description: 'Основная тестовая модель: заметно сильнее 0.6B, но всё ещё достаточно компактна для browser-local inference.',
+    role: 'Рекомендуемая модель',
+    description: 'Основной кандидат MiniMed и L-Note: умеренный размер, хороший практический баланс и модель по умолчанию для сравнительных прогонов.',
     vramRequiredMB: 2036.66,
   }),
   Object.freeze({
-    id: 'qwen3-4b',
-    modelId: 'Qwen3-4B-q4f16_1-MLC',
-    label: 'Qwen3 4B',
-    role: 'Проверка качества',
-    description: 'Более тяжёлая модель для сравнения качества сводки, следования источникам и отказа при недостатке данных.',
-    vramRequiredMB: 3431.59,
+    id: 'phi4-mini',
+    modelId: 'Phi-4-mini-instruct-q4f16_1-MLC',
+    label: 'Phi-4 Mini',
+    role: 'Сильная альтернатива',
+    description: 'Более тяжёлый независимый кандидат для проверки качества синтеза, следования локальным источникам и корректного отказа при недостатке данных.',
+    vramRequiredMB: 3437.58,
   }),
 ]);
 
