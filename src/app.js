@@ -40,6 +40,7 @@ function renderStatus() {
     online ? 'status-pill--online' : 'status-pill--offline'
   }`;
   $('#installed-count').textContent = `${state.installed.length} пакет(ов)`;
+  $('#onboarding').toggleAttribute('hidden', state.installed.length > 0);
 }
 
 function applyRoute() {
