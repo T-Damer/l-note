@@ -6,7 +6,7 @@ The current repository is a working browser/PWA prototype. Its runtime and pack 
 
 ## Hosted demo
 
-The canonical hosted preview is deployed through GitHub Pages:
+The canonical hosted preview is published through GitHub Pages when the Pages workflow succeeds:
 
 https://t-damer.github.io/l-note/
 
@@ -21,7 +21,7 @@ While PR #3 is active, Pages is built from `agent/universal-offline-kb`. After t
 - entities, relations, exact evidence quotes, and backlinks;
 - personal notes that can support, refine, contradict, or locally supersede a reference claim;
 - deterministic evidence collection before any generation;
-- three selectable browser-local Qwen3 profiles through WebLLM, loaded only on explicit request;
+- three selectable browser-local model families through WebLLM, loaded only on explicit request;
 - load and generation timing, completion-token throughput when reported, and deterministic citation-ID validation;
 - import/export of arbitrary compatible packs and personal notes;
 - pack updates without deleting the user's personal layer;
@@ -47,15 +47,15 @@ Open `http://127.0.0.1:4173/`, go to **Packs**, and install only the domains you
 
 ## Browser-local model test matrix
 
-The **Ask** page exposes three deliberately comparable WebLLM profiles from the same Qwen3 family and the same `q4f16_1` quantization:
+The **Ask** page exposes three deliberately different model families from WebLLM. All use the `q4f16_1` runtime format so the first comparison is practical rather than tied to one vendor:
 
 | Profile | WebLLM model ID | Test role | WebLLM VRAM estimate |
 | --- | --- | --- | ---: |
-| Qwen3 0.6B | `Qwen3-0.6B-q4f16_1-MLC` | fast baseline | about 1.4 GB |
-| Qwen3 1.7B | `Qwen3-1.7B-q4f16_1-MLC` | recommended balance and default | about 2.0 GB |
-| Qwen3 4B | `Qwen3-4B-q4f16_1-MLC` | quality comparison | about 3.4 GB |
+| Gemma 3 1B | `gemma3-1b-it-q4f16_1-MLC` | lightweight independent baseline | about 0.7 GB |
+| Qwen3 1.7B | `Qwen3-1.7B-q4f16_1-MLC` | recommended MiniMed/L-Note default | about 2.0 GB |
+| Phi-4 Mini | `Phi-4-mini-instruct-q4f16_1-MLC` | heavier quality alternative | about 3.4 GB |
 
-The first load requires network access to fetch the selected model. WebLLM then keeps model assets in the browser cache. Search, evidence collection, source reading, and notes remain usable without loading a model.
+Qwen3 1.7B remains selected by default. Gemma tests the smallest useful independent architecture, while Phi-4 Mini supplies a stronger non-Qwen comparison. The first load requires network access to fetch the selected model; WebLLM then keeps model assets in the browser cache. Search, evidence collection, source reading, and notes remain usable without loading a model.
 
 For each run the UI records the model, load time, answer time, completion-token count and tokens per second when WebLLM reports usage. Generated answers receive only retrieved evidence, run with model thinking output disabled, and are checked for invented or missing `[S…]` source identifiers. These checks measure contract compliance; they do not establish that any candidate is clinically or generally reliable.
 
