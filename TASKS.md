@@ -101,7 +101,7 @@ This is the single source of future work. Completed items describe the active br
 - [x] Infer common package categories without hard-coding medicine into the graph contract.
 - [x] Add regression coverage for a 50/50 pediatric/dentistry tooth-eruption concept.
 - [x] Add a visible downloadable demo pack containing the tooth-eruption mixed node.
-- [ ] Add browser E2E for graph/list switching and node navigation.
+- [x] Add browser E2E for graph/list switching, mixed-gradient rendering, routed node navigation and package installation.
 
 ## Phase 6 — notes and personal knowledge
 
