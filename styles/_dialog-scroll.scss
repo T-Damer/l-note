@@ -1,9 +1,17 @@
+html:has(body.modal-open) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 .sheet-dialog {
   overflow: hidden;
+  overflow: clip;
   overscroll-behavior: contain;
 }
 
 .dialog-shell {
+  width: 100%;
+  max-height: inherit;
   min-height: 0;
   overflow: hidden;
 }
@@ -13,7 +21,23 @@
   flex: 0 0 auto;
 }
 
+.dialog-back-button {
+  grid-column: 1;
+  justify-self: start;
+}
+
+.dialog-heading {
+  grid-column: 2;
+}
+
+.dialog-header > [data-action='close-resource-chain'] {
+  grid-column: 3;
+  align-self: start;
+  justify-self: end;
+}
+
 .dialog-body {
+  min-width: 0;
   min-height: 0;
   flex: 1 1 auto;
   overflow-x: hidden;
