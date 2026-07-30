@@ -1,0 +1,19 @@
+{
+  "name": "L-Note — локальная база знаний",
+  "short_name": "L-Note",
+  "description": "Офлайн-паки знаний, fuzzy-поиск, связи, заметки и локальный ИИ.",
+  "lang": "ru",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f3efe7",
+  "theme_color": "#f3efe7",
+  "icons": [
+    {
+      "src": "./icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
