@@ -13,9 +13,9 @@ The hosted web prototype currently provides:
 - optional browser-local WebLLM over retrieved evidence only;
 - versioned evidence envelopes and deterministic citation-ID validation;
 - SCSS source partials and deterministic static-PWA builds;
-- a first shared UI layer with `Text`, centralized Phosphor icons and one unknown-category placeholder.
+- shared `Text`, Icon, Card and Button primitives plus centralized routed-dialog close binding.
 
-The active shell now composes its search, storage, domain planner and local-model behavior through shared ports. Transitional legacy functions remain in the concatenated prototype files until the page/component split removes them, but they are no longer the active runtime path.
+The active shell composes its search, storage, domain planner and local-model behavior through shared ports. Transitional legacy functions remain in the concatenated prototype files until the page/component split removes them, but they are no longer the active runtime path.
 
 ## Product and MiniMed boundary
 
@@ -146,13 +146,14 @@ All authored styles live under `styles/`. `styles/main.scss` defines partial ord
 The framework-free shell now has reusable primitives:
 
 ```text
-src/ui/text.js + .d.ts    predefined typography variants without raw HTML
-src/ui/icons.js + .d.ts   centralized Phosphor names, category mapping and placeholder
+src/ui/text.js + .d.ts         predefined typography variants without raw HTML
+src/ui/icons.js + .d.ts        centralized Phosphor names, category mapping and placeholder
+src/ui/components.js + .d.ts   Button, Card and routed-dialog close binding
 ```
 
 `@phosphor-icons/web` is pinned and copied into `vendor/phosphor` during local and static builds. The font, CSS and UI modules are part of the offline shell; the application does not depend on an icon CDN.
 
-This is a foundation, not the completed component migration. Shared cards, buttons, fields and one routed-dialog component still need to replace repeated page code.
+`Card` now owns keyboard activation for search results, packages and notes. `Button` is used by package actions. Escape and backdrop closing use the shared routed-dialog binding. The migration is not complete: fields, source cards and the three dialog renderers still need shared components, and the transitional app parts still need to become page/services modules.
 
 ## Pack preparation boundary
 
@@ -172,9 +173,9 @@ Reference packs are immutable installed inputs. Notes remain physically separate
 
 ## Next ordered work
 
-1. Remove transitional direct adapter imports while splitting the shell into page/services/components.
-2. Add browser E2E coverage for direct links, refresh, nested Back and full-chain Close.
-3. Extract shared cards, buttons, fields and a routed-dialog component around the new `Text`/Icon primitives.
+1. Add browser E2E coverage for direct links, refresh, nested Back and full-chain Close.
+2. Remove transitional direct imports while splitting the shell into page, service and component modules.
+3. Extract shared fields, source cards and one routed-dialog renderer around the current primitives.
 4. Add the internal PDF asset path and knowledge graph after the component boundary is stable.
 5. Add SQLite/FTS5 without moving MiniMed rules into the shared core.
 
