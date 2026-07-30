@@ -1,10 +1,11 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath, URL } from 'node:url';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 
 import { defineConfig } from 'vite';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
+const sourceDirectory = join(root, 'src');
 const repositoryName = process.env.GITHUB_REPOSITORY?.split('/').at(-1) ?? 'l-note';
 const virtualId = 'virtual:l-note-app';
 const resolvedVirtualId = `\0${virtualId}`;
@@ -25,8 +26,12 @@ export default defineConfig({
   plugins: [
     {
       name: 'l-note-application-source',
-      resolveId(id) {
-        return id === virtualId ? resolvedVirtualId : null;
+      resolveId(id, importer) {
+        if (id === virtualId) return resolvedVirtualId;
+        if (importer === resolvedVirtualId && id.startsWith('.')) {
+          return resolve(sourceDirectory, id);
+        }
+        return null;
       },
       load(id) {
         return id === resolvedVirtualId ? loadApplicationSource() : null;
