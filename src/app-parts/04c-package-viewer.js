@@ -6,13 +6,13 @@ function renderPackageDialog(packId) {
 
   const title = pack?.title ?? entry.title;
   const description = pack?.description ?? entry.description ?? '';
-  dom.documentDialogHeading.replaceChildren(
+  dom.documentDialogView.replaceHeading([
     create('p', { className: 'eyebrow', text: installed ? (installed.enabled ? 'Установленный пакет' : 'Отключённый пакет') : 'Доступен для загрузки' }),
     create('h2', { text: title }),
     create('p', { text: `${pack?.version ?? entry.version ?? '—'} · ${pack?.language ?? entry.language ?? 'ru'}` }),
-  );
-  dom.documentDialogBody.replaceChildren();
-  if (description) dom.documentDialogBody.append(create('p', { className: 'document-summary', text: description }));
+  ]);
+  dom.documentDialogView.replaceBody();
+  if (description) dom.documentDialogView.appendBody(create('p', { className: 'document-summary', text: description }));
 
   const stats = entry?.stats ?? {};
   const summary = create('div', { className: 'storage-summary' });
@@ -21,14 +21,14 @@ function renderPackageDialog(packId) {
     create('span', { text: `${pack?.entities?.length ?? stats.entities ?? 0} понятий` }),
     create('span', { text: `${pack?.claims?.length ?? stats.claims ?? 0} утверждений` }),
   );
-  dom.documentDialogBody.append(summary);
+  dom.documentDialogView.appendBody(summary);
 
   if (!installed) {
     const download = create('button', { className: 'primary-button', type: 'button', text: 'Скачать пакет' });
     download.disabled = !entry?.url;
     download.addEventListener('click', () => downloadAndInstall(entry, download));
-    dom.documentDialogBody.append(download);
-    showRoutedDialog(dom.documentDialog);
+    dom.documentDialogView.appendBody(download);
+    dom.documentDialogView.show();
     return true;
   }
 
@@ -38,11 +38,11 @@ function renderPackageDialog(packId) {
       await storagePort.putOne('packs', { ...installed, enabled: true });
       await refreshState();
     });
-    dom.documentDialogBody.append(enable);
+    dom.documentDialogView.appendBody(enable);
   }
 
   if (pack?.documents?.length) {
-    dom.documentDialogBody.append(create('h3', { text: 'Документы' }));
+    dom.documentDialogView.appendBody(create('h3', { text: 'Документы' }));
     const list = create('div', { className: 'backlink-list' });
     for (const documentRecord of pack.documents) {
       const button = create('button', { className: 'backlink-button', type: 'button' }, [
@@ -53,7 +53,7 @@ function renderPackageDialog(packId) {
       button.addEventListener('click', () => navigateResource('document', documentRecord.id, { sectionId: documentRecord.sections?.[0]?.id }));
       list.append(button);
     }
-    dom.documentDialogBody.append(list);
+    dom.documentDialogView.appendBody(list);
   }
 
   if (pack?.entities?.length) {
@@ -70,9 +70,9 @@ function renderPackageDialog(packId) {
       list.append(button);
     }
     accordion.append(list);
-    dom.documentDialogBody.append(accordion);
+    dom.documentDialogView.appendBody(accordion);
   }
 
-  showRoutedDialog(dom.documentDialog);
+  dom.documentDialogView.show();
   return true;
 }
