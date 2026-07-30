@@ -9,6 +9,18 @@ const write = process.argv.includes('--write');
 const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
 const errors = [];
 
+function canonicalJson(value) {
+  if (Array.isArray(value)) return value.map(canonicalJson);
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonicalJson(value[key])]),
+    );
+  }
+  return value;
+}
+
 function validateEvidence(pack, entry) {
   const documents = new Map(pack.documents.map((document) => [document.id, document]));
   const chunks = new Map();
@@ -62,8 +74,10 @@ function validateEvidence(pack, entry) {
 for (const entry of catalog.packs) {
   const packPath = join(dirname(catalogPath), entry.url.replace(/^packs\//u, ''));
   const bytes = await readFile(packPath);
-  const digest = `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
   const pack = JSON.parse(bytes.toString('utf8'));
+  const canonical = JSON.stringify(canonicalJson(pack));
+  const canonicalBytes = Buffer.from(canonical, 'utf8');
+  const digest = `sha256:${createHash('sha256').update(canonicalBytes).digest('hex')}`;
 
   if (pack.manifest.id !== entry.id) errors.push(`${entry.id}: manifest id mismatch`);
   if (pack.manifest.version !== entry.version) errors.push(`${entry.id}: manifest version mismatch`);
@@ -71,10 +85,10 @@ for (const entry of catalog.packs) {
 
   if (write) {
     entry.sha256 = digest;
-    entry.sizeBytes = bytes.byteLength;
+    entry.sizeBytes = canonicalBytes.byteLength;
   } else {
     if (entry.sha256 !== digest) errors.push(`${entry.id}: checksum mismatch`);
-    if (entry.sizeBytes !== bytes.byteLength) errors.push(`${entry.id}: size mismatch`);
+    if (entry.sizeBytes !== canonicalBytes.byteLength) errors.push(`${entry.id}: canonical size mismatch`);
   }
 }
 
