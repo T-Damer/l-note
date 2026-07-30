@@ -3,6 +3,7 @@ const REQUIRED_METHODS = Object.freeze({
   storage: Object.freeze(['getAll', 'getOne', 'putOne', 'deleteOne', 'clearStore', 'getSetting', 'setSetting', 'mode']),
   domainQueryPlanner: Object.freeze(['appliesToPack', 'expandQuery']),
   localModel: Object.freeze(['load', 'answer']),
+  evidenceVerifier: Object.freeze(['verify']),
 });
 
 function assertPort(kind, candidate) {
@@ -34,6 +35,10 @@ export function defineDomainQueryPlannerPort(candidate) {
 
 export function defineLocalModelPort(candidate) {
   return assertPort('localModel', candidate);
+}
+
+export function defineEvidenceVerifierPort(candidate) {
+  return assertPort('evidenceVerifier', candidate);
 }
 
 export function activeDomainQueryExpanders(planners, packs) {
