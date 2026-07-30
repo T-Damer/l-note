@@ -17,18 +17,28 @@ const catalog = JSON.parse(
   await readFile(new URL('../packs/catalog.json', import.meta.url), 'utf8'),
 );
 const packs = await Promise.all(
-  catalog.packs.map(async (entry) => ({
-    entry,
-    pack: JSON.parse(
-      await readFile(new URL(`../packs/${entry.url.replace('./', '')}`, import.meta.url), 'utf8'),
-    ),
-  })),
+  catalog.packs.map(async (entry) => {
+    const raw = await readFile(
+      new URL(`../packs/${entry.url.replace('./', '')}`, import.meta.url),
+    );
+    return {
+      entry,
+      sizeBytes: raw.byteLength,
+      pack: JSON.parse(raw.toString('utf8')),
+    };
+  }),
 );
 
 test('catalog exposes four independently installable MiniMed packs', () => {
   assert.equal(packs.length, 4);
   assert.equal(new Set(packs.map(({ pack }) => pack.manifest.id)).size, 4);
   assert.ok(packs.every(({ entry, pack }) => entry.id === pack.manifest.id));
+});
+
+test('catalog byte sizes match the downloadable files', () => {
+  for (const { entry, sizeBytes } of packs) {
+    assert.equal(entry.sizeBytes, sizeBytes, entry.id);
+  }
 });
 
 test('all demo packs are structurally valid', () => {
