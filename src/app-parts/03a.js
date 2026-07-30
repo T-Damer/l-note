@@ -81,14 +81,14 @@
       const toggle = create('button', { className: 'secondary-button', type: 'button', text: installed.enabled ? 'Отключить' : 'Включить' });
       toggle.addEventListener('click', async (event) => {
         event.stopPropagation();
-        await putOne('packs', { ...installed, enabled: !installed.enabled });
+        await storagePort.putOne('packs', { ...installed, enabled: !installed.enabled });
         await refreshState();
       });
       const remove = create('button', { className: 'danger-button', type: 'button', text: 'Удалить' });
       remove.addEventListener('click', async (event) => {
         event.stopPropagation();
         if (!confirm(`Удалить пакет «${installed.pack.title}»? Личные заметки останутся.`)) return;
-        await deleteOne('packs', installed.id);
+        await storagePort.deleteOne('packs', installed.id);
         await refreshState();
       });
       actions.append(toggle, remove);
