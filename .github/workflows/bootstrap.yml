@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cat bootstrap/part-* | base64 --decode > /tmp/l-note.tar.gz
+          cat bootstrap/stream-* | base64 --decode > /tmp/l-note.tar.gz
           echo "b9b6c9d7163b8bb500749fdefba27ccd77dc8411d14241c075bddf33b35e2cb0  /tmp/l-note.tar.gz" | sha256sum --check --strict
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           tar -xzf /tmp/l-note.tar.gz -C .
