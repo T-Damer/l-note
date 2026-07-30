@@ -1,0 +1,244 @@
+async function handleClick(event) {
+  const button = event.target.closest('[data-action]');
+  if (!button) return;
+  const action = button.dataset.action;
+
+  if (action === 'navigate') {
+    state.view = button.dataset.view;
+    renderApp();
+    return;
+  }
+  if (action === 'suggestion') {
+    state.query = button.dataset.query ?? '';
+    executeSearch();
+    renderApp();
+    return;
+  }
+  if (action === 'open-result') {
+    openResult(button.dataset.resultId);
+    return;
+  }
+  if (action === 'open-entity') {
+    const reference = decodeReference(button.dataset.ref);
+    if (reference) openEntity(reference);
+    return;
+  }
+  if (action === 'open-claim') {
+    const reference = decodeReference(button.dataset.ref);
+    if (reference) openClaim(reference);
+    return;
+  }
+  if (action === 'close-dialog') {
+    closeDialog();
+    return;
+  }
+  if (action === 'install-pack') {
+    const entry = state.catalog?.packs.find((candidate) => candidate.id === button.dataset.packId);
+    if (!entry) return;
+    setBusy(button, true, 'Загружаю…');
+    try {
+      await installCatalogEntry(entry);
+      renderApp();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : String(error));
+      setBusy(button, false);
+    }
+    return;
+  }
+  if (action === 'uninstall-pack') {
+    const packId = button.dataset.packId;
+    const pack = installedPack(packId);
+    if (!pack || !confirm(`Удалить пакет «${pack.manifest.title}» с этого устройства?`)) return;
+    await state.storage.deletePack(packId);
+    state.packs = state.packs.filter((item) => item.manifest.id !== packId);
+    state.engine.setPacks(state.packs);
+    executeSearch();
+    renderApp();
+    showToast('Пакет удалён. Личные заметки сохранены.');
+    return;
+  }
+  if (action === 'delete-note') {
+    const noteId = button.dataset.noteId;
+    const note = state.notes.find((item) => item.id === noteId);
+    if (!note || !confirm(`Удалить заметку «${note.title}»?`)) return;
+    await state.storage.deleteNote(noteId);
+    state.notes = state.notes.filter((item) => item.id !== noteId);
+    state.engine.setNotes(state.notes);
+    executeSearch();
+    renderApp();
+    return;
+  }
+  if (action === 'bundle-result') {
+    const result = state.results.find((candidate) => candidate.id === button.dataset.resultId);
+    if (result) {
+      state.aiQuestion = state.query || result.text;
+      state.currentBundle = state.engine.buildEvidenceBundle(state.aiQuestion);
+      state.view = 'ai';
+      closeDialog();
+      renderApp();
+    }
+    return;
+  }
+  if (action === 'build-ai-bundle') {
+    const question = document.querySelector('#ai-question')?.value.trim();
+    if (!question) return;
+    state.aiQuestion = question;
+    state.currentBundle = state.engine.buildEvidenceBundle(question);
+    state.aiError = '';
+    renderApp();
+    return;
+  }
+  if (action === 'copy-bundle' && state.currentBundle) {
+    await navigator.clipboard.writeText(JSON.stringify(state.currentBundle, null, 2));
+    showToast('JSON скопирован.');
+    return;
+  }
+  if (action === 'copy-answer' && state.aiAnswer) {
+    await navigator.clipboard.writeText(state.aiAnswer);
+    showToast('Ответ скопирован.');
+  }
+}
+
+async function handleSubmit(event) {
+  if (event.target.id === 'search-form') {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    state.query = String(form.get('query') ?? '').trim();
+    executeSearch();
+    renderSearchDynamic();
+    return;
+  }
+
+  if (event.target.id === 'note-form') {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    const entityLinks = form
+      .getAll('entityLinks')
+      .map(decodeReference)
+      .filter(Boolean);
+    const subject = decodeReference(form.get('claimSubject'));
+    const predicate = String(form.get('claimPredicate') ?? '').trim();
+    const target = decodeReference(form.get('claimTarget'));
+    const relation = String(form.get('claimRelation') ?? 'refines');
+    const now = new Date().toISOString();
+
+    const note = parseLocalNote({
+      id: crypto.randomUUID(),
+      title: String(form.get('title') ?? '').trim(),
+      body: String(form.get('body') ?? '').trim(),
+      tags: String(form.get('tags') ?? '')
+        .split(',')
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+      entityLinks,
+      personalClaim:
+        subject && predicate
+          ? {
+              subject,
+              predicate,
+              value: String(form.get('claimValue') ?? '').trim() || null,
+              relationTo: target ? { claim: target, relation } : null,
+            }
+          : null,
+      createdAt: now,
+      updatedAt: now,
+    });
+
+    await state.storage.putNote(note);
+    state.notes = [note, ...state.notes];
+    state.engine.setNotes(state.notes);
+    executeSearch();
+    renderApp();
+    showToast('Заметка сохранена и добавлена в поиск.');
+    return;
+  }
+
+  if (event.target.id === 'ai-form') {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    const question = String(form.get('question') ?? '').trim();
+    const baseUrlValue = String(form.get('baseUrl') ?? '').trim();
+    const model = String(form.get('model') ?? '').trim();
+    const apiKey = String(form.get('apiKey') ?? '');
+
+    state.aiQuestion = question;
+    state.aiSettings = { baseUrl: baseUrlValue, model };
+    state.currentBundle = state.engine.buildEvidenceBundle(question);
+    state.aiError = '';
+    state.aiAnswer = '';
+    state.aiDraft = '';
+    state.aiRunning = true;
+    await state.storage.setSetting('ai-settings', state.aiSettings);
+    renderApp();
+
+    try {
+      const response = await answerWithSelfCheck({
+        baseUrl: baseUrlValue,
+        model,
+        apiKey,
+        bundle: state.currentBundle,
+      });
+      state.aiDraft = response.draft;
+      state.aiAnswer = response.final;
+    } catch (error) {
+      state.aiError = error instanceof Error ? error.message : String(error);
+    } finally {
+      state.aiRunning = false;
+      renderApp();
+    }
+  }
+}
+
+function handleInput(event) {
+  if (event.target.id !== 'search-input') return;
+  state.query = event.target.value;
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    executeSearch();
+    renderSearchDynamic();
+  }, 150);
+}
+
+async function handleChange(event) {
+  if (event.target.id !== 'pack-import') return;
+  const [file] = event.target.files;
+  if (!file) return;
+  try {
+    const pack = parseKnowledgePack(JSON.parse(await file.text()));
+    await savePack(pack);
+    renderApp();
+    showToast(`Пакет «${pack.manifest.title}» импортирован локально.`);
+  } catch (error) {
+    showToast(error instanceof Error ? `Пакет отклонён: ${error.message}` : String(error));
+  }
+}
+
+function registerServiceWorker() {
+  if (!('serviceWorker' in navigator) || !import.meta.env.PROD) return;
+  navigator.serviceWorker.register(assetUrl('sw.js'), { scope: import.meta.env.BASE_URL }).catch((error) => {
+    console.warn('Service worker registration failed.', error);
+  });
+}
+
+window.addEventListener('online', () => {
+  state.online = true;
+  const badge = document.querySelector('#network-status');
+  if (badge) {
+    badge.classList.remove('offline');
+    badge.textContent = 'сеть доступна';
+  }
+});
+
+window.addEventListener('offline', () => {
+  state.online = false;
+  const badge = document.querySelector('#network-status');
+  if (badge) {
+    badge.classList.add('offline');
+    badge.textContent = 'оффлайн';
+  }
+});
+
+bootstrap().catch((error) => {
+  console.error(error);
+  root.innerHTML = `<div class="empty-state"><h2>Не удалось запустить L-Note</h2><p>${escapeHtml(error instanceof Error ? error.message : String(error))}</p></div>`;
+});
