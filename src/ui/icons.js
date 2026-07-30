@@ -8,6 +8,7 @@ const ICONS = Object.freeze({
   close: 'x',
   download: 'download-simple',
   retry: 'arrow-clockwise',
+  spinner: 'spinner-gap',
   import: 'upload-simple',
   graph: 'share-network',
   list: 'list-bullets',
@@ -30,6 +31,9 @@ const ICONS = Object.freeze({
 const LEGACY_ICON_ALIASES = Object.freeze({
   'download-simple': 'download',
   'arrow-clockwise': 'retry',
+  'spinner-gap': 'spinner',
+  'share-network': 'graph',
+  'list-bullets': 'list',
   brain: 'model',
   'arrow-right': 'forward',
 });
