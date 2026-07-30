@@ -92,6 +92,43 @@ export function Card({
   return node;
 }
 
+export function SourceCard({
+  sourceId = '',
+  title = 'Источник',
+  type = 'Справочный источник',
+  excerpt = '',
+  actionText = 'Открыть источник',
+  onOpen,
+} = {}) {
+  const node = document.createElement('button');
+  node.type = 'button';
+  node.className = 'source-card';
+  node.setAttribute('aria-label', `${actionText}: ${title}`);
+
+  const heading = document.createElement('span');
+  heading.className = 'source-card__heading';
+  heading.append(
+    Text({ variant: 'caption', as: 'span', className: 'source-card__id', text: sourceId ? `[${sourceId}]` : 'Источник' }),
+    Text({ variant: 'title', as: 'strong', className: 'source-card__title', text: title }),
+    Text({ variant: 'caption', as: 'span', className: 'source-card__type', text: type }),
+  );
+
+  const action = document.createElement('span');
+  action.className = 'source-card__action';
+  action.append(
+    Text({ variant: 'label', as: 'span', text: actionText }),
+    Icon({ name: 'arrow-right', className: 'source-card__action-icon' }),
+  );
+
+  node.append(
+    heading,
+    Text({ variant: 'muted', as: 'span', className: 'source-card__excerpt', text: excerpt }),
+    action,
+  );
+  if (typeof onOpen === 'function') node.addEventListener('click', onOpen);
+  return node;
+}
+
 export function bindRoutedDialog(dialog, onFullClose, { closeOnBackdrop = true } = {}) {
   if (!(dialog instanceof HTMLDialogElement)) throw new TypeError('bindRoutedDialog requires a dialog element.');
   if (typeof onFullClose !== 'function') throw new TypeError('bindRoutedDialog requires an onFullClose callback.');
