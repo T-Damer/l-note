@@ -22,6 +22,17 @@
     );
     const stats = entry.stats ?? {};
     const card = create('article', { className: `pack-card${installed ? ' installed' : ''}` });
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-label', `Открыть пакет ${entry.title}`);
+    const openPackage = () => navigateResource('package', entry.id);
+    card.addEventListener('click', openPackage);
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openPackage();
+      }
+    });
     const header = create('header');
     header.append(
       create('div', {}, [
@@ -53,21 +64,29 @@
     if (!installed) {
       const install = create('button', { className: 'primary-button', type: 'button', text: 'Скачать' });
       install.disabled = !entry.url;
-      install.addEventListener('click', () => downloadAndInstall(entry, install));
+      install.addEventListener('click', (event) => {
+        event.stopPropagation();
+        downloadAndInstall(entry, install);
+      });
       actions.append(install);
     } else {
       if (updateAvailable) {
         const update = create('button', { className: 'primary-button', type: 'button', text: 'Обновить' });
-        update.addEventListener('click', () => downloadAndInstall(entry, update));
+        update.addEventListener('click', (event) => {
+          event.stopPropagation();
+          downloadAndInstall(entry, update);
+        });
         actions.append(update);
       }
       const toggle = create('button', { className: 'secondary-button', type: 'button', text: installed.enabled ? 'Отключить' : 'Включить' });
-      toggle.addEventListener('click', async () => {
+      toggle.addEventListener('click', async (event) => {
+        event.stopPropagation();
         await putOne('packs', { ...installed, enabled: !installed.enabled });
         await refreshState();
       });
       const remove = create('button', { className: 'danger-button', type: 'button', text: 'Удалить' });
-      remove.addEventListener('click', async () => {
+      remove.addEventListener('click', async (event) => {
+        event.stopPropagation();
         if (!confirm(`Удалить пакет «${installed.pack.title}»? Личные заметки останутся.`)) return;
         await deleteOne('packs', installed.id);
         await refreshState();
