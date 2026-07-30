@@ -1,3 +1,5 @@
+import { createEvidenceEnvelope } from './core/contracts.js';
+
 const WEBLLM_URL = 'https://esm.run/@mlc-ai/web-llm@0.2.84';
 
 export const LOCAL_MODEL_PROFILES = Object.freeze([
@@ -73,7 +75,7 @@ export function collectEvidence(query, results, knowledgeState, limit = 8) {
     .filter((note) => note.relation === 'contradicts' || note.relation === 'supersedes')
     .map((note) => ({ note, claim: note.targetClaimId ? knowledgeState.claims.get(note.targetClaimId) : undefined }));
 
-  return { query, sources, relatedNotes, conflicts };
+  return createEvidenceEnvelope({ query, sources, relatedNotes, conflicts });
 }
 
 export function evidencePrompt(evidence) {
