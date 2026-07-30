@@ -34,6 +34,7 @@ export interface KnowledgeGraph {
 }
 
 export const KNOWLEDGE_GRAPH_VERSION: string;
+export function inferKnowledgeCategories(...values: unknown[]): KnowledgeGraphCategory[];
 export function buildKnowledgeGraph(input?: {
   catalog?: { packs?: unknown[] };
   packRecords?: unknown[];
