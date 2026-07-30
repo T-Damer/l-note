@@ -1,0 +1,186 @@
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: var(--paper);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+body.modal-open {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+button,
+label.file-button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a,
+label.file-button,
+[role='button'] {
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}
+
+.primary-button,
+.secondary-button,
+.ghost-button,
+.danger-button,
+.icon-button,
+.file-button {
+  min-height: 2.65rem;
+  padding: .65rem .9rem;
+  border: 1px solid transparent;
+  border-radius: .75rem;
+  font-weight: 680;
+  transition: transform .12s ease, background .12s ease, border-color .12s ease, color .12s ease;
+}
+
+.primary-button {
+  background: var(--ink);
+  color: var(--paper-strong);
+}
+
+.secondary-button,
+.file-button {
+  border-color: var(--line);
+  background: var(--paper-strong);
+}
+
+.ghost-button {
+  border-color: var(--line);
+  background: transparent;
+}
+
+.danger-button {
+  border-color: color-mix(in srgb, var(--red) 55%, var(--line));
+  background: transparent;
+  color: var(--red);
+}
+
+.icon-button {
+  width: 2.7rem;
+  padding: 0;
+  border-color: var(--line);
+  background: transparent;
+  font-size: 1.6rem;
+  font-weight: 400;
+}
+
+.primary-button:hover,
+.secondary-button:hover,
+.ghost-button:hover,
+.danger-button:hover,
+.file-button:hover {
+  transform: translateY(-1px);
+}
+
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role='button']:focus-visible,
+.file-button:focus-within {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+button:disabled,
+[role='button'][aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: .55;
+  transform: none;
+}
+
+.file-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.file-button input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: .72rem;
+  font-weight: 780;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  max-width: 100%;
+  padding: .22rem .48rem;
+  border-radius: 999px;
+  background: var(--green-soft);
+  color: var(--ink);
+  font-size: .66rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.pill.blue {
+  background: var(--blue-soft);
+}
+
+.pill.accent {
+  background: var(--accent-soft);
+}
+
+.pill.muted {
+  background: color-mix(in srgb, var(--line) 50%, transparent);
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+mark {
+  padding: 0 .08em;
+  border-radius: .2rem;
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  color: inherit;
+}
