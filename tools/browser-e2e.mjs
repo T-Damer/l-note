@@ -43,6 +43,14 @@ async function waitFor(check, message, timeoutMs = 15_000) {
   throw new Error(`${message}${lastError ? `: ${lastError.message}` : ''}`);
 }
 
+async function waitForProcessExit(child, timeoutMs = 2_000) {
+  if (child.exitCode !== null || child.signalCode !== null) return;
+  await Promise.race([
+    new Promise((resolvePromise) => child.once('exit', resolvePromise)),
+    new Promise((resolvePromise) => setTimeout(resolvePromise, timeoutMs)),
+  ]);
+}
+
 function createStaticServer() {
   const types = new Map([
     ['.css', 'text/css; charset=utf-8'],
@@ -271,6 +279,11 @@ try {
 } finally {
   client?.close();
   browser.kill('SIGTERM');
+  await waitForProcessExit(browser);
+  if (browser.exitCode === null && browser.signalCode === null) {
+    browser.kill('SIGKILL');
+    await waitForProcessExit(browser, 1_000);
+  }
   await new Promise((resolvePromise) => server.close(resolvePromise));
-  await rm(profileDir, { recursive: true, force: true });
+  await rm(profileDir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
 }
