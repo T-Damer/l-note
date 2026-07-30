@@ -38,6 +38,7 @@ test('static build contains the complete offline shell', async () => {
     'src/ui/text.js',
     'src/ui/icons.js',
     'src/ui/components.js',
+    'src/ui/routed-dialog.js',
     'src/ui/knowledge-graph.js',
   ]) {
     await access(path.join(root, 'dist', relative));
@@ -63,6 +64,7 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /SourceCard\(\{/u);
   assert.match(app, /buildKnowledgeGraph/u);
   assert.match(app, /beginLocalModelLoad/u);
+  assert.match(app, /createRoutedDialogController/u);
 
   const syntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
     cwd: root,
