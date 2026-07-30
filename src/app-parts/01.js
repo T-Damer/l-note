@@ -11,6 +11,13 @@ import {
 import { createSearchEngine, highlightRanges, normalizeText } from './search.js';
 import { BrowserLocalAi, collectEvidence } from './ai.js';
 import { expandMiniMedQuery } from './domain-plugins/minimed.js';
+import {
+  baseRouteHash,
+  nextResourceRoute,
+  normalizeBaseRoute,
+  parseHashRoute,
+  resourceRouteHash,
+} from './router.js';
 
 const state = {
   catalog: { packs: [] },
@@ -24,12 +31,15 @@ const state = {
   currentEvidence: null,
   localAi: new BrowserLocalAi(),
   localAiReady: false,
-  route: 'search',
+  route: parseHashRoute(location.hash),
+  ready: false,
+  pendingCloseBase: null,
 };
 
 const dom = {
   pages: [...document.querySelectorAll('[data-page]')],
   navButtons: [...document.querySelectorAll('[data-nav]')],
+  resourceBackButtons: [...document.querySelectorAll('[data-action="resource-back"]')],
   sidebarStatus: document.querySelector('#sidebar-status'),
   notesCount: document.querySelector('#notes-count'),
   searchForm: document.querySelector('#search-form'),
@@ -104,17 +114,157 @@ function formatBytes(bytes) {
   return `${value >= 10 || unit === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unit]}`;
 }
 
-function routeTo(route) {
-  const next = ['search', 'ask', 'library', 'notes'].includes(route) ? route : 'search';
-  state.route = next;
-  for (const page of dom.pages) page.classList.toggle('active', page.dataset.page === next);
-  for (const button of dom.navButtons) button.classList.toggle('active', button.dataset.nav === next);
-  if (location.hash !== `#/${next}`) history.replaceState(null, '', `#/${next}`);
-  window.scrollTo({ top: 0, behavior: 'auto' });
+function pageHistoryState(page) {
+  const normalized = normalizeBaseRoute(page);
+  return { lnote: true, kind: 'page', page: normalized, base: normalized, depth: 0 };
 }
 
-function currentRouteFromHash() {
-  return location.hash.replace(/^#\/?/u, '').split('/')[0] || 'search';
+function resourceHistoryState(route) {
+  return {
+    lnote: true,
+    kind: 'resource',
+    page: route.base,
+    base: route.base,
+    depth: route.depth,
+    resourceType: route.resourceType,
+    resourceId: route.resourceId,
+  };
+}
+
+function ensureInitialRouteHistory() {
+  if (history.state?.lnote) return;
+  const initial = parseHashRoute(location.hash);
+  if (initial.kind === 'resource') {
+    const base = initial.base;
+    history.replaceState(pageHistoryState(base), '', baseRouteHash(base));
+    const directRoute = {
+      ...initial,
+      depth: 1,
+      hash: resourceRouteHash(initial.resourceType, initial.resourceId, {
+        base,
+        depth: 1,
+        sectionId: initial.sectionId,
+        claimId: initial.claimId,
+      }),
+    };
+    history.pushState(resourceHistoryState(directRoute), '', directRoute.hash);
+    return;
+  }
+  history.replaceState(pageHistoryState(initial.page), '', baseRouteHash(initial.page));
+}
+
+function showBasePage(page, { scroll = false } = {}) {
+  const next = normalizeBaseRoute(page);
+  for (const item of dom.pages) item.classList.toggle('active', item.dataset.page === next);
+  for (const button of dom.navButtons) button.classList.toggle('active', button.dataset.nav === next);
+  if (scroll) window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+function closeAllDialogs() {
+  for (const dialog of [dom.documentDialog, dom.entityDialog, dom.noteDialog]) {
+    if (dialog?.open) dialog.close();
+  }
+  document.body.classList.remove('modal-open');
+}
+
+function showRoutedDialog(dialog) {
+  if (!dialog.open) dialog.showModal();
+  document.body.classList.add('modal-open');
+}
+
+function updateResourceNavigation(route) {
+  const canGoBack = route.kind === 'resource' && route.depth > 1;
+  for (const button of dom.resourceBackButtons) button.hidden = !canGoBack;
+}
+
+function renderResourceRoute(route) {
+  let opened = false;
+  switch (route.resourceType) {
+    case 'document':
+      opened = renderDocumentDialog({ documentId: route.resourceId, sectionId: route.sectionId });
+      break;
+    case 'concept':
+      opened = renderEntityDialog(route.resourceId);
+      break;
+    case 'statement':
+      opened = renderStatementDialog(route.resourceId);
+      break;
+    case 'package':
+      opened = renderPackageDialog(route.resourceId);
+      break;
+    case 'note':
+      opened = renderNoteRoute(route);
+      break;
+    default:
+      opened = false;
+  }
+  if (!opened) {
+    toast('Запрошенная карточка недоступна в активных пакетах.', 'error');
+    closeResourceChain(route.base);
+  }
+}
+
+function applyRouteFromLocation({ scroll = false } = {}) {
+  let route = parseHashRoute(location.hash);
+  if (state.pendingCloseBase && route.kind === 'page') {
+    const target = normalizeBaseRoute(state.pendingCloseBase);
+    state.pendingCloseBase = null;
+    history.pushState(pageHistoryState(target), '', baseRouteHash(target));
+    route = parseHashRoute(location.hash);
+  }
+
+  state.route = route;
+  showBasePage(route.kind === 'resource' ? route.base : route.page, { scroll: scroll && route.kind === 'page' });
+  closeAllDialogs();
+  updateResourceNavigation(route);
+  if (route.kind === 'resource' && state.ready) renderResourceRoute(route);
+}
+
+function routeTo(page, options = {}) {
+  const target = normalizeBaseRoute(page);
+  const current = parseHashRoute(location.hash);
+  if (current.kind === 'resource') {
+    closeResourceChain(target);
+    return;
+  }
+  const hash = baseRouteHash(target);
+  const replace = Boolean(options.replace);
+  if (replace || location.hash === hash) history.replaceState(pageHistoryState(target), '', hash);
+  else history.pushState(pageHistoryState(target), '', hash);
+  applyRouteFromLocation({ scroll: true });
+}
+
+function navigateResource(resourceType, resourceId, options = {}) {
+  const current = parseHashRoute(location.hash);
+  const next = nextResourceRoute(current, resourceType, resourceId, options);
+  if (location.hash === next.hash) {
+    applyRouteFromLocation();
+    return;
+  }
+  history.pushState(resourceHistoryState(next), '', next.hash);
+  applyRouteFromLocation();
+}
+
+function closeResourceChain(targetBase = null) {
+  const current = parseHashRoute(location.hash);
+  if (current.kind !== 'resource') {
+    routeTo(targetBase ?? current.page, { replace: true });
+    return;
+  }
+  state.pendingCloseBase = normalizeBaseRoute(targetBase ?? current.base);
+  const expectedBase = state.pendingCloseBase;
+  history.go(-Math.max(1, current.depth));
+  setTimeout(() => {
+    if (state.pendingCloseBase !== expectedBase) return;
+    state.pendingCloseBase = null;
+    history.replaceState(pageHistoryState(expectedBase), '', baseRouteHash(expectedBase));
+    applyRouteFromLocation();
+  }, 350);
+}
+
+function goBackInResourceChain() {
+  const current = parseHashRoute(location.hash);
+  if (current.kind === 'resource' && current.depth > 1) history.back();
 }
 
 async function sha256Hex(buffer) {
@@ -193,6 +343,8 @@ async function refreshState() {
   renderSearchEmpty();
   renderSuggestions();
   if (state.currentQuery) runSearch(state.currentQuery);
+  state.ready = true;
+  applyRouteFromLocation();
 }
 
 function renderSidebarStatus() {
@@ -201,7 +353,7 @@ function renderSidebarStatus() {
   dom.sidebarStatus.replaceChildren(
     create('strong', { text: offline ? 'Оффлайн-режим' : 'Локальное хранилище' }),
     create('span', {
-      text: `${enabled.length} пак. · ${state.records.length} записей · ${storageMode() === 'persistent' ? 'IndexedDB' : 'память вкладки'}`,
+      text: `${enabled.length} пак. · ${storageMode() === 'persistent' ? 'IndexedDB' : 'память вкладки'}`,
     }),
   );
 }
