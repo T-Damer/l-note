@@ -93,6 +93,37 @@ button:disabled,
   border: 0;
 }
 
+.model-lab {
+  display: grid;
+  gap: .85rem;
+  margin: 1rem 0;
+}
+
+.model-lab > p {
+  margin: 0;
+}
+
+.model-selector {
+  display: grid;
+  gap: .5rem;
+}
+
+.model-selector select {
+  width: 100%;
+}
+
+.model-storage-summary {
+  margin-bottom: 0;
+}
+
+.model-storage-summary .muted {
+  flex-basis: 100%;
+  margin: .1rem 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
 @media (max-width: 680px) {
   .sheet-dialog,
   .sheet-dialog.narrow {
