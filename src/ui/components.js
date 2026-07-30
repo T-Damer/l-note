@@ -26,6 +26,14 @@ export function cardClassName(kind = 'surface', className = '', interactive = fa
   ].filter(Boolean).join(' ');
 }
 
+export function fieldClassName(className = '') {
+  return ['ui-field', String(className ?? '').trim()].filter(Boolean).join(' ');
+}
+
+export function switchClassName(className = '') {
+  return ['ui-switch', String(className ?? '').trim()].filter(Boolean).join(' ');
+}
+
 function appendChildren(node, children) {
   for (const child of Array.isArray(children) ? children : [children]) {
     if (child === undefined || child === null) continue;
@@ -90,6 +98,58 @@ export function Card({
     }
   }
   return node;
+}
+
+export function Field({
+  label = '',
+  control,
+  hint = '',
+  className = '',
+  labelClassName = '',
+} = {}) {
+  if (!(control instanceof HTMLElement)) throw new TypeError('Field requires a control element.');
+  const wrapper = document.createElement('label');
+  wrapper.className = fieldClassName(className);
+  const labelNode = Text({ variant: 'label', as: 'span', className: ['ui-field__label', labelClassName].filter(Boolean).join(' '), text: label });
+  wrapper.append(labelNode, control);
+  if (hint) wrapper.append(Text({ variant: 'caption', as: 'span', className: 'ui-field__hint', text: hint }));
+  return wrapper;
+}
+
+export function Switch({
+  id = '',
+  name = '',
+  label = '',
+  description = '',
+  checked = false,
+  disabled = false,
+  className = '',
+  onChange,
+} = {}) {
+  const wrapper = document.createElement('label');
+  wrapper.className = switchClassName(className);
+
+  const input = document.createElement('input');
+  input.type = 'checkbox';
+  if (id) input.id = id;
+  if (name) input.name = name;
+  input.checked = Boolean(checked);
+  input.disabled = Boolean(disabled);
+  input.className = 'ui-switch__input';
+
+  const visual = document.createElement('span');
+  visual.className = 'ui-switch__track';
+  visual.setAttribute('aria-hidden', 'true');
+  visual.append(document.createElement('span'));
+
+  const copy = document.createElement('span');
+  copy.className = 'ui-switch__copy';
+  copy.append(Text({ variant: 'label', as: 'span', text: label }));
+  if (description) copy.append(Text({ variant: 'caption', as: 'span', text: description }));
+
+  wrapper.append(input, visual, copy);
+  if (typeof onChange === 'function') input.addEventListener('change', onChange);
+  return { element: wrapper, input };
 }
 
 export function SourceCard({
