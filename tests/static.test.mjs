@@ -28,12 +28,17 @@ test('static build contains the complete offline shell', async () => {
     'src/core/contracts.js',
     'src/core/ports.js',
     'src/core/runtime.js',
+    'src/core/application-adapter.js',
+    'src/core/knowledge-graph.js',
     'src/adapters/runtime-adapters.js',
     'src/domain-plugins/minimed.js',
+    'src/integrations/minimed-adapter.js',
     'src/services/model-action.js',
+    'src/services/model-progress.js',
     'src/ui/text.js',
     'src/ui/icons.js',
     'src/ui/components.js',
+    'src/ui/knowledge-graph.js',
   ]) {
     await access(path.join(root, 'dist', relative));
   }
@@ -42,15 +47,22 @@ test('static build contains the complete offline shell', async () => {
   assert.match(css, /--palette-dark-paper/u);
   assert.match(css, /vendor\/phosphor\/style\.css/u);
   assert.match(css, /html:has\(body\.modal-open\)/u);
-  assert.match(css, /grid-column:\s*3/u);
+  assert.match(css, /\.dialog-close-button/u);
   assert.match(css, /\.source-card__action/u);
+  assert.match(css, /\.model-progress-track/u);
+  assert.match(css, /\.knowledge-graph-node/u);
 
   const html = await readFile(path.join(root, 'dist', 'index.html'), 'utf8');
   assert.match(html, /ph-magnifying-glass/u);
   assert.match(html, /ph-note-pencil/u);
+  assert.match(html, /data-action="toggle-library-view"/u);
+  assert.match(html, /id="model-workspace" class="model-workspace hidden"/u);
+  assert.match(html, /dialog-close-button/u);
 
   const app = await readFile(path.join(root, 'dist', 'src', 'app.js'), 'utf8');
   assert.match(app, /SourceCard\(\{/u);
+  assert.match(app, /buildKnowledgeGraph/u);
+  assert.match(app, /beginLocalModelLoad/u);
 
   const syntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
     cwd: root,
