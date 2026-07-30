@@ -2,7 +2,7 @@
 
 This is the single source of future work. Completed items describe the active branch; unfinished browser/device verification remains explicit.
 
-**Current focus:** split the transitional shell into pages/services and finish the reusable routed-dialog layer. Next are local PDF assets and SQLite/FTS5 behind the same adapter contracts. Android/iOS remain deferred.
+**Current focus:** replace the remaining resource renderers with the shared routed-dialog layer and split the transitional shell into pages/services. Next are local PDF assets and SQLite/FTS5 behind the same adapter contracts. Android/iOS remain deferred.
 
 ## Phase 0 — universal core and MiniMed boundary
 
@@ -52,8 +52,9 @@ This is the single source of future work. Completed items describe the active br
 - [x] Pin and vendor Phosphor locally with centralized category mapping and a placeholder icon.
 - [x] Use shared cards in search, packages and notes.
 - [x] Add a reusable SourceCard with separate ID, title, source type, excerpt and open action.
+- [x] Add a generic routed-dialog controller and use it for the existing dialog lifecycle/navigation shell.
 - [ ] Add shared field/switch primitives.
-- [ ] Replace the three resource renderers with one reusable routed-dialog renderer.
+- [ ] Replace the three resource-specific body renderers with one reusable routed-dialog renderer.
 - [ ] Split remaining large app fragments into page, component, helper and service modules.
 - [ ] Remove remaining legacy glyphs and use Phosphor everywhere.
 
@@ -80,8 +81,10 @@ This is the single source of future work. Completed items describe the active br
 - [x] Allow the selected model to download with an empty question field and no collected evidence.
 - [x] Require a question/evidence only when a loaded model is asked to generate an answer.
 - [x] Keep the question workspace hidden until the selected model is loaded.
-- [x] Display estimated percent, loaded/total/remaining size, speed and retry state from WebLLM progress events.
-- [ ] Add explicit cancellation and a structured download-error view.
+- [x] Keep selected-model UI compact: name, parameter count, approximate size and on/off indicator.
+- [x] Display estimated percent, loaded/total/remaining size and speed from WebLLM progress events.
+- [x] Show a structured error state with an explicit retry action.
+- [ ] Add explicit cancellation.
 - [ ] Support a persisted priority queue with at most four concurrent model/document downloads.
 - [ ] Resume interrupted downloads where the browser/runtime API supports it.
 - [ ] Improve verification from citation-ID validity to statement-to-evidence support.
@@ -97,7 +100,7 @@ This is the single source of future work. Completed items describe the active br
 - [x] Use centralized category colors: pediatrics pink, dentistry blue and proportional mixed-node gradients.
 - [x] Infer common package categories without hard-coding medicine into the graph contract.
 - [x] Add regression coverage for a 50/50 pediatric/dentistry tooth-eruption concept.
-- [ ] Add a visible downloadable demo pack containing the tooth-eruption mixed node.
+- [x] Add a visible downloadable demo pack containing the tooth-eruption mixed node.
 - [ ] Add browser E2E for graph/list switching and node navigation.
 
 ## Phase 6 — notes and personal knowledge
