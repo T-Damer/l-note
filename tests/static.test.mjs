@@ -12,6 +12,7 @@ test('static build contains the complete offline shell', async () => {
   assert.equal(result.status, 0, result.stderr);
   for (const relative of [
     'index.html',
+    'styles.css',
     'service-worker.js',
     'vendor/minisearch.js',
     'packs/catalog.json',
@@ -19,10 +20,12 @@ test('static build contains the complete offline shell', async () => {
     'src/router.js',
     'src/relations.js',
     'src/domain-plugins/minimed.js',
-    'src/routed-dialog.css',
   ]) {
     await access(path.join(root, 'dist', relative));
   }
+  const css = await readFile(path.join(root, 'dist', 'styles.css'), 'utf8');
+  assert.match(css, /Generated from styles\/main\.scss/u);
+  assert.match(css, /--palette-dark-paper/u);
 });
 
 test('static builder vendors the installed MiniSearch UMD file', async () => {
