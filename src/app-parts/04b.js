@@ -11,7 +11,7 @@ async function importNotesFile(file) {
     for (const input of notes) {
       if (!input || typeof input.title !== 'string' || typeof input.body !== 'string') continue;
       const now = new Date().toISOString();
-      await putOne('notes', {
+      await storagePort.putOne('notes', {
         id: typeof input.id === 'string' ? input.id : crypto.randomUUID(),
         title: input.title.slice(0, 160),
         body: input.body.slice(0, 12000),
@@ -65,7 +65,7 @@ function bindEvents() {
     const id = dom.noteId.value;
     if (!id || !confirm('Удалить эту заметку?')) return;
     closeResourceChain();
-    await deleteOne('notes', id);
+    await storagePort.deleteOne('notes', id);
     await refreshState();
   });
   dom.packFileInput.addEventListener('change', async () => {
