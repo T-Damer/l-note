@@ -53,7 +53,7 @@ This is the single source of future work. Completed items describe the active br
 - [x] Use shared cards in search, packages and notes.
 - [x] Add a reusable SourceCard with separate ID, title, source type, excerpt and open action.
 - [x] Add a generic routed-dialog controller and use it for the existing dialog lifecycle/navigation shell.
-- [ ] Add shared field/switch primitives.
+- [x] Add shared Field and Switch primitives and use them in model selection and personal-note priority.
 - [ ] Replace the three resource-specific body renderers with one reusable routed-dialog renderer.
 - [ ] Split remaining large app fragments into page, component, helper and service modules.
 - [ ] Remove remaining legacy glyphs and use Phosphor everywhere.
