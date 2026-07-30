@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "serve": "node tools/build-styles.mjs && node tools/serve.mjs",
+    "serve": "node tools/build-icons.mjs && node tools/build-styles.mjs && node tools/serve.mjs",
+    "build:icons": "node tools/build-icons.mjs",
     "build:styles": "node tools/build-styles.mjs",
     "build:pack": "node tools/build-pack.mjs",
     "build:static": "node tools/build-static.mjs",
@@ -17,6 +18,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@phosphor-icons/web": "2.1.2",
     "minisearch": "7.2.0"
   }
 }
