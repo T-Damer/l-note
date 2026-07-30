@@ -1,9 +1,10 @@
-const SHELL_CACHE = 'l-note-shell-v3';
-const RUNTIME_CACHE = 'l-note-runtime-v3';
+const SHELL_CACHE = 'l-note-shell-v4';
+const RUNTIME_CACHE = 'l-note-runtime-v4';
 const SHELL = [
   './',
   './index.html',
   './styles.css',
+  './src/routed-dialog.css',
   './manifest.webmanifest',
   './assets/icon.svg',
   './vendor/minisearch.js',
@@ -13,6 +14,9 @@ const SHELL = [
   './src/search.js',
   './src/packs.js',
   './src/ai.js',
+  './src/router.js',
+  './src/relations.js',
+  './src/domain-plugins/minimed.js',
   './packs/catalog.json',
 ];
 
