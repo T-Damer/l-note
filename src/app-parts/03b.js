@@ -43,7 +43,7 @@ function renderNoteRoute(route) {
 
 async function saveCurrentNote(event) {
   event.preventDefault();
-  const previous = dom.noteId.value ? await getOne('notes', dom.noteId.value) : null;
+  const previous = dom.noteId.value ? await storagePort.getOne('notes', dom.noteId.value) : null;
   const now = new Date().toISOString();
   const related = detectRelatedEntities(`${dom.noteTitle.value} ${dom.noteBody.value}`);
   const note = {
@@ -57,7 +57,7 @@ async function saveCurrentNote(event) {
     createdAt: previous?.createdAt ?? now,
     updatedAt: now,
   };
-  await putOne('notes', note);
+  await storagePort.putOne('notes', note);
   await refreshState();
   closeResourceChain();
   toast('Заметка сохранена и добавлена в локальный поиск.');
