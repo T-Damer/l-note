@@ -4,6 +4,14 @@ L-Note is an offline-first web knowledge workspace built around **installable kn
 
 The current repository is a working browser/PWA prototype. Its runtime and pack format are domain-neutral; the first demonstration catalog uses several independently installable MiniMed-derived packs. The current product phase deliberately focuses on hosted web search and browser-local LLM experiments. Native Android work is deferred until the search and grounded-answer workflow is stable.
 
+## Hosted demo
+
+The canonical hosted preview is deployed through GitHub Pages:
+
+https://t-damer.github.io/l-note/
+
+While PR #3 is active, Pages is built from `agent/universal-offline-kb`. After the PR is merged, `main` becomes the only deployment line.
+
 ## What works
 
 - independent JSON knowledge packs with catalog metadata and SHA-256 verification;
