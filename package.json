@@ -1,0 +1,15 @@
+{
+  "name": "l-note",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Offline-first, domain-neutral knowledge packs with fuzzy search, linked evidence, notes and optional local AI.",
+  "scripts": {
+    "serve": "python3 -m http.server 4173",
+    "test": "node --test",
+    "pack": "node tools/build-pack.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
