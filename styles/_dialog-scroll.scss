@@ -5,7 +5,6 @@ html:has(body.modal-open) {
 
 .sheet-dialog {
   overflow: hidden;
-  overflow: clip;
   overscroll-behavior: contain;
 }
 
