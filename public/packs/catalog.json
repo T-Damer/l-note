@@ -16,8 +16,8 @@
       ],
       "featured": true,
       "url": "packs/l-note-foundations.json",
-      "sha256": "sha256:11ae9ec64028db265960aaf1ef93a88cca2f8c475a084cc6c9d1928097060440",
-      "sizeBytes": 19008
+      "sha256": "sha256:0599b7b93cd2de2969f6bf2b4a4d47097f57cab0ec30457a1f17a87e9f7c938e",
+      "sizeBytes": 14682
     },
     {
       "id": "offline-web-runtime",
@@ -33,8 +33,8 @@
       ],
       "featured": false,
       "url": "packs/offline-web-runtime.json",
-      "sha256": "sha256:3d8005596bce6c0ccfad518098c8d125db0cf32ca3cb157caeeaa5303ef6e597",
-      "sizeBytes": 16092
+      "sha256": "sha256:f0c0b7da13f9d507e5a5492e35d94d1c0ba339697bd5a00be566f5c02e22e1d4",
+      "sizeBytes": 12360
     }
   ]
 }
