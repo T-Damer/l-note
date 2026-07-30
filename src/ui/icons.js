@@ -4,6 +4,7 @@ const ICONS = Object.freeze({
   packages: 'books',
   notes: 'note-pencil',
   back: 'arrow-left',
+  forward: 'arrow-right',
   close: 'x',
   download: 'download-simple',
   import: 'upload-simple',
