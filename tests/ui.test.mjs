@@ -14,6 +14,8 @@ test('Text variants are centralized and have a safe body fallback', () => {
 test('unknown icon categories use the centralized placeholder', () => {
   assert.equal(iconName('search'), 'magnifying-glass');
   assert.equal(iconName('forward'), 'arrow-right');
+  assert.equal(iconName('graph'), 'share-network');
+  assert.equal(iconName('list'), 'list-bullets');
   assert.equal(iconNameForCategory('педиатрия'), 'baby');
   assert.equal(iconNameForCategory('стоматология'), 'tooth');
   assert.equal(iconNameForCategory('unknown-domain'), 'placeholder');
