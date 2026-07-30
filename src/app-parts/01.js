@@ -10,6 +10,7 @@ import {
 } from './packs.js';
 import { createSearchEngine, highlightRanges, normalizeText } from './search.js';
 import { BrowserLocalAi, collectEvidence } from './ai.js';
+import { expandMiniMedQuery } from './domain-plugins/minimed.js';
 
 const state = {
   catalog: { packs: [] },
@@ -177,7 +178,14 @@ async function refreshState() {
   const enabledPacks = state.packRecords.filter((record) => record.enabled).map((record) => record.pack);
   state.knowledge = buildKnowledgeState(enabledPacks, state.notes);
   state.records = flattenKnowledge(enabledPacks, state.notes);
-  state.search = createSearchEngine(state.records, [...state.knowledge.entities.values()]);
+  const queryExpanders = enabledPacks.some((pack) => pack.id.startsWith('minimed.'))
+    ? [expandMiniMedQuery]
+    : [];
+  state.search = createSearchEngine(
+    state.records,
+    [...state.knowledge.entities.values()],
+    { queryExpanders },
+  );
   dom.searchEngineStatus.textContent = `${state.search.kind}: ${state.search.count} записей`;
   dom.notesCount.textContent = state.notes.length ? String(state.notes.length) : '';
   renderSidebarStatus();
