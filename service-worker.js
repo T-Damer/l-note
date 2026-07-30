@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v7';
-const RUNTIME_CACHE = 'l-note-runtime-v7';
+const SHELL_CACHE = 'l-note-shell-v8';
+const RUNTIME_CACHE = 'l-note-runtime-v8';
 const SHELL = [
   './',
   './index.html',
@@ -24,6 +24,7 @@ const SHELL = [
   './src/domain-plugins/minimed.js',
   './src/ui/text.js',
   './src/ui/icons.js',
+  './src/ui/components.js',
   './packs/catalog.json',
 ];
 
