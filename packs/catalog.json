@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-30T12:00:00+03:00",
+  "packs": [
+    {
+      "id": "demo.minimed.bronchiolitis.ru",
+      "title": "MiniMed: острый бронхиолит",
+      "description": "Карточка по острому бронхиолиту у детей из публичного source-linked пилота MiniMed.",
+      "domain": "medicine / pediatrics",
+      "language": "ru",
+      "version": "2026.07.30-demo1",
+      "sizeBytes": 11994,
+      "tags": [
+        "педиатрия",
+        "bronchiolitis",
+        "демо"
+      ],
+      "url": "./minimed-bronchiolitis.json"
+    },
+    {
+      "id": "demo.minimed.pneumonia.ru",
+      "title": "MiniMed: пневмония у детей",
+      "description": "Карточка по внебольничной пневмонии у детей из публичного source-linked пилота MiniMed.",
+      "domain": "medicine / pediatrics",
+      "language": "ru",
+      "version": "2026.07.30-demo1",
+      "sizeBytes": 12928,
+      "tags": [
+        "педиатрия",
+        "pneumonia",
+        "демо"
+      ],
+      "url": "./minimed-pneumonia.json"
+    },
+    {
+      "id": "demo.minimed.uti.ru",
+      "title": "MiniMed: инфекция мочевых путей",
+      "description": "Карточка по инфекции мочевых путей у детей из публичного source-linked пилота MiniMed.",
+      "domain": "medicine / pediatrics",
+      "language": "ru",
+      "version": "2026.07.30-demo1",
+      "sizeBytes": 12630,
+      "tags": [
+        "педиатрия",
+        "uti",
+        "демо"
+      ],
+      "url": "./minimed-uti.json"
+    },
+    {
+      "id": "demo.minimed.measles.ru",
+      "title": "MiniMed: корь у детей",
+      "description": "Карточка по кори у детей из публичного source-linked пилота MiniMed.",
+      "domain": "medicine / pediatrics",
+      "language": "ru",
+      "version": "2026.07.30-demo1",
+      "sizeBytes": 10625,
+      "tags": [
+        "педиатрия",
+        "measles",
+        "демо"
+      ],
+      "url": "./minimed-measles.json"
+    }
+  ]
+}
