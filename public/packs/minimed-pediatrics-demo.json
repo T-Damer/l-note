@@ -1,0 +1,2060 @@
+{
+  "format": "l-note-pack",
+  "schemaVersion": 1,
+  "id": "demo.minimed.pediatrics",
+  "version": "2026.07.30-1",
+  "title": "MiniMed: педиатрический демо-пакет",
+  "description": "Семь компактных source-linked карточек из публичного пилота MiniMed, сущности, сокращения и связи для демонстрации офлайн-поиска.",
+  "language": "ru",
+  "createdAt": "2026-07-30T11:30:00Z",
+  "source": {
+    "name": "T-Damer/MiniMed public pilot",
+    "url": "https://github.com/T-Damer/MiniMed",
+    "license": "See original source metadata",
+    "contentMode": "source-linked-paraphrase"
+  },
+  "disclaimer": "Демонстрационный пакет не является самостоятельным медицинским источником и не содержит полных рекомендаций или проверенных схем дозирования. Перед решением откройте актуальный первоисточник.",
+  "tags": [
+    "демо",
+    "медицина",
+    "педиатрия",
+    "русский"
+  ],
+  "records": [
+    {
+      "id": "record.pneumonia.general",
+      "documentId": "kr.rf.714_2.pneumonia",
+      "kind": "reference",
+      "title": "Внебольничная пневмония у детей",
+      "section": "Общая информация",
+      "body": "В российской педиатрической рекомендации внебольничная пневмония рассматривается как острое инфекционное поражение легочной паренхимы, которое оценивают по дыхательному синдрому и физикальным данным вместе с инфильтративными изменениями. Редакция 714_2 утверждена в 2025 году и действует для детей.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "инфекционные болезни",
+        "общая информация"
+      ],
+      "entityIds": [
+        "condition.pediatric-pneumonia"
+      ],
+      "claims": [
+        {
+          "id": "claim.pneumonia.general",
+          "statement": "В российской педиатрической рекомендации внебольничная пневмония рассматривается как острое инфекционное поражение легочной паренхимы, которое оценивают по дыхательному синдрому и физикальным данным вместе с инфильтративными изменениями. Редакция 714_2 утверждена в 2025 году и действует для детей.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2025-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 714_2-2025",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/714_2",
+        "locator": "1.1 Определение",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2025-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.pneumonia.clinical",
+      "documentId": "kr.rf.714_2.pneumonia",
+      "kind": "reference",
+      "title": "Внебольничная пневмония у детей",
+      "section": "Клиническая картина",
+      "body": "Пневмония может сопровождаться лихорадкой, кашлем, тахипноэ, одышкой, втяжением грудной клетки, стонущим дыханием, раздуванием крыльев носа, локальными изменениями дыхания и болью в груди или животе. Отсутствие тахипноэ не исключает заболевание; стойкая температура не ниже 38 градусов более трех дней повышает подозрение.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "инфекционные болезни",
+        "клиническая картина"
+      ],
+      "entityIds": [
+        "condition.pediatric-pneumonia",
+        "measurement.respiratory-rate"
+      ],
+      "claims": [
+        {
+          "id": "claim.pneumonia.clinical",
+          "statement": "Пневмония может сопровождаться лихорадкой, кашлем, тахипноэ, одышкой, втяжением грудной клетки, стонущим дыханием, раздуванием крыльев носа, локальными изменениями дыхания и болью в груди или животе. Отсутствие тахипноэ не исключает заболевание; стойкая температура не ниже 38 градусов более трех дней повышает подозрение.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2025-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 714_2-2025",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/714_2",
+        "locator": "1.6 Клиническая картина",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2025-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.pneumonia.oxygen",
+      "documentId": "kr.rf.714_2.pneumonia",
+      "kind": "reference",
+      "title": "Внебольничная пневмония у детей",
+      "section": "Сатурация и гипоксемия",
+      "body": "Всем детям с респираторными симптомами рекомендуется оценивать сатурацию. Значения ниже 94% считаются аномальными, а менее 90% соответствуют значимой гипоксемии; интерпретация всегда проводится вместе с клинической картиной и качеством измерения.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "инфекционные болезни",
+        "сатурация и гипоксемия"
+      ],
+      "entityIds": [
+        "condition.pediatric-pneumonia",
+        "measurement.oxygen-saturation"
+      ],
+      "claims": [
+        {
+          "id": "claim.pneumonia.oxygen",
+          "statement": "Всем детям с респираторными симптомами рекомендуется оценивать сатурацию. Значения ниже 94% считаются аномальными, а менее 90% соответствуют значимой гипоксемии; интерпретация всегда проводится вместе с клинической картиной и качеством измерения.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2025-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 714_2-2025",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/714_2",
+        "locator": "1.6 Клиническая картина и признаки дыхательной недостаточности",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2025-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.pneumonia.diagnosis",
+      "documentId": "kr.rf.714_2.pneumonia",
+      "kind": "reference",
+      "title": "Внебольничная пневмония у детей",
+      "section": "Диагностика",
+      "body": "Диагностический поиск сочетает анамнез, осмотр, частоту дыхания, пульсоксиметрию, физикальные данные и визуализацию по показаниям. Воспалительные маркеры сами по себе не позволяют надежно определить тяжесть. При хорошем клиническом ответе рутинная повторная рентгенография перед выпиской не требуется.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "инфекционные болезни",
+        "диагностика"
+      ],
+      "entityIds": [
+        "condition.pediatric-pneumonia",
+        "measurement.oxygen-saturation",
+        "measurement.respiratory-rate"
+      ],
+      "claims": [
+        {
+          "id": "claim.pneumonia.diagnosis",
+          "statement": "Диагностический поиск сочетает анамнез, осмотр, частоту дыхания, пульсоксиметрию, физикальные данные и визуализацию по показаниям. Воспалительные маркеры сами по себе не позволяют надежно определить тяжесть. При хорошем клиническом ответе рутинная повторная рентгенография перед выпиской не требуется.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2025-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 714_2-2025",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/714_2",
+        "locator": "2. Диагностика",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2025-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.pneumonia.treatment",
+      "documentId": "kr.rf.714_2.pneumonia",
+      "kind": "reference",
+      "title": "Внебольничная пневмония у детей",
+      "section": "Лечение",
+      "body": "При предполагаемой бактериальной внебольничной пневмонии антибактериальную терапию выбирают по возрасту, тяжести, вероятной этиологии, аллергии и условиям лечения. Для многих амбулаторных детей препаратом выбора является амоксициллин; госпитализированным пациентам путь введения и стартовую схему определяют по тяжести. При отсутствии ожидаемого ответа через 48–72 часа необходима повторная клиническая и лабораторная оценка.",
+      "aliases": [
+        "нет ответа на стартовый антибиотик через 72 часа",
+        "амоксициллин при пневмонии"
+      ],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "инфекционные болезни",
+        "лечение"
+      ],
+      "entityIds": [
+        "condition.pediatric-pneumonia",
+        "medication.amoxicillin"
+      ],
+      "claims": [
+        {
+          "id": "claim.pneumonia.treatment",
+          "statement": "При предполагаемой бактериальной внебольничной пневмонии антибактериальную терапию выбирают по возрасту, тяжести, вероятной этиологии, аллергии и условиям лечения. Для многих амбулаторных детей препаратом выбора является амоксициллин; госпитализированным пациентам путь введения и стартовую схему определяют по тяжести. При отсутствии ожидаемого ответа через 48–72 часа необходима повторная клиническая и лабораторная оценка.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2025-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 714_2-2025",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/714_2",
+        "locator": "3. Лечение",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2025-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.pneumonia.routing",
+      "documentId": "kr.rf.714_2.pneumonia",
+      "kind": "reference",
+      "title": "Внебольничная пневмония у детей",
+      "section": "Маршрутизация и красные флаги",
+      "body": "Госпитализация требуется при тяжелом или осложненном течении, возрасте до трех месяцев, апноэ или цианозе, сатурации ниже 90% на воздухе, дегидратации или выраженном затруднении кормления, невозможности лечения дома, неэффективности стартовой терапии либо внелегочном очаге инфекции. Нарушение сознания, сохраняющаяся гипоксемия и нарастающая дыхательная недостаточность требуют интенсивного мониторинга.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "инфекционные болезни",
+        "маршрутизация и красные флаги"
+      ],
+      "entityIds": [
+        "condition.pediatric-pneumonia",
+        "measurement.oxygen-saturation"
+      ],
+      "claims": [
+        {
+          "id": "claim.pneumonia.routing",
+          "statement": "Госпитализация требуется при тяжелом или осложненном течении, возрасте до трех месяцев, апноэ или цианозе, сатурации ниже 90% на воздухе, дегидратации или выраженном затруднении кормления, невозможности лечения дома, неэффективности стартовой терапии либо внелегочном очаге инфекции. Нарушение сознания, сохраняющаяся гипоксемия и нарастающая дыхательная недостаточность требуют интенсивного мониторинга.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2025-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 714_2-2025",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/714_2",
+        "locator": "6. Организация оказания медицинской помощи",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2025-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.bronchitis.general",
+      "documentId": "kr.rf.381_3.bronchitis",
+      "kind": "reference",
+      "title": "Бронхит у детей",
+      "section": "Общая информация",
+      "body": "Острый бронхит у детей чаще связан с вирусной инфекцией и обычно диагностируется клинически. Эта карточка помогает перейти к нужному разделу рекомендации 2024 года, но не воспроизводит ее полностью.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "общая информация"
+      ],
+      "entityIds": [
+        "condition.pediatric-bronchitis"
+      ],
+      "claims": [
+        {
+          "id": "claim.bronchitis.general",
+          "statement": "Острый бронхит у детей чаще связан с вирусной инфекцией и обычно диагностируется клинически. Эта карточка помогает перейти к нужному разделу рекомендации 2024 года, но не воспроизводит ее полностью.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 381_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/view-cr/381_3",
+        "locator": "1. Краткая информация",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.bronchitis.clinical",
+      "documentId": "kr.rf.381_3.bronchitis",
+      "kind": "reference",
+      "title": "Бронхит у детей",
+      "section": "Клиническая картина",
+      "body": "Ведущим симптомом является кашель, который может сопровождаться признаками инфекции верхних дыхательных путей, хрипами и умеренной лихорадкой. Сам по себе цвет мокроты или длительность кашля не доказывают бактериальную природу заболевания.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "клиническая картина"
+      ],
+      "entityIds": [
+        "condition.pediatric-bronchitis"
+      ],
+      "claims": [
+        {
+          "id": "claim.bronchitis.clinical",
+          "statement": "Ведущим симптомом является кашель, который может сопровождаться признаками инфекции верхних дыхательных путей, хрипами и умеренной лихорадкой. Сам по себе цвет мокроты или длительность кашля не доказывают бактериальную природу заболевания.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 381_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/view-cr/381_3",
+        "locator": "1.6 Клиническая картина",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.bronchitis.diagnosis",
+      "documentId": "kr.rf.381_3.bronchitis",
+      "kind": "reference",
+      "title": "Бронхит у детей",
+      "section": "Диагностика",
+      "body": "При типичной картине рутинный этиологический поиск, лабораторные исследования и рентгенография обычно не требуются. Стойкая высокая температура, выраженное ухудшение состояния, дыхательный дистресс либо локальные асимметричные физикальные изменения требуют исключения пневмонии и другой патологии.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "диагностика"
+      ],
+      "entityIds": [
+        "condition.pediatric-bronchitis",
+        "condition.pediatric-pneumonia"
+      ],
+      "claims": [
+        {
+          "id": "claim.bronchitis.diagnosis",
+          "statement": "При типичной картине рутинный этиологический поиск, лабораторные исследования и рентгенография обычно не требуются. Стойкая высокая температура, выраженное ухудшение состояния, дыхательный дистресс либо локальные асимметричные физикальные изменения требуют исключения пневмонии и другой патологии.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 381_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/view-cr/381_3",
+        "locator": "2. Диагностика",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.bronchitis.treatment",
+      "documentId": "kr.rf.381_3.bronchitis",
+      "kind": "reference",
+      "title": "Бронхит у детей",
+      "section": "Лечение",
+      "body": "Основу ведения составляют достаточное питье, контроль температуры и наблюдение за дыханием и общим состоянием. При неосложненном вирусном бронхите антибактериальная терапия не назначается рутинно; противокашлевые препараты также не должны применяться автоматически без оценки показаний и риска.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "лечение"
+      ],
+      "entityIds": [
+        "condition.pediatric-bronchitis"
+      ],
+      "claims": [
+        {
+          "id": "claim.bronchitis.treatment",
+          "statement": "Основу ведения составляют достаточное питье, контроль температуры и наблюдение за дыханием и общим состоянием. При неосложненном вирусном бронхите антибактериальная терапия не назначается рутинно; противокашлевые препараты также не должны применяться автоматически без оценки показаний и риска.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 381_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/view-cr/381_3",
+        "locator": "3. Лечение",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.bronchitis.routing",
+      "documentId": "kr.rf.381_3.bronchitis",
+      "kind": "reference",
+      "title": "Бронхит у детей",
+      "section": "Маршрутизация и красные флаги",
+      "body": "Срочная переоценка нужна при нарастающей одышке, втяжении грудной клетки, цианозе или снижении сатурации, нарушении сознания, невозможности пить, выраженном обезвоживании, а также если лихорадка и состояние не соответствуют ожидаемому течению бронхита.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "маршрутизация и красные флаги"
+      ],
+      "entityIds": [
+        "condition.pediatric-bronchitis",
+        "measurement.oxygen-saturation"
+      ],
+      "claims": [
+        {
+          "id": "claim.bronchitis.routing",
+          "statement": "Срочная переоценка нужна при нарастающей одышке, втяжении грудной клетки, цианозе или снижении сатурации, нарушении сознания, невозможности пить, выраженном обезвоживании, а также если лихорадка и состояние не соответствуют ожидаемому течению бронхита.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 381_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/view-cr/381_3",
+        "locator": "6. Организация оказания медицинской помощи",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.bronchiolitis.general",
+      "documentId": "kr.rf.360_3.bronchiolitis",
+      "kind": "reference",
+      "title": "Острый бронхиолит у детей",
+      "section": "Общая информация",
+      "body": "Острый бронхиолит — вирусное воспалительное заболевание мелких дыхательных путей у детей младше двух лет, чаще первого года жизни. Карточка представляет краткую поисковую выжимку из рекомендации 2024 года.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "неонатология",
+        "общая информация"
+      ],
+      "entityIds": [
+        "condition.pediatric-bronchiolitis"
+      ],
+      "claims": [
+        {
+          "id": "claim.bronchiolitis.general",
+          "statement": "Острый бронхиолит — вирусное воспалительное заболевание мелких дыхательных путей у детей младше двух лет, чаще первого года жизни. Карточка представляет краткую поисковую выжимку из рекомендации 2024 года.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 360_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/360_3",
+        "locator": "1.1 Определение",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.bronchiolitis.clinical",
+      "documentId": "kr.rf.360_3.bronchiolitis",
+      "kind": "reference",
+      "title": "Острый бронхиолит у детей",
+      "section": "Клиническая картина",
+      "body": "Болезнь обычно развивается через несколько дней после инфекции верхних дыхательных путей. Для нее характерны нарастающие кашель и одышка, тахипноэ, двусторонние мелкопузырчатые или свистящие хрипы, удлиненный выдох, участие вспомогательных мышц и втяжение межреберий. У недоношенного ребенка первым проявлением может быть апноэ.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "неонатология",
+        "клиническая картина"
+      ],
+      "entityIds": [
+        "condition.pediatric-bronchiolitis",
+        "measurement.respiratory-rate"
+      ],
+      "claims": [
+        {
+          "id": "claim.bronchiolitis.clinical",
+          "statement": "Болезнь обычно развивается через несколько дней после инфекции верхних дыхательных путей. Для нее характерны нарастающие кашель и одышка, тахипноэ, двусторонние мелкопузырчатые или свистящие хрипы, удлиненный выдох, участие вспомогательных мышц и втяжение межреберий. У недоношенного ребенка первым проявлением может быть апноэ.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 360_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/360_3",
+        "locator": "1.6 Клиническая картина",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.bronchiolitis.hydration",
+      "documentId": "kr.rf.360_3.bronchiolitis",
+      "kind": "reference",
+      "title": "Острый бронхиолит у детей",
+      "section": "Кормление и гидратация",
+      "body": "Из-за частого дыхания, затруднения кормления, лихорадки или рвоты возможно обезвоживание. Состояние динамично и иногда ухудшается после нескольких суток болезни, поэтому важна повторная оценка дыхания, сатурации и способности пить.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "неонатология",
+        "кормление и гидратация"
+      ],
+      "entityIds": [
+        "condition.pediatric-bronchiolitis",
+        "measurement.oxygen-saturation"
+      ],
+      "claims": [
+        {
+          "id": "claim.bronchiolitis.hydration",
+          "statement": "Из-за частого дыхания, затруднения кормления, лихорадки или рвоты возможно обезвоживание. Состояние динамично и иногда ухудшается после нескольких суток болезни, поэтому важна повторная оценка дыхания, сатурации и способности пить.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 360_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/360_3",
+        "locator": "1.6 Клиническая картина",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.bronchiolitis.diagnosis",
+      "documentId": "kr.rf.360_3.bronchiolitis",
+      "kind": "reference",
+      "title": "Острый бронхиолит у детей",
+      "section": "Диагностика",
+      "body": "Диагноз в большинстве случаев клинический: первый эпизод поражения нижних дыхательных путей у ребенка до двух лет оценивают по дыхательным симптомам, кормлению, гидратации и пульсоксиметрии. Объем лабораторных и инструментальных исследований определяется тяжестью и необходимостью исключить пневмонию, инородное тело, сердечную патологию и другие состояния.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "неонатология",
+        "диагностика"
+      ],
+      "entityIds": [
+        "condition.pediatric-bronchiolitis",
+        "condition.pediatric-pneumonia",
+        "measurement.oxygen-saturation"
+      ],
+      "claims": [
+        {
+          "id": "claim.bronchiolitis.diagnosis",
+          "statement": "Диагноз в большинстве случаев клинический: первый эпизод поражения нижних дыхательных путей у ребенка до двух лет оценивают по дыхательным симптомам, кормлению, гидратации и пульсоксиметрии. Объем лабораторных и инструментальных исследований определяется тяжестью и необходимостью исключить пневмонию, инородное тело, сердечную патологию и другие состояния.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 360_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/360_3",
+        "locator": "2. Диагностика",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.bronchiolitis.treatment",
+      "documentId": "kr.rf.360_3.bronchiolitis",
+      "kind": "reference",
+      "title": "Острый бронхиолит у детей",
+      "section": "Лечение",
+      "body": "Лечение преимущественно поддерживающее: обеспечение проходимости верхних дыхательных путей, адекватное поступление жидкости и респираторная поддержка по показаниям. Антибиотики не применяются рутинно и рассматриваются при подозрении на бактериальное осложнение. Вибрационный и перкуссионный массаж не относится к стандартной рутинной терапии.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "неонатология",
+        "лечение"
+      ],
+      "entityIds": [
+        "condition.pediatric-bronchiolitis"
+      ],
+      "claims": [
+        {
+          "id": "claim.bronchiolitis.treatment",
+          "statement": "Лечение преимущественно поддерживающее: обеспечение проходимости верхних дыхательных путей, адекватное поступление жидкости и респираторная поддержка по показаниям. Антибиотики не применяются рутинно и рассматриваются при подозрении на бактериальное осложнение. Вибрационный и перкуссионный массаж не относится к стандартной рутинной терапии.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 360_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/360_3",
+        "locator": "3. Лечение",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.bronchiolitis.routing",
+      "documentId": "kr.rf.360_3.bronchiolitis",
+      "kind": "reference",
+      "title": "Острый бронхиолит у детей",
+      "section": "Маршрутизация и красные флаги",
+      "body": "Госпитализация показана при апноэ, выраженной дыхательной недостаточности, дегидратации или затрудненном кормлении, сонливости, пониженном питании, а также у некоторых недоношенных детей младше шести месяцев. Для выписки ожидают стабильную сатурацию выше 94% на комнатном воздухе, отсутствие респираторного дистресса и возможность принимать не менее примерно трех четвертей обычного объема питания и жидкости.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "пульмонология",
+        "неонатология",
+        "маршрутизация и красные флаги"
+      ],
+      "entityIds": [
+        "condition.pediatric-bronchiolitis",
+        "measurement.oxygen-saturation"
+      ],
+      "claims": [
+        {
+          "id": "claim.bronchiolitis.routing",
+          "statement": "Госпитализация показана при апноэ, выраженной дыхательной недостаточности, дегидратации или затрудненном кормлении, сонливости, пониженном питании, а также у некоторых недоношенных детей младше шести месяцев. Для выписки ожидают стабильную сатурацию выше 94% на комнатном воздухе, отсутствие респираторного дистресса и возможность принимать не менее примерно трех четвертей обычного объема питания и жидкости.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 360_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/preview-cr/360_3",
+        "locator": "6.1 Показания для госпитализации",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.uti.general",
+      "documentId": "kr.rf.281_3.uti",
+      "kind": "reference",
+      "title": "Инфекция мочевых путей",
+      "section": "Общая информация",
+      "body": "Инфекция мочевых путей объединяет бактериальные инфекции разных отделов мочевой системы. Эта карточка является кратким навигатором по клинической рекомендации 2024 года и не заменяет полный текст первоисточника.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "нефрология",
+        "урология",
+        "общая информация"
+      ],
+      "entityIds": [
+        "condition.pediatric-uti"
+      ],
+      "claims": [
+        {
+          "id": "claim.uti.general",
+          "statement": "Инфекция мочевых путей объединяет бактериальные инфекции разных отделов мочевой системы. Эта карточка является кратким навигатором по клинической рекомендации 2024 года и не заменяет полный текст первоисточника.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 281_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/view-cr/281_3",
+        "locator": "1. Краткая информация",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.uti.infants",
+      "documentId": "kr.rf.281_3.uti",
+      "kind": "reference",
+      "title": "Инфекция мочевых путей",
+      "section": "Клиническая картина у младенцев",
+      "body": "У младенцев проявления могут быть неспецифичными: лихорадка, снижение аппетита, рвота, вялость, плохая прибавка массы или признаки обезвоживания. После двух лет пиелонефрит чаще проявляется лихорадкой без катаральных симптомов, ознобом, недомоганием, рвотой, болью в боку или пояснице.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "нефрология",
+        "урология",
+        "клиническая картина у младенцев"
+      ],
+      "entityIds": [
+        "condition.pediatric-uti"
+      ],
+      "claims": [
+        {
+          "id": "claim.uti.infants",
+          "statement": "У младенцев проявления могут быть неспецифичными: лихорадка, снижение аппетита, рвота, вялость, плохая прибавка массы или признаки обезвоживания. После двух лет пиелонефрит чаще проявляется лихорадкой без катаральных симптомов, ознобом, недомоганием, рвотой, болью в боку или пояснице.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 281_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/view-cr/281_3",
+        "locator": "1.6 Клиническая картина",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.uti.lower",
+      "documentId": "kr.rf.281_3.uti",
+      "kind": "reference",
+      "title": "Инфекция мочевых путей",
+      "section": "Нижние мочевые пути",
+      "body": "Для инфекции нижних мочевых путей характерны частое или болезненное мочеиспускание, императивные позывы, боль над лоном или в животе, новое дневное недержание или энурез, мутная либо резко пахнущая моча. Дизурия без учащения мочеиспускания может соответствовать уретриту.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "нефрология",
+        "урология",
+        "нижние мочевые пути"
+      ],
+      "entityIds": [
+        "condition.pediatric-uti"
+      ],
+      "claims": [
+        {
+          "id": "claim.uti.lower",
+          "statement": "Для инфекции нижних мочевых путей характерны частое или болезненное мочеиспускание, императивные позывы, боль над лоном или в животе, новое дневное недержание или энурез, мутная либо резко пахнущая моча. Дизурия без учащения мочеиспускания может соответствовать уретриту.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 281_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/view-cr/281_3",
+        "locator": "1.6 Клиническая картина",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.uti.diagnosis",
+      "documentId": "kr.rf.281_3.uti",
+      "kind": "reference",
+      "title": "Инфекция мочевых путей",
+      "section": "Диагностика",
+      "body": "При лихорадке без ясного очага, особенно у маленького ребенка, необходимо рассмотреть исследование мочи. Диагностический поиск опирается на правильно полученный образец, общий анализ мочи и посев; способ забора и интерпретация зависят от возраста и клинической ситуации.",
+      "aliases": [
+        "ОАМ при температуре без симптомов",
+        "анализ мочи при лихорадке"
+      ],
+      "tags": [
+        "педиатрия",
+        "нефрология",
+        "урология",
+        "диагностика"
+      ],
+      "entityIds": [
+        "condition.pediatric-uti",
+        "investigation.urinalysis"
+      ],
+      "claims": [
+        {
+          "id": "claim.uti.diagnosis",
+          "statement": "При лихорадке без ясного очага, особенно у маленького ребенка, необходимо рассмотреть исследование мочи. Диагностический поиск опирается на правильно полученный образец, общий анализ мочи и посев; способ забора и интерпретация зависят от возраста и клинической ситуации.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 281_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/view-cr/281_3",
+        "locator": "2. Диагностика",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.uti.treatment",
+      "documentId": "kr.rf.281_3.uti",
+      "kind": "reference",
+      "title": "Инфекция мочевых путей",
+      "section": "Лечение",
+      "body": "Выбор антимикробной терапии зависит от локализации инфекции, возраста, тяжести, функции почек, аллергологического анамнеза и локальной устойчивости возбудителей. При высокой клинической вероятности пиелонефрита или тяжелом состоянии лечение не откладывают до получения окончательного результата посева; после ответа лаборатории схему уточняют.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "нефрология",
+        "урология",
+        "лечение"
+      ],
+      "entityIds": [
+        "condition.pediatric-uti"
+      ],
+      "claims": [
+        {
+          "id": "claim.uti.treatment",
+          "statement": "Выбор антимикробной терапии зависит от локализации инфекции, возраста, тяжести, функции почек, аллергологического анамнеза и локальной устойчивости возбудителей. При высокой клинической вероятности пиелонефрита или тяжелом состоянии лечение не откладывают до получения окончательного результата посева; после ответа лаборатории схему уточняют.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 281_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/view-cr/281_3",
+        "locator": "3. Лечение",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.uti.routing",
+      "documentId": "kr.rf.281_3.uti",
+      "kind": "reference",
+      "title": "Инфекция мочевых путей",
+      "section": "Маршрутизация и красные флаги",
+      "body": "Стационарная оценка требуется, в частности, детям первых шести месяцев с фебрильной лихорадкой, при пиелонефрите с интоксикацией и рвотой, невозможности пить на фоне обезвоживания, подозрении на бактериемию или сепсис и при острой задержке мочи.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "нефрология",
+        "урология",
+        "маршрутизация и красные флаги"
+      ],
+      "entityIds": [
+        "condition.pediatric-uti"
+      ],
+      "claims": [
+        {
+          "id": "claim.uti.routing",
+          "statement": "Стационарная оценка требуется, в частности, детям первых шести месяцев с фебрильной лихорадкой, при пиелонефрите с интоксикацией и рвотой, невозможности пить на фоне обезвоживания, подозрении на бактериемию или сепсис и при острой задержке мочи.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 281_3-2024",
+        "url": "https://cr.minzdrav.gov.ru/view-cr/281_3",
+        "locator": "6. Организация оказания медицинской помощи",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.measles.general",
+      "documentId": "kr.rf.563_2.measles",
+      "kind": "reference",
+      "title": "Корь у детей",
+      "section": "Общая информация",
+      "body": "Корь — острая высококонтагиозная вирусная инфекция. Эта публичная карточка кратко пересказывает ключевые поисковые признаки из педиатрической рекомендации 2024 года и не заменяет эпидемиологическое извещение или полный документ.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "общая информация"
+      ],
+      "entityIds": [
+        "condition.pediatric-measles"
+      ],
+      "claims": [
+        {
+          "id": "claim.measles.general",
+          "statement": "Корь — острая высококонтагиозная вирусная инфекция. Эта публичная карточка кратко пересказывает ключевые поисковые признаки из педиатрической рекомендации 2024 года и не заменяет эпидемиологическое извещение или полный документ.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 563_2-2024",
+        "url": "https://cr.minzdrav.gov.ru/schema/563_2",
+        "locator": "1. Краткая информация",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.measles.clinical",
+      "documentId": "kr.rf.563_2.measles",
+      "kind": "reference",
+      "title": "Корь у детей",
+      "section": "Клиническая картина",
+      "body": "Типичная картина включает лихорадку, кашель, насморк и конъюнктивит. Пятна Бельского–Филатова–Коплика на слизистой щек могут предшествовать сыпи. Экзантема появляется этапно: сначала на лице и голове, затем распространяется на туловище и конечности.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "клиническая картина"
+      ],
+      "entityIds": [
+        "condition.pediatric-measles",
+        "finding.koplik-spots"
+      ],
+      "claims": [
+        {
+          "id": "claim.measles.clinical",
+          "statement": "Типичная картина включает лихорадку, кашель, насморк и конъюнктивит. Пятна Бельского–Филатова–Коплика на слизистой щек могут предшествовать сыпи. Экзантема появляется этапно: сначала на лице и голове, затем распространяется на туловище и конечности.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 563_2-2024",
+        "url": "https://cr.minzdrav.gov.ru/schema/563_2",
+        "locator": "1.6 Клиническая картина",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.measles.complications",
+      "documentId": "kr.rf.563_2.measles",
+      "kind": "reference",
+      "title": "Корь у детей",
+      "section": "Осложнения и красные флаги",
+      "body": "Осложнения могут затрагивать дыхательную и нервную системы, органы слуха и пищеварительный тракт. Одышка, снижение сатурации, нарушение сознания, судороги, выраженное обезвоживание или ухудшение после появления сыпи требуют немедленной оценки.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "осложнения и красные флаги"
+      ],
+      "entityIds": [
+        "condition.pediatric-measles",
+        "measurement.oxygen-saturation"
+      ],
+      "claims": [
+        {
+          "id": "claim.measles.complications",
+          "statement": "Осложнения могут затрагивать дыхательную и нервную системы, органы слуха и пищеварительный тракт. Одышка, снижение сатурации, нарушение сознания, судороги, выраженное обезвоживание или ухудшение после появления сыпи требуют немедленной оценки.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 563_2-2024",
+        "url": "https://cr.minzdrav.gov.ru/schema/563_2",
+        "locator": "1.6 Клиническая картина и осложнения",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.measles.diagnosis",
+      "documentId": "kr.rf.563_2.measles",
+      "kind": "reference",
+      "title": "Корь у детей",
+      "section": "Диагностика",
+      "body": "Диагностический статус формируется из клинических проявлений, эпидемиологического анамнеза и лабораторного подтверждения. Важно уточнить вакцинацию, контакт с больным, поездки и последовательность появления катаральных симптомов и сыпи.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "диагностика"
+      ],
+      "entityIds": [
+        "condition.pediatric-measles",
+        "investigation.pcr"
+      ],
+      "claims": [
+        {
+          "id": "claim.measles.diagnosis",
+          "statement": "Диагностический статус формируется из клинических проявлений, эпидемиологического анамнеза и лабораторного подтверждения. Важно уточнить вакцинацию, контакт с больным, поездки и последовательность появления катаральных симптомов и сыпи.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 563_2-2024",
+        "url": "https://cr.minzdrav.gov.ru/schema/563_2",
+        "locator": "2. Диагностика",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.measles.treatment",
+      "documentId": "kr.rf.563_2.measles",
+      "kind": "reference",
+      "title": "Корь у детей",
+      "section": "Лечение",
+      "body": "Специфической этиотропной терапии кори обычно нет; ведение включает поддерживающую помощь и лечение осложнений. Антибактериальные препараты используют не против вируса, а только при доказанном или обоснованно подозреваемом бактериальном осложнении.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "лечение"
+      ],
+      "entityIds": [
+        "condition.pediatric-measles"
+      ],
+      "claims": [
+        {
+          "id": "claim.measles.treatment",
+          "statement": "Специфической этиотропной терапии кори обычно нет; ведение включает поддерживающую помощь и лечение осложнений. Антибактериальные препараты используют не против вируса, а только при доказанном или обоснованно подозреваемом бактериальном осложнении.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 563_2-2024",
+        "url": "https://cr.minzdrav.gov.ru/schema/563_2",
+        "locator": "3. Лечение",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.measles.routing",
+      "documentId": "kr.rf.563_2.measles",
+      "kind": "reference",
+      "title": "Корь у детей",
+      "section": "Маршрутизация и инфекционный контроль",
+      "body": "При подозрении на корь необходимо организовать изоляцию и эпидемиологические мероприятия. Госпитализация зависит от тяжести, возраста, осложнений и возможности безопасного наблюдения; тяжелое дыхательное или неврологическое поражение требует интенсивной помощи.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "маршрутизация и инфекционный контроль"
+      ],
+      "entityIds": [
+        "condition.pediatric-measles"
+      ],
+      "claims": [
+        {
+          "id": "claim.measles.routing",
+          "statement": "При подозрении на корь необходимо организовать изоляцию и эпидемиологические мероприятия. Госпитализация зависит от тяжести, возраста, осложнений и возможности безопасного наблюдения; тяжелое дыхательное или неврологическое поражение требует интенсивной помощи.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2024-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 563_2-2024",
+        "url": "https://cr.minzdrav.gov.ru/schema/563_2",
+        "locator": "6. Организация оказания медицинской помощи",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2024-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.rotavirus.general",
+      "documentId": "kr.rf.755_1.rotavirus",
+      "kind": "reference",
+      "title": "Ротавирусный гастроэнтерит у детей",
+      "section": "Общая информация",
+      "body": "Ротавирусный гастроэнтерит — острая кишечная инфекция, при которой основной практический риск связан с потерей жидкости и электролитов. Карточка предназначена для навигации по рекомендации 2023 года.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "гастроэнтерология",
+        "общая информация"
+      ],
+      "entityIds": [
+        "condition.pediatric-rotavirus"
+      ],
+      "claims": [
+        {
+          "id": "claim.rotavirus.general",
+          "statement": "Ротавирусный гастроэнтерит — острая кишечная инфекция, при которой основной практический риск связан с потерей жидкости и электролитов. Карточка предназначена для навигации по рекомендации 2023 года.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2023-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 755_1-2023",
+        "url": "https://cr.minzdrav.gov.ru/schema/755_1",
+        "locator": "1. Краткая информация",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2023-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.rotavirus.clinical",
+      "documentId": "kr.rf.755_1.rotavirus",
+      "kind": "reference",
+      "title": "Ротавирусный гастроэнтерит у детей",
+      "section": "Клиническая картина",
+      "body": "Заболевание обычно проявляется рвотой, водянистой диареей, лихорадкой, болью или урчанием в животе и снижением аппетита. Необходимо оценить частоту стула и рвоты, поступление жидкости, мочеиспускание, массу тела, уровень активности и признаки обезвоживания.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "гастроэнтерология",
+        "клиническая картина"
+      ],
+      "entityIds": [
+        "condition.pediatric-rotavirus",
+        "condition.dehydration"
+      ],
+      "claims": [
+        {
+          "id": "claim.rotavirus.clinical",
+          "statement": "Заболевание обычно проявляется рвотой, водянистой диареей, лихорадкой, болью или урчанием в животе и снижением аппетита. Необходимо оценить частоту стула и рвоты, поступление жидкости, мочеиспускание, массу тела, уровень активности и признаки обезвоживания.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2023-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 755_1-2023",
+        "url": "https://cr.minzdrav.gov.ru/schema/755_1",
+        "locator": "1.6 Клиническая картина",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2023-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.rotavirus.diagnosis",
+      "documentId": "kr.rf.755_1.rotavirus",
+      "kind": "reference",
+      "title": "Ротавирусный гастроэнтерит у детей",
+      "section": "Диагностика",
+      "body": "Диагноз основывается на жалобах, эпидемиологическом анамнезе, осмотре и, когда это меняет тактику, лабораторном подтверждении. Важнейший элемент первичной оценки — степень обезвоживания; кровь в стуле, выраженная локальная боль или менингеальные и хирургические симптомы требуют другого диагностического поиска.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "гастроэнтерология",
+        "диагностика"
+      ],
+      "entityIds": [
+        "condition.pediatric-rotavirus",
+        "condition.dehydration"
+      ],
+      "claims": [
+        {
+          "id": "claim.rotavirus.diagnosis",
+          "statement": "Диагноз основывается на жалобах, эпидемиологическом анамнезе, осмотре и, когда это меняет тактику, лабораторном подтверждении. Важнейший элемент первичной оценки — степень обезвоживания; кровь в стуле, выраженная локальная боль или менингеальные и хирургические симптомы требуют другого диагностического поиска.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2023-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 755_1-2023",
+        "url": "https://cr.minzdrav.gov.ru/schema/755_1",
+        "locator": "2. Диагностика",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2023-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.rotavirus.treatment",
+      "documentId": "kr.rf.755_1.rotavirus",
+      "kind": "reference",
+      "title": "Ротавирусный гастроэнтерит у детей",
+      "section": "Лечение",
+      "body": "Основой лечения является оральная регидратация низкоосмолярными растворами небольшими повторными порциями. Объем и путь восполнения жидкости зависят от степени обезвоживания и продолжающихся потерь. Антибактериальные препараты не лечат ротавирусную инфекцию и не назначаются рутинно без иных показаний.",
+      "aliases": [
+        "отпаивать ребенка",
+        "оральная регидратация"
+      ],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "гастроэнтерология",
+        "лечение"
+      ],
+      "entityIds": [
+        "condition.pediatric-rotavirus",
+        "treatment.oral-rehydration"
+      ],
+      "claims": [
+        {
+          "id": "claim.rotavirus.treatment",
+          "statement": "Основой лечения является оральная регидратация низкоосмолярными растворами небольшими повторными порциями. Объем и путь восполнения жидкости зависят от степени обезвоживания и продолжающихся потерь. Антибактериальные препараты не лечат ротавирусную инфекцию и не назначаются рутинно без иных показаний.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2023-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 755_1-2023",
+        "url": "https://cr.minzdrav.gov.ru/schema/755_1",
+        "locator": "3. Лечение",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2023-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.rotavirus.routing",
+      "documentId": "kr.rf.755_1.rotavirus",
+      "kind": "reference",
+      "title": "Ротавирусный гастроэнтерит у детей",
+      "section": "Маршрутизация и красные флаги",
+      "body": "Стационарная помощь нужна при тяжелом обезвоживании, нарушении сознания, невозможности пить, неукротимой рвоте, признаках шока, тяжелом сопутствующем состоянии или невозможности безопасного наблюдения дома. У маленьких детей ухудшение может быть быстрым, поэтому важна повторная оценка.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "гастроэнтерология",
+        "маршрутизация и красные флаги"
+      ],
+      "entityIds": [
+        "condition.pediatric-rotavirus",
+        "condition.dehydration"
+      ],
+      "claims": [
+        {
+          "id": "claim.rotavirus.routing",
+          "statement": "Стационарная помощь нужна при тяжелом обезвоживании, нарушении сознания, невозможности пить, неукротимой рвоте, признаках шока, тяжелом сопутствующем состоянии или невозможности безопасного наблюдения дома. У маленьких детей ухудшение может быть быстрым, поэтому важна повторная оценка.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2023-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 755_1-2023",
+        "url": "https://cr.minzdrav.gov.ru/schema/755_1",
+        "locator": "6. Организация оказания медицинской помощи",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2023-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.meningococcal.general",
+      "documentId": "kr.rf.58_2.meningococcal",
+      "kind": "reference",
+      "title": "Менингококковая инфекция у детей",
+      "section": "Общая информация",
+      "body": "Менингококковая инфекция может проявляться локальной инфекцией носоглотки, менингитом, менингококцемией или сочетанными формами. Генерализованное заболевание способно прогрессировать очень быстро, поэтому карточка ориентирована прежде всего на раннее распознавание угрозы.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "неотложная помощь",
+        "общая информация"
+      ],
+      "entityIds": [
+        "condition.pediatric-meningococcal"
+      ],
+      "claims": [
+        {
+          "id": "claim.meningococcal.general",
+          "statement": "Менингококковая инфекция может проявляться локальной инфекцией носоглотки, менингитом, менингококцемией или сочетанными формами. Генерализованное заболевание способно прогрессировать очень быстро, поэтому карточка ориентирована прежде всего на раннее распознавание угрозы.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2023-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 58_2-2023",
+        "url": "https://cr.minzdrav.gov.ru/schema/58_2",
+        "locator": "1. Краткая информация",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2023-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.meningococcal.clinical",
+      "documentId": "kr.rf.58_2.meningococcal",
+      "kind": "reference",
+      "title": "Менингококковая инфекция у детей",
+      "section": "Клиническая картина",
+      "body": "Тревожная комбинация включает лихорадку, резкое ухудшение самочувствия, сильную головную боль, повторную рвоту, нарушение сознания, судороги или менингеальные симптомы. У младенца проявления могут быть менее специфичными: вялость, отказ от еды, монотонный крик, выбухание родничка или нестабильность температуры.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "неотложная помощь",
+        "клиническая картина"
+      ],
+      "entityIds": [
+        "condition.pediatric-meningococcal"
+      ],
+      "claims": [
+        {
+          "id": "claim.meningococcal.clinical",
+          "statement": "Тревожная комбинация включает лихорадку, резкое ухудшение самочувствия, сильную головную боль, повторную рвоту, нарушение сознания, судороги или менингеальные симптомы. У младенца проявления могут быть менее специфичными: вялость, отказ от еды, монотонный крик, выбухание родничка или нестабильность температуры.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2023-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 58_2-2023",
+        "url": "https://cr.minzdrav.gov.ru/schema/58_2",
+        "locator": "1.6 Клиническая картина",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2023-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.meningococcal.rash",
+      "documentId": "kr.rf.58_2.meningococcal",
+      "kind": "reference",
+      "title": "Менингококковая инфекция у детей",
+      "section": "Геморрагическая сыпь",
+      "body": "Геморрагическая сыпь, которая не бледнеет при надавливании, особенно вместе с лихорадкой и ухудшением периферической перфузии, рассматривается как неотложный признак. Отсутствие сыпи в начале заболевания не исключает генерализованную инфекцию.",
+      "aliases": [
+        "сыпь под стаканом",
+        "геморрагическая сыпь"
+      ],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "неотложная помощь",
+        "геморрагическая сыпь"
+      ],
+      "entityIds": [
+        "condition.pediatric-meningococcal",
+        "finding.nonblanching-rash"
+      ],
+      "claims": [
+        {
+          "id": "claim.meningococcal.rash",
+          "statement": "Геморрагическая сыпь, которая не бледнеет при надавливании, особенно вместе с лихорадкой и ухудшением периферической перфузии, рассматривается как неотложный признак. Отсутствие сыпи в начале заболевания не исключает генерализованную инфекцию.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2023-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 58_2-2023",
+        "url": "https://cr.minzdrav.gov.ru/schema/58_2",
+        "locator": "1.6 Клиническая картина и 2. Диагностика",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2023-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.meningococcal.diagnosis",
+      "documentId": "kr.rf.58_2.meningococcal",
+      "kind": "reference",
+      "title": "Менингококковая инфекция у детей",
+      "section": "Диагностика",
+      "body": "Диагностический поиск включает клиническую оценку жизненно важных функций, признаков шока и поражения нервной системы, а также лабораторное и микробиологическое подтверждение, если оно не задерживает неотложную помощь. При нестабильности приоритетом является стабилизация и срочная маршрутизация.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "неотложная помощь",
+        "диагностика"
+      ],
+      "entityIds": [
+        "condition.pediatric-meningococcal",
+        "investigation.pcr"
+      ],
+      "claims": [
+        {
+          "id": "claim.meningococcal.diagnosis",
+          "statement": "Диагностический поиск включает клиническую оценку жизненно важных функций, признаков шока и поражения нервной системы, а также лабораторное и микробиологическое подтверждение, если оно не задерживает неотложную помощь. При нестабильности приоритетом является стабилизация и срочная маршрутизация.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2023-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 58_2-2023",
+        "url": "https://cr.minzdrav.gov.ru/schema/58_2",
+        "locator": "2. Диагностика",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2023-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.meningococcal.treatment",
+      "documentId": "kr.rf.58_2.meningococcal",
+      "kind": "reference",
+      "title": "Менингококковая инфекция у детей",
+      "section": "Лечение",
+      "body": "При подозрении на генерализованную менингококковую инфекцию требуется немедленное начало неотложных мероприятий и антибактериальной терапии по действующему протоколу; ожидание полного лабораторного подтверждения не должно откладывать лечение тяжелого пациента.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "неотложная помощь",
+        "лечение"
+      ],
+      "entityIds": [
+        "condition.pediatric-meningococcal"
+      ],
+      "claims": [
+        {
+          "id": "claim.meningococcal.treatment",
+          "statement": "При подозрении на генерализованную менингококковую инфекцию требуется немедленное начало неотложных мероприятий и антибактериальной терапии по действующему протоколу; ожидание полного лабораторного подтверждения не должно откладывать лечение тяжелого пациента.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2023-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 58_2-2023",
+        "url": "https://cr.minzdrav.gov.ru/schema/58_2",
+        "locator": "3. Лечение",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2023-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    },
+    {
+      "id": "record.meningococcal.routing",
+      "documentId": "kr.rf.58_2.meningococcal",
+      "kind": "reference",
+      "title": "Менингококковая инфекция у детей",
+      "section": "Маршрутизация и красные флаги",
+      "body": "Любое подозрение на генерализованную форму требует экстренной госпитализации в стационар, способный обеспечить интенсивную терапию. Небледнеющая сыпь, признаки шока, нарушение сознания, судороги, быстрое ухудшение и дыхательная недостаточность являются поводом для немедленной экстренной помощи.",
+      "aliases": [],
+      "tags": [
+        "педиатрия",
+        "инфекционные болезни",
+        "неотложная помощь",
+        "маршрутизация и красные флаги"
+      ],
+      "entityIds": [
+        "condition.pediatric-meningococcal",
+        "finding.nonblanching-rash"
+      ],
+      "claims": [
+        {
+          "id": "claim.meningococcal.routing",
+          "statement": "Любое подозрение на генерализованную форму требует экстренной госпитализации в стационар, способный обеспечить интенсивную терапию. Небледнеющая сыпь, признаки шока, нарушение сознания, судороги, быстрое ухудшение и дыхательная недостаточность являются поводом для немедленной экстренной помощи.",
+          "status": "asserted",
+          "authority": "official",
+          "confidence": 0.95,
+          "validFrom": "2023-01-01",
+          "validTo": null
+        }
+      ],
+      "source": {
+        "label": "Клиническая рекомендация 58_2-2023",
+        "url": "https://cr.minzdrav.gov.ru/schema/58_2",
+        "locator": "6. Организация оказания медицинской помощи",
+        "authority": "official",
+        "retrievedAt": "2026-07-19"
+      },
+      "updatedAt": "2023-01-01",
+      "metadata": {
+        "originalRepository": "T-Damer/MiniMed",
+        "contentMode": "source-linked-paraphrase",
+        "notSubstituteForOriginal": true
+      }
+    }
+  ],
+  "entities": [
+    {
+      "id": "condition.pediatric-pneumonia",
+      "type": "condition",
+      "name": "Внебольничная пневмония у детей",
+      "aliases": [
+        "пневмония у ребенка",
+        "детская пневмония",
+        "ВП"
+      ],
+      "description": "Острое инфекционное поражение легочной паренхимы у ребенка.",
+      "tags": [
+        "дыхательная система"
+      ]
+    },
+    {
+      "id": "condition.pediatric-bronchitis",
+      "type": "condition",
+      "name": "Острый бронхит у детей",
+      "aliases": [
+        "бронхит",
+        "острый бронхит"
+      ],
+      "description": "Клинически диагностируемое воспаление бронхов, чаще вирусной природы.",
+      "tags": [
+        "дыхательная система"
+      ]
+    },
+    {
+      "id": "condition.pediatric-bronchiolitis",
+      "type": "condition",
+      "name": "Острый бронхиолит у детей",
+      "aliases": [
+        "бронхиолит",
+        "свистящее дыхание у грудничка"
+      ],
+      "description": "Вирусное поражение мелких дыхательных путей у детей младше двух лет.",
+      "tags": [
+        "дыхательная система"
+      ]
+    },
+    {
+      "id": "condition.pediatric-uti",
+      "type": "condition",
+      "name": "Инфекция мочевых путей",
+      "aliases": [
+        "ИМП",
+        "ИМВП",
+        "мочевая инфекция"
+      ],
+      "description": "Бактериальная инфекция одного или нескольких отделов мочевой системы.",
+      "tags": [
+        "мочевая система"
+      ]
+    },
+    {
+      "id": "condition.pediatric-measles",
+      "type": "condition",
+      "name": "Корь у детей",
+      "aliases": [
+        "корь",
+        "кори"
+      ],
+      "description": "Острая высококонтагиозная вирусная инфекция с этапной экзантемой.",
+      "tags": [
+        "инфекция"
+      ]
+    },
+    {
+      "id": "condition.pediatric-rotavirus",
+      "type": "condition",
+      "name": "Ротавирусный гастроэнтерит у детей",
+      "aliases": [
+        "ротавирус",
+        "рвота и водянистый понос"
+      ],
+      "description": "Острая кишечная инфекция с риском потери жидкости и электролитов.",
+      "tags": [
+        "инфекция",
+        "пищеварительная система"
+      ]
+    },
+    {
+      "id": "condition.pediatric-meningococcal",
+      "type": "condition",
+      "name": "Менингококковая инфекция у детей",
+      "aliases": [
+        "менингококк",
+        "менингококцемия"
+      ],
+      "description": "Инфекция, генерализованные формы которой могут быстро прогрессировать.",
+      "tags": [
+        "инфекция",
+        "неотложное состояние"
+      ]
+    },
+    {
+      "id": "condition.dehydration",
+      "type": "condition",
+      "name": "Обезвоживание",
+      "aliases": [
+        "дегидратация",
+        "не может пить"
+      ],
+      "description": "Дефицит жидкости, требующий оценки тяжести и продолжающихся потерь.",
+      "tags": [
+        "синдром"
+      ]
+    },
+    {
+      "id": "medication.amoxicillin",
+      "type": "medication",
+      "name": "Амоксициллин",
+      "aliases": [
+        "amoxicillin",
+        "амоксицилин"
+      ],
+      "description": "Антибактериальный препарат; конкретная форма и режим требуют проверки по первоисточнику.",
+      "tags": [
+        "антибиотик"
+      ]
+    },
+    {
+      "id": "treatment.oral-rehydration",
+      "type": "treatment",
+      "name": "Оральная регидратация",
+      "aliases": [
+        "ОРТ",
+        "отпаивать",
+        "чем поить",
+        "оральный регидратационный раствор"
+      ],
+      "description": "Восполнение жидкости низкоосмолярным раствором небольшими повторными порциями.",
+      "tags": [
+        "лечение"
+      ]
+    },
+    {
+      "id": "measurement.oxygen-saturation",
+      "type": "measurement",
+      "name": "Периферическая сатурация кислорода",
+      "aliases": [
+        "SpO2",
+        "сатурация",
+        "пульсоксиметрия",
+        "низкая сатурация"
+      ],
+      "description": "Показатель оксигенации, измеряемый пульсоксиметром и оцениваемый вместе с клинической картиной.",
+      "tags": [
+        "измерение"
+      ]
+    },
+    {
+      "id": "measurement.respiratory-rate",
+      "type": "measurement",
+      "name": "Частота дыхательных движений",
+      "aliases": [
+        "ЧДД",
+        "частота дыхания",
+        "тахипноэ"
+      ],
+      "description": "Количество дыхательных движений за минуту.",
+      "tags": [
+        "измерение"
+      ]
+    },
+    {
+      "id": "investigation.urinalysis",
+      "type": "investigation",
+      "name": "Общий анализ мочи",
+      "aliases": [
+        "ОАМ",
+        "анализ мочи"
+      ],
+      "description": "Исследование мочи, используемое в диагностике инфекции мочевых путей.",
+      "tags": [
+        "исследование"
+      ]
+    },
+    {
+      "id": "investigation.cbc",
+      "type": "investigation",
+      "name": "Общий анализ крови",
+      "aliases": [
+        "ОАК",
+        "анализ крови"
+      ],
+      "description": "Базовое лабораторное исследование клеточного состава крови.",
+      "tags": [
+        "исследование"
+      ]
+    },
+    {
+      "id": "investigation.pcr",
+      "type": "investigation",
+      "name": "Полимеразная цепная реакция",
+      "aliases": [
+        "ПЦР",
+        "PCR"
+      ],
+      "description": "Метод выявления генетического материала возбудителя.",
+      "tags": [
+        "исследование"
+      ]
+    },
+    {
+      "id": "finding.koplik-spots",
+      "type": "finding",
+      "name": "Пятна Бельского–Филатова–Коплика",
+      "aliases": [
+        "пятна Коплика"
+      ],
+      "description": "Изменения слизистой щек, которые могут предшествовать коревой сыпи.",
+      "tags": [
+        "симптом"
+      ]
+    },
+    {
+      "id": "finding.nonblanching-rash",
+      "type": "finding",
+      "name": "Небледнеющая геморрагическая сыпь",
+      "aliases": [
+        "сыпь не исчезает под стаканом",
+        "не бледнеет при надавливании"
+      ],
+      "description": "Неотложный клинический признак в сочетании с лихорадкой и ухудшением состояния.",
+      "tags": [
+        "красный флаг"
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "id": "relation.amoxicillin-pneumonia",
+      "from": "medication.amoxicillin",
+      "predicate": "recommended-treatment-for",
+      "to": "condition.pediatric-pneumonia",
+      "recordId": "record.pneumonia.treatment",
+      "description": "Для многих амбулаторных детей препарат выбора; форма, доза и режим проверяются по полной рекомендации.",
+      "weight": 0.95,
+      "metadata": {
+        "authority": "clinical-guideline"
+      }
+    },
+    {
+      "id": "relation.bronchitis-pneumonia",
+      "from": "condition.pediatric-bronchitis",
+      "predicate": "differential-with",
+      "to": "condition.pediatric-pneumonia",
+      "recordId": "record.bronchitis.diagnosis",
+      "description": "Пневмонию исключают при высокой стойкой температуре, дыхательном дистрессе или локальных изменениях.",
+      "weight": 0.9,
+      "metadata": {}
+    },
+    {
+      "id": "relation.bronchiolitis-pneumonia",
+      "from": "condition.pediatric-bronchiolitis",
+      "predicate": "differential-with",
+      "to": "condition.pediatric-pneumonia",
+      "recordId": "record.bronchiolitis.diagnosis",
+      "description": "Объем обследования зависит от тяжести и необходимости исключить пневмонию.",
+      "weight": 0.9,
+      "metadata": {}
+    },
+    {
+      "id": "relation.rotavirus-rehydration",
+      "from": "condition.pediatric-rotavirus",
+      "predicate": "treated-with",
+      "to": "treatment.oral-rehydration",
+      "recordId": "record.rotavirus.treatment",
+      "description": "Оральная регидратация является основой лечения.",
+      "weight": 1.0,
+      "metadata": {}
+    },
+    {
+      "id": "relation.uti-oam",
+      "from": "condition.pediatric-uti",
+      "predicate": "diagnosed-with",
+      "to": "investigation.urinalysis",
+      "recordId": "record.uti.diagnosis",
+      "description": "Исследование мочи рассматривается при лихорадке без ясного очага.",
+      "weight": 1.0,
+      "metadata": {}
+    },
+    {
+      "id": "relation.pneumonia-spo2",
+      "from": "condition.pediatric-pneumonia",
+      "predicate": "assessed-with",
+      "to": "measurement.oxygen-saturation",
+      "recordId": "record.pneumonia.oxygen",
+      "description": "Сатурацию оценивают у детей с респираторными симптомами.",
+      "weight": 1.0,
+      "metadata": {}
+    },
+    {
+      "id": "relation.bronchiolitis-spo2",
+      "from": "condition.pediatric-bronchiolitis",
+      "predicate": "assessed-with",
+      "to": "measurement.oxygen-saturation",
+      "recordId": "record.bronchiolitis.diagnosis",
+      "description": "Пульсоксиметрия входит в клиническую оценку.",
+      "weight": 1.0,
+      "metadata": {}
+    },
+    {
+      "id": "relation.measles-koplik",
+      "from": "condition.pediatric-measles",
+      "predicate": "associated-with",
+      "to": "finding.koplik-spots",
+      "recordId": "record.measles.clinical",
+      "description": "Пятна могут предшествовать сыпи.",
+      "weight": 0.9,
+      "metadata": {}
+    },
+    {
+      "id": "relation.meningococcal-rash",
+      "from": "condition.pediatric-meningococcal",
+      "predicate": "associated-with",
+      "to": "finding.nonblanching-rash",
+      "recordId": "record.meningococcal.rash",
+      "description": "В сочетании с лихорадкой рассматривается как неотложный признак.",
+      "weight": 1.0,
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "derivedFrom": "T-Damer/MiniMed@20c67c6e3b0233a3ec39a6580bf559290eda97da",
+    "documentCount": 7,
+    "publicPilot": true
+  }
+}

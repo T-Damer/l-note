@@ -1,0 +1,95 @@
+{
+  "id": "example.team-handbook",
+  "version": "1.0.0",
+  "title": "Пример: справочник команды Northstar",
+  "description": "Небольшой синтетический пакет, показывающий документы, сокращения, сущности и связи.",
+  "language": "ru",
+  "createdAt": "2026-07-30T00:00:00Z",
+  "source": {
+    "name": "Synthetic L-Note example",
+    "url": null,
+    "license": "CC0-1.0",
+    "contentMode": "authored-example"
+  },
+  "disclaimer": "Синтетические данные только для демонстрации формата.",
+  "tags": ["пример", "команда", "архитектура"],
+  "records": [
+    {
+      "id": "record.northstar.gateway",
+      "documentId": "document.northstar.architecture",
+      "kind": "reference",
+      "title": "Архитектура Northstar",
+      "section": "API Gateway",
+      "body": "API Gateway принимает внешние запросы, проверяет базовые ограничения и маршрутизирует трафик в сервисы. Бизнес-правила остаются внутри целевых сервисов.",
+      "aliases": ["шлюз", "входная точка API"],
+      "tags": ["backend", "архитектура"],
+      "entityIds": ["component.api-gateway"],
+      "claims": [],
+      "source": {
+        "label": "Внутренний архитектурный справочник",
+        "url": null,
+        "locator": "Раздел 2.1",
+        "authority": "reference",
+        "retrievedAt": "2026-07-30"
+      },
+      "updatedAt": "2026-07-30",
+      "metadata": {}
+    },
+    {
+      "id": "record.northstar.auth",
+      "documentId": "document.northstar.architecture",
+      "kind": "reference",
+      "title": "Архитектура Northstar",
+      "section": "Сервис авторизации",
+      "body": "Auth Service выпускает и проверяет пользовательские сессии. API Gateway вызывает его для проверки учетного контекста, но не хранит пароли.",
+      "aliases": ["AS", "Auth"],
+      "tags": ["backend", "безопасность"],
+      "entityIds": ["component.auth-service", "component.api-gateway"],
+      "claims": [],
+      "source": {
+        "label": "Внутренний архитектурный справочник",
+        "url": null,
+        "locator": "Раздел 2.2",
+        "authority": "reference",
+        "retrievedAt": "2026-07-30"
+      },
+      "updatedAt": "2026-07-30",
+      "metadata": {}
+    }
+  ],
+  "entities": [
+    {
+      "id": "component.api-gateway",
+      "type": "component",
+      "name": "API Gateway",
+      "aliases": ["Gateway", "AGW", "шлюз"],
+      "description": "Единая внешняя точка входа в API.",
+      "tags": ["backend"],
+      "metadata": {}
+    },
+    {
+      "id": "component.auth-service",
+      "type": "component",
+      "name": "Auth Service",
+      "aliases": ["AS", "сервис авторизации"],
+      "description": "Компонент управления пользовательскими сессиями.",
+      "tags": ["backend", "security"],
+      "metadata": {}
+    }
+  ],
+  "relations": [
+    {
+      "id": "relation.gateway-auth",
+      "from": "component.api-gateway",
+      "predicate": "uses",
+      "to": "component.auth-service",
+      "recordId": "record.northstar.auth",
+      "description": "Шлюз обращается к сервису для проверки учетного контекста.",
+      "weight": 1,
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "example": true
+  }
+}

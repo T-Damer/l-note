@@ -1,11 +1,7 @@
 node_modules/
 dist/
-coverage/
+.DS_Store
+*.log
 .env
 .env.*
 !.env.example
-*.db
-*.sqlite
-*.sqlite3
-*.gguf
-.DS_Store

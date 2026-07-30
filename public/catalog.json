@@ -1,0 +1,31 @@
+{
+  "format": "l-note-catalog",
+  "schemaVersion": 1,
+  "updatedAt": "2026-07-30T11:30:00Z",
+  "packs": [
+    {
+      "id": "demo.minimed.pediatrics",
+      "version": "2026.07.30-1",
+      "title": "MiniMed: педиатрический демо-пакет",
+      "description": "Семь компактных source-linked карточек из публичного пилота MiniMed, сущности, сокращения и связи для демонстрации офлайн-поиска.",
+      "language": "ru",
+      "tags": [
+        "демо",
+        "медицина",
+        "педиатрия",
+        "русский"
+      ],
+      "featured": true,
+      "artifact": {
+        "url": "./packs/minimed-pediatrics-demo.json",
+        "sha256": "6d4704a0cdf77ace9ddc916390566c97894de2c33ca5ee70ade7aa2e8975011e",
+        "sizeBytes": 108887
+      },
+      "source": {
+        "name": "T-Damer/MiniMed public pilot",
+        "url": "https://github.com/T-Damer/MiniMed"
+      },
+      "disclaimer": "Демонстрационный пакет не является самостоятельным медицинским источником и не содержит полных рекомендаций или проверенных схем дозирования. Перед решением откройте актуальный первоисточник."
+    }
+  ]
+}
