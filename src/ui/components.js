@@ -30,8 +30,12 @@ export function fieldClassName(className = '') {
   return ['ui-field', String(className ?? '').trim()].filter(Boolean).join(' ');
 }
 
-export function switchClassName(className = '') {
-  return ['ui-switch', String(className ?? '').trim()].filter(Boolean).join(' ');
+export function switchClassName(className = '', disabled = false) {
+  return [
+    'ui-switch',
+    disabled ? 'is-disabled' : '',
+    String(className ?? '').trim(),
+  ].filter(Boolean).join(' ');
 }
 
 function appendChildren(node, children) {
@@ -102,54 +106,54 @@ export function Card({
 
 export function Field({
   label = '',
-  control,
   hint = '',
+  control,
   className = '',
-  labelClassName = '',
+  required = false,
 } = {}) {
   if (!(control instanceof HTMLElement)) throw new TypeError('Field requires a control element.');
-  const wrapper = document.createElement('label');
-  wrapper.className = fieldClassName(className);
-  const labelNode = Text({ variant: 'label', as: 'span', className: ['ui-field__label', labelClassName].filter(Boolean).join(' '), text: label });
-  wrapper.append(labelNode, control);
-  if (hint) wrapper.append(Text({ variant: 'caption', as: 'span', className: 'ui-field__hint', text: hint }));
-  return wrapper;
+  const root = document.createElement('label');
+  root.className = fieldClassName(className);
+  root.append(Text({ variant: 'label', as: 'span', text: required ? `${label} *` : label }));
+  root.append(control);
+  if (hint) root.append(Text({ variant: 'caption', as: 'span', className: 'ui-field__hint', text: hint }));
+  return root;
 }
 
 export function Switch({
-  id = '',
-  name = '',
   label = '',
-  description = '',
+  hint = '',
+  input = null,
+  id,
+  name,
   checked = false,
   disabled = false,
   className = '',
   onChange,
 } = {}) {
-  const wrapper = document.createElement('label');
-  wrapper.className = switchClassName(className);
+  const control = input instanceof HTMLInputElement ? input : document.createElement('input');
+  control.type = 'checkbox';
+  if (id) control.id = id;
+  if (name) control.name = name;
+  if (!(input instanceof HTMLInputElement)) control.checked = Boolean(checked);
+  control.disabled = Boolean(disabled);
 
-  const input = document.createElement('input');
-  input.type = 'checkbox';
-  if (id) input.id = id;
-  if (name) input.name = name;
-  input.checked = Boolean(checked);
-  input.disabled = Boolean(disabled);
-  input.className = 'ui-switch__input';
-
-  const visual = document.createElement('span');
-  visual.className = 'ui-switch__track';
-  visual.setAttribute('aria-hidden', 'true');
-  visual.append(document.createElement('span'));
+  const root = document.createElement('label');
+  root.className = switchClassName(className, control.disabled);
+  const track = document.createElement('span');
+  track.className = 'ui-switch__track';
+  track.setAttribute('aria-hidden', 'true');
+  track.append(Object.assign(document.createElement('span'), { className: 'ui-switch__thumb' }));
 
   const copy = document.createElement('span');
   copy.className = 'ui-switch__copy';
   copy.append(Text({ variant: 'label', as: 'span', text: label }));
-  if (description) copy.append(Text({ variant: 'caption', as: 'span', text: description }));
+  if (hint) copy.append(Text({ variant: 'caption', as: 'span', text: hint }));
 
-  wrapper.append(input, visual, copy);
-  if (typeof onChange === 'function') input.addEventListener('change', onChange);
-  return { element: wrapper, input };
+  root.append(control, track, copy);
+  if (typeof onChange === 'function') control.addEventListener('change', onChange);
+  Object.defineProperty(root, 'control', { value: control, enumerable: false });
+  return root;
 }
 
 export function SourceCard({

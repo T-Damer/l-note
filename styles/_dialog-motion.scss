@@ -1,0 +1,55 @@
+.sheet-dialog {
+  opacity: 0;
+  transform: translateY(10px) scale(.99);
+  transition:
+    opacity .16s ease,
+    transform .16s ease,
+    overlay .16s allow-discrete,
+    display .16s allow-discrete;
+}
+
+.sheet-dialog[open] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+@starting-style {
+  .sheet-dialog[open] {
+    opacity: 0;
+    transform: translateY(10px) scale(.99);
+  }
+}
+
+.sheet-dialog::backdrop {
+  opacity: 0;
+  transition:
+    opacity .16s ease,
+    overlay .16s allow-discrete,
+    display .16s allow-discrete;
+}
+
+.sheet-dialog[open]::backdrop {
+  opacity: 1;
+}
+
+@starting-style {
+  .sheet-dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+@media (max-width: 680px) {
+  .sheet-dialog {
+    transform: translateY(22px);
+  }
+
+  .sheet-dialog[open] {
+    transform: translateY(0);
+  }
+
+  @starting-style {
+    .sheet-dialog[open] {
+      transform: translateY(22px);
+    }
+  }
+}

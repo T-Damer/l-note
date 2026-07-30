@@ -1,0 +1,83 @@
+.ui-field {
+  display: grid;
+  gap: .45rem;
+  min-width: 0;
+}
+
+.ui-field > input,
+.ui-field > textarea,
+.ui-field > select {
+  width: 100%;
+}
+
+.ui-field__hint {
+  color: var(--muted);
+}
+
+.ui-switch {
+  position: relative;
+  display: inline-grid;
+  min-height: 2.5rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: .7rem;
+  padding: .35rem .15rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.ui-switch > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ui-switch__track {
+  position: relative;
+  width: 2.6rem;
+  height: 1.45rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--paper);
+  transition: border-color .14s ease, background .14s ease;
+}
+
+.ui-switch__thumb {
+  position: absolute;
+  top: 50%;
+  left: .18rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: var(--muted);
+  transform: translateY(-50%);
+  transition: transform .14s ease, background .14s ease;
+}
+
+.ui-switch > input:checked + .ui-switch__track {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.ui-switch > input:checked + .ui-switch__track .ui-switch__thumb {
+  background: var(--accent);
+  transform: translate(1.12rem, -50%);
+}
+
+.ui-switch > input:focus-visible + .ui-switch__track {
+  outline: 3px solid color-mix(in srgb, var(--accent) 42%, transparent);
+  outline-offset: 2px;
+}
+
+.ui-switch__copy {
+  display: grid;
+  min-width: 0;
+  gap: .12rem;
+}
+
+.ui-switch.is-disabled {
+  cursor: not-allowed;
+  opacity: .56;
+}

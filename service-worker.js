@@ -27,6 +27,7 @@ const SHELL = [
   './src/integrations/minimed-adapter.js',
   './src/services/model-action.js',
   './src/services/model-progress.js',
+  './src/services/welcome-note.js',
   './src/ui/text.js',
   './src/ui/icons.js',
   './src/ui/components.js',

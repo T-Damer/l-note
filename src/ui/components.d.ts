@@ -2,11 +2,12 @@ import type { IconKey } from './icons.js';
 
 export type ControlVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'icon';
 export type CardKind = 'surface' | 'result' | 'package' | 'note' | string;
+export type SwitchElement = HTMLLabelElement & { readonly control: HTMLInputElement };
 
 export function controlClassName(variant?: ControlVariant | string, className?: string, withIcon?: boolean): string;
 export function cardClassName(kind?: CardKind, className?: string, interactive?: boolean): string;
 export function fieldClassName(className?: string): string;
-export function switchClassName(className?: string): string;
+export function switchClassName(className?: string, disabled?: boolean): string;
 
 export function Button(options?: {
   variant?: ControlVariant;
@@ -32,22 +33,23 @@ export function Card(options?: {
 
 export function Field(options: {
   label?: string;
-  control: HTMLElement;
   hint?: string;
+  control: HTMLElement;
   className?: string;
-  labelClassName?: string;
+  required?: boolean;
 }): HTMLLabelElement;
 
 export function Switch(options?: {
+  label?: string;
+  hint?: string;
+  input?: HTMLInputElement | null;
   id?: string;
   name?: string;
-  label?: string;
-  description?: string;
   checked?: boolean;
   disabled?: boolean;
   className?: string;
   onChange?: (event: Event) => void;
-}): { element: HTMLLabelElement; input: HTMLInputElement };
+}): SwitchElement;
 
 export function SourceCard(options?: {
   sourceId?: string;
