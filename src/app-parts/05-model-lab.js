@@ -43,7 +43,7 @@ const modelLoadError = create('p', { className: 'model-load-error hidden' });
 const modelLoadButton = Button({
   variant: 'primary',
   className: 'model-load-button',
-  children: [Icon({ name: 'download-simple', className: 'icon' }), document.createTextNode('Загрузить и включить')],
+  children: [Icon({ name: 'download', className: 'icon' }), document.createTextNode('Загрузить и включить')],
 });
 const modelDownloadPanel = create('section', { className: 'model-download-panel' }, [
   create('div', { className: 'model-progress-heading' }, [modelProgressText, modelProgressPercent]),
@@ -55,10 +55,11 @@ const modelDownloadPanel = create('section', { className: 'model-download-panel'
 
 const modelLab = create('section', { className: 'model-control-panel' }, [
   create('div', { className: 'model-compact-row' }, [
-    create('label', { className: 'model-picker' }, [
-      Text({ variant: 'caption', text: 'Модель' }),
-      localAiModel,
-    ]),
+    Field({
+      label: 'Модель',
+      control: localAiModel,
+      className: 'model-picker',
+    }),
     modelParameters,
     modelSize,
     modelPower,
@@ -108,128 +109,3 @@ function formatGenerationSpeed(value) {
 }
 
 function modelIsReady(profile = selectedLocalModelProfile()) {
-  return Boolean(state.localAiReady && state.localAi.modelId === profile.modelId);
-}
-
-function resetModelLoadState(profile = selectedLocalModelProfile()) {
-  state.modelLoadState = modelIsReady(profile)
-    ? completeModelLoad(createModelLoadState(profile))
-    : createModelLoadState(profile);
-}
-
-function beginLocalModelLoad(profile = selectedLocalModelProfile()) {
-  state.modelLoadState = startModelLoad(state.modelLoadState, profile);
-  renderModelPageState();
-}
-
-function reportLocalModelProgress(progress) {
-  state.modelLoadState = updateModelLoadProgress(state.modelLoadState, progress);
-  renderModelPageState();
-}
-
-function finishLocalModelLoad() {
-  state.modelLoadState = completeModelLoad(state.modelLoadState);
-  renderModelPageState();
-}
-
-function rejectLocalModelLoad(error) {
-  state.modelLoadState = failModelLoad(state.modelLoadState, error);
-  renderModelPageState();
-}
-
-function renderLocalModelDetails() {
-  const profile = selectedLocalModelProfile();
-  state.selectedLocalModelId = profile.modelId;
-  const ready = modelIsReady(profile);
-  dom.modelParameters.textContent = profile.parameters;
-  dom.modelSize.textContent = `≈${(profile.sizeMB / 1024).toFixed(1)} ГБ`;
-  dom.modelPower.className = `model-power ${ready ? 'is-on' : 'is-off'}`;
-  dom.modelPower.replaceChildren(
-    create('span', { className: 'model-power-dot', 'aria-hidden': 'true' }),
-    document.createTextNode(ready ? 'Вкл' : 'Выкл'),
-  );
-}
-
-function renderModelProgress() {
-  const progressState = state.modelLoadState;
-  const percent = Math.round(Math.max(0, Math.min(1, progressState.progress ?? 0)) * 100);
-  dom.modelProgressText.textContent = progressState.text;
-  dom.modelProgressPercent.textContent = `${percent}%`;
-  dom.modelProgressBar.style.width = `${percent}%`;
-  dom.modelProgressTrack.setAttribute('aria-valuenow', String(percent));
-  dom.modelProgressStats.replaceChildren(
-    create('span', { text: `≈${formatBytes(progressState.loadedMB * 1024 * 1024)} / ${formatBytes(progressState.totalMB * 1024 * 1024)}` }),
-    create('span', { text: `осталось ≈${formatBytes(progressState.remainingMB * 1024 * 1024)}` }),
-    create('span', { text: formatDownloadSpeed(progressState.speedMBps) }),
-  );
-  const hasError = progressState.status === MODEL_LOAD_STATUS.ERROR && progressState.error;
-  dom.modelLoadError.classList.toggle('hidden', !hasError);
-  dom.modelLoadError.textContent = hasError ? progressState.error : '';
-  dom.modelLoadButton.replaceChildren(
-    Icon({ name: progressState.status === MODEL_LOAD_STATUS.ERROR ? 'arrow-clockwise' : 'download-simple', className: 'icon' }),
-    document.createTextNode(progressState.status === MODEL_LOAD_STATUS.ERROR ? 'Повторить загрузку' : 'Загрузить и включить'),
-  );
-}
-
-function syncLocalAiButton() {
-  dom.localAiButton.replaceChildren(
-    Icon({ name: 'brain', className: 'icon' }),
-    document.createTextNode('Ответить локальной моделью'),
-  );
-}
-
-function renderModelPageState() {
-  const profile = selectedLocalModelProfile();
-  const ready = modelIsReady(profile);
-  const loading = state.modelLoadState.status === MODEL_LOAD_STATUS.LOADING;
-  renderLocalModelDetails();
-  renderModelProgress();
-  dom.localAiModel.disabled = loading;
-  dom.modelLoadButton.disabled = loading || !state.localAi.available;
-  dom.modelDownloadPanel.classList.toggle('hidden', ready);
-  dom.modelWorkspace?.classList.toggle('hidden', !ready);
-  dom.answerOutput.classList.toggle('hidden', !ready);
-  if (!state.localAi.available && !ready) {
-    dom.modelProgressText.textContent = 'WebGPU недоступен';
-    dom.modelLoadError.classList.remove('hidden');
-    dom.modelLoadError.textContent = 'Этот браузер не может запустить локальную WebLLM-модель. Поиск по базе остаётся доступен на отдельной странице.';
-  }
-  if (ready) {
-    dom.aiStatus.textContent = `${profile.label} ${profile.parameters} включена. Сформулируйте вопрос и соберите локальные источники.`;
-  }
-  syncLocalAiButton();
-}
-
-function renderModelRunHistory() {
-  dom.modelRunHistory.replaceChildren();
-  dom.modelRunHistory.classList.toggle('hidden', state.localAiRuns.length === 0);
-  if (!state.localAiRuns.length) return;
-  dom.modelRunHistory.append(
-    create('div', { className: 'panel-title-row' }, [
-      Icon({ name: 'model', className: 'panel-title-icon', size: 20 }),
-      Text({ variant: 'title', text: 'Последние тесты моделей' }),
-    ]),
-  );
-  for (const run of state.localAiRuns.slice(0, 6)) {
-    const profile = localModelProfile(run.modelId);
-    const status = run.grounded ? 'ссылки валидны' : 'нужна ручная проверка';
-    dom.modelRunHistory.append(
-      Text({
-        variant: 'muted',
-        text: `${profile?.label ?? run.modelId}: загрузка ${formatModelDuration(run.loadMs)}, ответ ${formatModelDuration(run.durationMs)}, ${formatGenerationSpeed(run.tokensPerSecond)}, ${status}.`,
-      }),
-    );
-  }
-}
-
-dom.modelLoadButton.addEventListener('click', () => loadOrRunLocalAi(dom.modelLoadButton));
-dom.localAiModel.addEventListener('change', () => {
-  state.selectedLocalModelId = dom.localAiModel.value;
-  state.localAiReady = Boolean(state.localAi.engine && state.localAi.modelId === state.selectedLocalModelId);
-  resetModelLoadState();
-  renderModelPageState();
-});
-
-resetModelLoadState();
-renderModelPageState();
-renderModelRunHistory();
