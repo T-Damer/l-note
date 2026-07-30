@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items reflect code in the active branch; browser/device verification remains explicit where it is still needed.
 
-**Current focus:** browser routing E2E and decomposition of the transitional web shell into services, shared cards/controls and one routed-dialog component. Android/iOS remain deferred.
+**Current focus:** browser routing E2E, followed by decomposition of the transitional web shell into page/services modules and completion of the routed-dialog/source-card component layer. Android/iOS remain deferred.
 
 ## Phase 0 — shared-core boundary and correctness
 
@@ -62,13 +62,16 @@ Single source of future work. Completed items reflect code in the active branch;
 
 ### Component architecture
 
-- [x] Add the first framework-neutral UI primitives without coupling them to the headless core.
+- [x] Add framework-neutral UI primitives without coupling them to the headless core.
 - [x] Add a shared `Text` component with predefined typography variants and no raw-HTML path.
 - [x] Add a centralized Phosphor icon catalog and category resolver.
 - [x] Add one centrally configured placeholder icon for unknown categories.
 - [x] Pin and vendor Phosphor assets locally for offline use.
+- [x] Add shared `Card`, `Button` and routed-dialog close-binding primitives.
+- [x] Use `Card` in search results, package cards and note cards.
+- [x] Use `Button` for package download/update/enable/remove actions.
 - [x] Use shared typography/icons in the model lab, search results and primary navigation.
-- [ ] Split large page logic into reusable cards, buttons, switches, fields and dialogs.
+- [ ] Split remaining page logic into reusable fields, source cards and one routed-dialog renderer.
 - [ ] Move reusable logic into `helpers`, `hooks` and `services`.
 - [ ] Keep components and files within the limits described in `AGENTS.md`.
 - [ ] Audit remaining legacy glyphs and enforce Phosphor as the only application icon family.
@@ -86,6 +89,7 @@ Single source of future work. Completed items reflect code in the active branch;
 
 ### Dialog behavior
 
+- [x] Centralize Escape and backdrop closing through `bindRoutedDialog`.
 - [ ] Replace the three native dialog renderers with one reusable routed-dialog component.
 - [ ] Add open and close animations through the future component layer.
 - [x] Make current dialogs full-width on mobile while respecting safe-area insets.
@@ -172,7 +176,7 @@ Single source of future work. Completed items reflect code in the active branch;
 - [ ] Add dialog open/close animation through the component layer.
 - [ ] Add a default “Привет, коллега” note.
 - [x] Show note creation date and optional modification date.
-- [x] Add pointer and keyboard interaction to note cards.
+- [x] Add pointer and keyboard interaction to note cards through shared `Card`.
 - [x] Route notes as `#/note/:id` and new notes as `#/note/new`.
 - [ ] Expose routed links from a note to its related reference concepts.
 - [ ] Use a local model to propose note-to-reference links.
