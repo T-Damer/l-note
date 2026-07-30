@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v6';
-const RUNTIME_CACHE = 'l-note-runtime-v6';
+const SHELL_CACHE = 'l-note-shell-v7';
+const RUNTIME_CACHE = 'l-note-runtime-v7';
 const SHELL = [
   './',
   './index.html',
@@ -8,6 +8,8 @@ const SHELL = [
   './assets/icon.svg',
   './vendor/minisearch.js',
   './vendor/minisearch.LICENSE.txt',
+  './vendor/phosphor/style.css',
+  './vendor/phosphor/Phosphor.woff2',
   './src/app.js',
   './src/db.js',
   './src/search.js',
@@ -20,6 +22,8 @@ const SHELL = [
   './src/core/runtime.js',
   './src/adapters/runtime-adapters.js',
   './src/domain-plugins/minimed.js',
+  './src/ui/text.js',
+  './src/ui/icons.js',
   './packs/catalog.json',
 ];
 
