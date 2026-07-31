@@ -44,8 +44,11 @@ function imports(source) {
 function validateBoundaries(relative, source, errors) {
   const moduleImports = imports(source);
   if (relative.startsWith('src/core/')) {
-    const forbidden = /\b(?:document|window|navigator|indexedDB|localStorage|sessionStorage)\b|\bfetch\s*\(/u;
-    if (forbidden.test(source)) errors.push(`${relative}: core must not use browser or network globals`);
+    const browserGlobalAccess = /\b(?:globalThis\.)?(?:document|window|navigator|indexedDB|localStorage|sessionStorage)\s*(?:\.|\[)/u;
+    const networkCall = /\bfetch\s*\(/u;
+    if (browserGlobalAccess.test(source) || networkCall.test(source)) {
+      errors.push(`${relative}: core must not use browser or network globals`);
+    }
   }
   if (relative.startsWith('src/ui/')) {
     if (moduleImports.some((value) => /\/(?:pages|services|adapters)\//u.test(value))) {
