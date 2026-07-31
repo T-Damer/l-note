@@ -8,6 +8,31 @@ function requireString(value, path, errors) {
   if (typeof value !== 'string' || value.trim().length === 0) errors.push(`${path} must be a non-empty string`);
 }
 
+function requirePositiveInteger(value, path, errors) {
+  if (!Number.isInteger(value) || value < 1) errors.push(`${path} must be a positive integer`);
+}
+
+function validateDocumentAsset(asset, path, errors) {
+  if (asset === undefined) return;
+  if (!isObject(asset)) {
+    errors.push(`${path} must be an object`);
+    return;
+  }
+  requireString(asset.url, `${path}.url`, errors);
+  requireString(asset.mimeType, `${path}.mimeType`, errors);
+  if (asset.title !== undefined) requireString(asset.title, `${path}.title`, errors);
+  if (asset.page !== undefined) requirePositiveInteger(asset.page, `${path}.page`, errors);
+}
+
+function validateAssetAnchor(anchor, path, errors) {
+  if (anchor === undefined) return;
+  if (!isObject(anchor)) {
+    errors.push(`${path} must be an object`);
+    return;
+  }
+  requirePositiveInteger(anchor.page, `${path}.page`, errors);
+}
+
 export function validatePack(pack) {
   const errors = [];
   if (!isObject(pack)) return { valid: false, errors: ['pack must be an object'] };
@@ -34,6 +59,7 @@ export function validatePack(pack) {
   for (const [index, document] of (pack.documents ?? []).entries()) {
     requireString(document?.id, `documents[${index}].id`, errors);
     requireString(document?.title, `documents[${index}].title`, errors);
+    validateDocumentAsset(document?.asset, `documents[${index}].asset`, errors);
     if (document?.id && documentIds.has(document.id)) errors.push(`duplicate document id: ${document.id}`);
     if (document?.id) documentIds.add(document.id);
     if (!Array.isArray(document?.sections) || document.sections.length === 0) {
@@ -44,6 +70,7 @@ export function validatePack(pack) {
       requireString(section?.id, `documents[${index}].sections[${sectionIndex}].id`, errors);
       requireString(section?.title, `documents[${index}].sections[${sectionIndex}].title`, errors);
       requireString(section?.text, `documents[${index}].sections[${sectionIndex}].text`, errors);
+      validateAssetAnchor(section?.assetAnchor, `documents[${index}].sections[${sectionIndex}].assetAnchor`, errors);
       const key = `${document.id}/${section?.id}`;
       if (sectionIds.has(key)) errors.push(`duplicate section id within document: ${key}`);
       sectionIds.add(key);
