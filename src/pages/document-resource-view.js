@@ -3,6 +3,7 @@ import { Button, Card } from '../ui/components.js';
 import { element } from '../ui/dom.js';
 import { Icon } from '../ui/icons.js';
 import { Text } from '../ui/text.js';
+import { createDocumentAssetView } from './document-asset-view.js';
 
 function appendLinkedText({ container, text, entityIds, knowledge, normalizeText, navigate }) {
   const entities = entityIds.map((id) => knowledge.entities.get(id)).filter(Boolean);
@@ -72,11 +73,22 @@ function renderClaim({ claim, navigate }) {
   return card;
 }
 
-function renderSection({ section, documentRecord, knowledge, normalizeText, navigate }) {
+function renderSection({
+  section,
+  documentRecord,
+  knowledge,
+  normalizeText,
+  navigate,
+  assetView,
+}) {
   const article = element('article', {
     className: 'document-section',
     id: `section-${section.id}`,
   });
+  const heading = element('header', { className: 'document-section-header' }, [
+    Text({ variant: 'heading', as: 'h3', text: section.title }),
+    assetView?.sourceButton(section.id),
+  ].filter(Boolean));
   const paragraph = element('p');
   appendLinkedText({
     container: paragraph,
@@ -86,7 +98,7 @@ function renderSection({ section, documentRecord, knowledge, normalizeText, navi
     normalizeText,
     navigate,
   });
-  article.append(Text({ variant: 'heading', as: 'h3', text: section.title }), paragraph);
+  article.append(heading, paragraph);
 
   const claims = claimsForSection(knowledge, documentRecord.id, section.id);
   if (claims.length) {
@@ -120,6 +132,10 @@ export function renderDocumentResource({
 } = {}) {
   const documentRecord = findDocumentForSection(knowledge, record);
   if (!documentRecord) return false;
+  const assetView = createDocumentAssetView({
+    documentRecord,
+    sectionId: record.sectionId,
+  });
 
   dialogView.replaceHeading([
     Text({ variant: 'eyebrow', text: documentRecord.packTitle }),
@@ -127,6 +143,7 @@ export function renderDocumentResource({
     Text({ variant: 'muted', text: documentRecord.source?.title ?? 'Локальный источник' }),
   ]);
   const body = [];
+  if (assetView) body.push(assetView.element);
   if (documentRecord.summary) {
     body.push(Text({ variant: 'body', className: 'document-summary', text: documentRecord.summary }));
   }
@@ -137,6 +154,7 @@ export function renderDocumentResource({
       knowledge,
       normalizeText,
       navigate,
+      assetView,
     }));
   }
   body.push(renderExternalSource(documentRecord.source));
@@ -145,6 +163,10 @@ export function renderDocumentResource({
 
   if (record.sectionId) {
     queueMicrotask(() => {
+      if (assetView) {
+        assetView.openSection(record.sectionId);
+        return;
+      }
       const escaped = globalThis.CSS?.escape?.(record.sectionId) ?? record.sectionId;
       dialogView.scrollTo(`#section-${escaped}`);
     });
