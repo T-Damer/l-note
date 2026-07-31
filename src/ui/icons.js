@@ -2,6 +2,7 @@ const ICONS = Object.freeze({
   search: 'magnifying-glass',
   ask: 'sparkle',
   packages: 'books',
+  package: 'package',
   notes: 'note-pencil',
   back: 'arrow-left',
   forward: 'arrow-right',
