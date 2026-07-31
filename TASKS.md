@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish the routed-dialog/page-service split, then add local PDF assets, SQLite/FTS5 and a user-facing pack preparer. Android/iOS remain deferred.
+**Current focus:** continue shrinking transitional `app-parts` into pages, services, helpers and reusable components. Next are the routed resource renderer, local PDF assets, SQLite/FTS5 and a user-facing pack preparer. Android/iOS remain deferred.
 
 ## Universal core and MiniMed
 
@@ -11,6 +11,10 @@ Single source of future work. Completed items describe the active branch.
 - [x] Add storage, search, domain-planner, local-model and evidence-verifier ports.
 - [x] Run the web shell through `KnowledgeApplicationAdapter`.
 - [x] Add a MiniMed compatibility adapter while keeping clinical parsing, ranking, dose validation, abstention and benchmarks in MiniMed.
+- [x] Define dependency direction, file/function limits and extraction rules in `AGENTS.md`.
+- [x] Extract model formatting and lifecycle state into `helpers` and `services`.
+- [x] Extract model-page element construction and rendering into `src/pages/`.
+- [ ] Move remaining Ask/model orchestration out of `src/app-parts/04a.js` and `05-model-lab.js`.
 - [ ] Split the remaining transitional shell into pages, services, helpers and components.
 - [ ] Add SQLite/FTS5 for large packs without moving medical policy into L-Note.
 - [ ] Add an optional vector adapter behind the same search boundary.
@@ -35,6 +39,7 @@ Single source of future work. Completed items describe the active branch.
 - [x] Add package list/graph switching and routed graph nodes.
 - [x] Support weighted category gradients and the mixed pediatric/dentistry example.
 - [x] Add the one-time `Привет, коллега` note and routed note links.
+- [x] Add a safe reusable DOM element helper without raw HTML insertion.
 - [ ] Finish interaction-state, click-target and legacy-glyph auditing.
 - [ ] Make the desktop sidebar collapsible with tooltips.
 - [ ] Let the local model propose note links with explicit user review.
@@ -79,5 +84,6 @@ Single source of future work. Completed items describe the active branch.
 - [x] Keep setup and product use in `README.md`.
 - [x] Keep current architecture and invariants in `docs/ARCHITECTURE.md`.
 - [x] Keep this file as the only implementation backlog.
+- [x] Keep development and decomposition rules in `AGENTS.md`.
 - [x] Update docs together with behavior changes.
 - [ ] Use LLM Wiki only as an optional generated navigation layer.
