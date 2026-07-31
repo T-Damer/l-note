@@ -33,6 +33,20 @@ const routedResourceRenderer = createRoutedResourceRenderer({
       });
     },
     package(route) {
+      if (route.resourceId === 'new') {
+        return renderPackageBuilderResource({
+          dialogView: documentDialogView,
+          async onInstall(pack) {
+            await installPack(pack, { sizeBytes: packByteSize(pack) });
+            toast(`Пакет «${pack.title}» установлен и добавлен в локальный поиск.`);
+            navigateResource('package', pack.id);
+          },
+          onDownload(pack) {
+            downloadJson(safePackFilename(pack), pack);
+            toast(`Пакет «${pack.title}» сохранён в JSON.`);
+          },
+        });
+      }
       return renderPackageResource({
         packId: route.resourceId,
         packRecords: state.packRecords,
