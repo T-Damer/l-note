@@ -110,6 +110,8 @@ test('static build contains the complete offline shell', async () => {
   assert.match(html, /data-action="create-pack"/u);
   assert.match(html, /data-page="create-pack"/u);
   assert.match(html, /id="pack-creator-form"/u);
+  assert.match(html, /id="pack-creator-install"/u);
+  assert.match(html, /Установить в L-Note/u);
   assert.match(html, /id="model-workspace" class="model-workspace hidden"/u);
   assert.match(html, /dialog-close-button/u);
 
@@ -149,7 +151,7 @@ test('static build contains the complete offline shell', async () => {
   const packCreator = await readFile(path.join(root, 'dist', 'src', 'pages', 'pack-creator-page.js'), 'utf8');
   assert.match(packCreator, /createPackCreatorPage/u);
   assert.match(packCreator, /buildPackFromBrowserFiles/u);
-  assert.match(packCreator, /Установить/u);
+  assert.match(packCreator, /Пакет установлен/u);
 
   const packBuilder = await readFile(path.join(root, 'dist', 'src', 'services', 'browser-pack-builder.js'), 'utf8');
   assert.match(packBuilder, /buildPackFromBrowserFiles/u);
