@@ -78,24 +78,6 @@ const dom = {
   toastRegion: document.querySelector('#toast-region'),
 };
 
-function create(tag, options = {}, children = []) {
-  const node = document.createElement(tag);
-  for (const [key, value] of Object.entries(options)) {
-    if (key === 'className') node.className = value;
-    else if (key === 'text') node.textContent = value;
-    else if (key === 'html') node.innerHTML = value;
-    else if (key.startsWith('data-')) node.dataset[key.slice(5)] = value;
-    else if (key === 'hidden') node.hidden = Boolean(value);
-    else if (key in node) node[key] = value;
-    else node.setAttribute(key, value);
-  }
-  for (const child of Array.isArray(children) ? children : [children]) {
-    if (child === null || child === undefined) continue;
-    node.append(child instanceof Node ? child : document.createTextNode(String(child)));
-  }
-  return node;
-}
-
 function toast(message, type = 'info') {
   const item = create('div', { className: `toast${type === 'error' ? ' error' : ''}`, text: message });
   dom.toastRegion.append(item);
@@ -177,32 +159,7 @@ function updateResourceNavigation(route) {
   for (const button of dom.resourceBackButtons) button.hidden = !canGoBack;
 }
 
-function renderResourceRoute(route) {
-  let opened = false;
-  switch (route.resourceType) {
-    case 'document':
-      opened = renderDocumentDialog({ documentId: route.resourceId, sectionId: route.sectionId });
-      break;
-    case 'concept':
-      opened = renderEntityDialog(route.resourceId);
-      break;
-    case 'statement':
-      opened = renderStatementDialog(route.resourceId);
-      break;
-    case 'package':
-      opened = renderPackageDialog(route.resourceId);
-      break;
-    case 'note':
-      opened = renderNoteRoute(route);
-      break;
-    default:
-      opened = false;
-  }
-  if (!opened) {
-    toast('Запрошенная карточка недоступна в активных пакетах.', 'error');
-    closeResourceChain(route.base);
-  }
-}
+let renderResourceRoute = () => false;
 
 function applyRouteFromLocation({ scroll = false } = {}) {
   let route = parseHashRoute(location.hash);
