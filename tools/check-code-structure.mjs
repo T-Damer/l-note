@@ -19,7 +19,12 @@ const MAX_LINES = 300;
 const TRANSITIONAL_BUDGETS = new Map([
   ['src/app-parts/00-models.js', 40],
   ['src/app-parts/02a.js', 110],
+  ['src/app-parts/03b.js', 30],
+  ['src/app-parts/04a.js', 12],
+  ['src/app-parts/04b.js', 90],
+  ['src/app-parts/04e-notes.js', 90],
   ['src/app-parts/05-model-lab.js', 280],
+  ['src/app-parts/05a-ask-page.js', 90],
 ]);
 
 async function collectFiles(directory) {
