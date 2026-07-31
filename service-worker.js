@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v25';
-const RUNTIME_CACHE = 'l-note-runtime-v25';
+const SHELL_CACHE = 'l-note-shell-v26';
+const RUNTIME_CACHE = 'l-note-runtime-v26';
 const SHELL = [
   './',
   './index.html',
@@ -33,6 +33,8 @@ const SHELL = [
   './src/pages/local-answer-view.js',
   './src/pages/model-lab-elements.js',
   './src/pages/model-lab-view.js',
+  './src/pages/note-resource-view.js',
+  './src/pages/notes-list-view.js',
   './src/pages/package-resource-view.js',
   './src/pages/routed-resource-renderer.js',
   './src/pages/statement-resource-view.js',
@@ -43,6 +45,7 @@ const SHELL = [
   './src/services/model-lifecycle.js',
   './src/services/model-preferences.js',
   './src/services/model-progress.js',
+  './src/services/note-workflow.js',
   './src/services/storage-persistence.js',
   './src/services/welcome-note.js',
   './src/workers/webllm-worker.js',
