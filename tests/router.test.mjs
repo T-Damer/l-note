@@ -9,8 +9,10 @@ import {
 
 test('parses base pages and falls back to search', () => {
   assert.equal(parseHashRoute('#/ask').page, 'ask');
+  assert.equal(parseHashRoute('#/create-pack').page, 'create-pack');
   assert.equal(parseHashRoute('#/unknown').page, 'search');
   assert.equal(baseRouteHash('library'), '#/library');
+  assert.equal(baseRouteHash('create-pack'), '#/create-pack');
 });
 
 test('creates and parses a restorable document route', () => {
