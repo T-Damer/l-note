@@ -44,11 +44,20 @@ export interface LocalModelLoadResult {
   profile?: unknown;
   loadMs: number;
   reused: boolean;
+  runtime?: string;
+  cacheBackend?: string;
+}
+
+export interface LocalModelAnswerOptions {
+  modeId?: string;
 }
 
 export interface LocalModelAnswer {
   text: string;
   modelId: string;
+  modeId?: string;
+  modeLabel?: string;
+  evidenceChars?: number;
   durationMs: number;
   completionTokens: number | null;
   tokensPerSecond: number | null;
@@ -64,7 +73,8 @@ export interface LocalModelPort {
   readonly engine?: unknown;
   inspectModels?(): Promise<unknown[]>;
   load(options?: { modelId?: string; onProgress?: (progress: unknown) => void }): Promise<LocalModelLoadResult>;
-  answer(query: string, evidence: EvidenceEnvelope): Promise<LocalModelAnswer>;
+  unload(): Promise<void>;
+  answer(query: string, evidence: EvidenceEnvelope, options?: LocalModelAnswerOptions): Promise<LocalModelAnswer>;
 }
 
 export interface EvidenceVerificationResult {
