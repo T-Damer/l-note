@@ -10,6 +10,7 @@ import {
 import {
   activeDomainQueryExpanders,
   defineDomainQueryPlannerPort,
+  defineLocalModelPort,
   defineSearchPort,
 } from '../src/core/ports.js';
 import { composeKnowledgeRuntime } from '../src/core/runtime.js';
@@ -62,6 +63,10 @@ test('evidence envelope is versioned and rejects an empty query', () => {
 
 test('port definitions fail fast on incomplete adapters', () => {
   assert.throws(() => defineSearchPort({ search() {} }), /suggest/u);
+  assert.throws(
+    () => defineLocalModelPort({ async load() {}, async answer() {} }),
+    /unload/u,
+  );
 });
 
 test('domain planners activate only for matching packs', () => {
@@ -101,4 +106,6 @@ test('browser adapters expose the shared ports in a Node memory fallback', async
   const model = createWebLlmPort();
   assert.equal(typeof model.load, 'function');
   assert.equal(typeof model.answer, 'function');
+  assert.equal(typeof model.unload, 'function');
+  assert.equal(defineLocalModelPort(model), model);
 });
