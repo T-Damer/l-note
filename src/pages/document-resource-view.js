@@ -1,13 +1,8 @@
+import { entityTerms } from '../helpers/entity-terms.js';
 import { Button, Card } from '../ui/components.js';
 import { element } from '../ui/dom.js';
 import { Icon } from '../ui/icons.js';
 import { Text } from '../ui/text.js';
-
-function entityTerms(entity) {
-  return [entity.name, ...(entity.aliases ?? [])]
-    .filter(Boolean)
-    .sort((left, right) => right.length - left.length);
-}
 
 function appendLinkedText({ container, text, entityIds, knowledge, normalizeText, navigate }) {
   const entities = entityIds.map((id) => knowledge.entities.get(id)).filter(Boolean);
