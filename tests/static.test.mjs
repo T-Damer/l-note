@@ -31,6 +31,7 @@ const offlineModules = [
   'src/integrations/minimed-adapter.js',
   'src/helpers/entity-terms.js',
   'src/helpers/model-formatters.js',
+  'src/helpers/pack-source-parser.js',
   'src/pages/ask-page-controller.js',
   'src/pages/concept-resource-view.js',
   'src/pages/document-resource-view.js',
@@ -40,12 +41,14 @@ const offlineModules = [
   'src/pages/model-lab-view.js',
   'src/pages/note-resource-view.js',
   'src/pages/notes-list-view.js',
+  'src/pages/pack-creator-page.js',
   'src/pages/package-resource-view.js',
   'src/pages/routed-resource-renderer.js',
   'src/pages/sidebar-controller.js',
   'src/pages/statement-resource-view.js',
   'src/services/answer-modes.js',
   'src/services/ask-workflow.js',
+  'src/services/browser-pack-builder.js',
   'src/services/evidence-query.js',
   'src/services/local-model-loader.js',
   'src/services/model-action.js',
@@ -97,11 +100,16 @@ test('static build contains the complete offline shell', async () => {
   assert.match(css, /\.sidebar\.is-collapsed/u);
   assert.match(css, /\.workspace\.is-sidebar-collapsed/u);
   assert.match(css, /content:\s*attr\(data-tooltip\)/u);
+  assert.match(css, /\.pack-creator-layout/u);
+  assert.match(css, /\.pack-creator-dropzone/u);
 
   const html = await readFile(path.join(root, 'dist', 'index.html'), 'utf8');
   assert.match(html, /ph-magnifying-glass/u);
   assert.match(html, /ph-note-pencil/u);
   assert.match(html, /data-action="toggle-library-view"/u);
+  assert.match(html, /data-action="create-pack"/u);
+  assert.match(html, /data-page="create-pack"/u);
+  assert.match(html, /id="pack-creator-form"/u);
   assert.match(html, /id="model-workspace" class="model-workspace hidden"/u);
   assert.match(html, /dialog-close-button/u);
 
@@ -113,6 +121,7 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /createAskPageController/u);
   assert.match(app, /renderEvidenceView/u);
   assert.match(app, /renderGeneratedLocalAnswer/u);
+  assert.match(app, /createPackCreatorPage/u);
   assert.match(app, /createRoutedResourceRenderer/u);
   assert.match(app, /renderDocumentResource/u);
   assert.match(app, /renderConceptResource/u);
@@ -136,6 +145,15 @@ test('static build contains the complete offline shell', async () => {
   assert.match(askWorkflow, /createAskWorkflow/u);
   assert.match(askWorkflow, /loadSelectedLocalModel/u);
   assert.match(askWorkflow, /collectQuestionEvidence/u);
+
+  const packCreator = await readFile(path.join(root, 'dist', 'src', 'pages', 'pack-creator-page.js'), 'utf8');
+  assert.match(packCreator, /createPackCreatorPage/u);
+  assert.match(packCreator, /buildPackFromBrowserFiles/u);
+  assert.match(packCreator, /Установить/u);
+
+  const packBuilder = await readFile(path.join(root, 'dist', 'src', 'services', 'browser-pack-builder.js'), 'utf8');
+  assert.match(packBuilder, /buildPackFromBrowserFiles/u);
+  assert.match(packBuilder, /BROWSER_PACK_TOTAL_LIMIT/u);
 
   const evidenceView = await readFile(path.join(root, 'dist', 'src', 'pages', 'evidence-view.js'), 'utf8');
   assert.match(evidenceView, /SourceCard\(\{/u);
