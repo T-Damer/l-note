@@ -28,7 +28,7 @@ Single source of future work. Completed items describe the active branch.
 - [x] Use stable hash routes, nested browser history, Back and full-chain Close.
 - [x] Add browser E2E for direct links, reload, modal scrolling and close-chain behavior.
 - [x] Use one routed-resource registry for package, document, concept, statement and note routes.
-- [x] Add the restorable `#/create-pack` page route while keeping the Packages nav item active.
+- [x] Open the creator as the restorable routed card `#/package/new` from the existing Packages page.
 - [ ] Add broader non-demo and large-corpus retrieval regressions.
 - [ ] Add internal PDF/document assets with exact page/section anchors.
 
