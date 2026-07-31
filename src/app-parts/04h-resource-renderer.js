@@ -46,7 +46,7 @@ const routedResourceRenderer = createRoutedResourceRenderer({
         },
       });
     },
-    note: (route) => renderNoteRoute(route),
+    note: (route) => noteResourceView.renderRoute(route),
   },
   onMissing(route) {
     toast('Запрошенная карточка недоступна в активных пакетах.', 'error');
