@@ -7,7 +7,7 @@ L-Note is a hosted, offline-first knowledge workspace with:
 - checksummed installable packs stored in IndexedDB;
 - exact, prefix, alias and fuzzy retrieval through MiniSearch with deterministic fallback;
 - optional domain query planners outside the generic search engine;
-- hash-routed packages, documents, concepts, statements, notes and the local pack creator;
+- hash-routed packages, documents, concepts, statements, notes and package creation;
 - source-linked statements, relations, backlinks and personal-note overlays;
 - list and graph views over the same resources;
 - a browser-local creator for Markdown/TXT/JSON sources and pasted Markdown text;
@@ -54,9 +54,9 @@ The model and Ask slices are split into focused helpers, services and pages. Not
 The local pack creator is split into:
 
 ```text
-src/helpers/pack-source-parser.js      Markdown/TXT/JSON parsing and safe IDs
-src/services/browser-pack-builder.js   limits, documents, abbreviation entities and validation
-src/pages/pack-creator-page.js         form, progress, preview, download/install actions
+src/helpers/pack-source-parser.js       Markdown/TXT/JSON parsing and safe IDs
+src/services/browser-pack-builder.js    limits, documents, abbreviation entities and validation
+src/pages/package-builder-view.js       routed form, progress, preview, download/install actions
 ```
 
 The browser builder has no server dependency. It accepts several `.md`, `.markdown`, `.txt` or `.json` files, or a virtual Markdown file created from pasted text. It preserves source text and headings, splits oversized sections, discovers common abbreviation patterns and emits the same schema-v1 package accepted by normal import. The current limits are 32 MiB per source and 64 MiB total.
@@ -172,7 +172,6 @@ Stable routes:
 #/search
 #/ask
 #/library
-#/create-pack
 #/notes
 #/package/:id
 #/document/:id
@@ -181,7 +180,9 @@ Stable routes:
 #/note/:id
 ```
 
-Browser history owns nested card traversal. Back moves through the chain; full Close returns to the recorded base page and removes forward card routes. Direct links and reload restore the route. The creator is a normal base page launched from Packages; it does not duplicate package installation or catalog UI.
+The package creator uses the ordinary routed resource `#/package/new?from=library&depth=1`. It opens inside the existing document dialog, inherits browser-history Back/full Close behavior and returns to the same Packages page. It does not duplicate package installation or catalog UI.
+
+Browser history owns nested card traversal. Back moves through the chain; full Close returns to the recorded base page and removes forward card routes. Direct links and reload restore the route. Graph nodes use the same registry and route contract.
 
 ## Preparation and distribution
 
