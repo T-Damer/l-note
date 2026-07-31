@@ -2,7 +2,7 @@ const REQUIRED_METHODS = Object.freeze({
   search: Object.freeze(['search', 'suggest']),
   storage: Object.freeze(['getAll', 'getOne', 'putOne', 'deleteOne', 'clearStore', 'getSetting', 'setSetting', 'mode']),
   domainQueryPlanner: Object.freeze(['appliesToPack', 'expandQuery']),
-  localModel: Object.freeze(['load', 'answer']),
+  localModel: Object.freeze(['load', 'answer', 'unload']),
   evidenceVerifier: Object.freeze(['verify']),
 });
 
