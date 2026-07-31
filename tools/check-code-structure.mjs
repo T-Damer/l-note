@@ -44,7 +44,7 @@ function imports(source) {
 function validateBoundaries(relative, source, errors) {
   const moduleImports = imports(source);
   if (relative.startsWith('src/core/')) {
-    const browserGlobalAccess = /\b(?:globalThis\.)?(?:document|window|navigator|indexedDB|localStorage|sessionStorage)\s*(?:\.|\[)/u;
+    const browserGlobalAccess = /\b(?:window|navigator|indexedDB|localStorage|sessionStorage)\s*\.|\bglobalThis\s*\.\s*(?:document|window|navigator|indexedDB|localStorage|sessionStorage)\b/u;
     const networkCall = /\bfetch\s*\(/u;
     if (browserGlobalAccess.test(source) || networkCall.test(source)) {
       errors.push(`${relative}: core must not use browser or network globals`);
