@@ -11,6 +11,7 @@ const ICONS = Object.freeze({
   retry: 'arrow-clockwise',
   spinner: 'spinner-gap',
   import: 'upload-simple',
+  external: 'arrow-square-out',
   graph: 'share-network',
   list: 'list-bullets',
   document: 'file-text',
