@@ -42,6 +42,7 @@ const offlineModules = [
   'src/pages/notes-list-view.js',
   'src/pages/package-resource-view.js',
   'src/pages/routed-resource-renderer.js',
+  'src/pages/sidebar-controller.js',
   'src/pages/statement-resource-view.js',
   'src/services/answer-modes.js',
   'src/services/ask-workflow.js',
@@ -93,6 +94,9 @@ test('static build contains the complete offline shell', async () => {
   assert.match(css, /\.answer-mode-panel/u);
   assert.match(css, /\.knowledge-graph-node/u);
   assert.match(css, /\.ui-switch__track/u);
+  assert.match(css, /\.sidebar\.is-collapsed/u);
+  assert.match(css, /\.workspace\.is-sidebar-collapsed/u);
+  assert.match(css, /content:\s*attr\(data-tooltip\)/u);
 
   const html = await readFile(path.join(root, 'dist', 'index.html'), 'utf8');
   assert.match(html, /ph-magnifying-glass/u);
@@ -117,6 +121,7 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /createNoteResourceView/u);
   assert.match(app, /renderNotesList/u);
   assert.match(app, /createNoteRecord/u);
+  assert.match(app, /createSidebarController/u);
   assert.match(app, /detectEntitiesInText/u);
   assert.match(app, /MODEL_SELECTION_SETTING_KEY/u);
   assert.match(app, /markLocalModelCached/u);
@@ -155,6 +160,10 @@ test('static build contains the complete offline shell', async () => {
   const noteWorkflow = await readFile(path.join(root, 'dist', 'src', 'services', 'note-workflow.js'), 'utf8');
   assert.match(noteWorkflow, /createNoteRecord/u);
   assert.match(noteWorkflow, /normalizeImportedNotes/u);
+
+  const sidebarController = await readFile(path.join(root, 'dist', 'src', 'pages', 'sidebar-controller.js'), 'utf8');
+  assert.match(sidebarController, /SIDEBAR_COLLAPSED_SETTING_KEY/u);
+  assert.match(sidebarController, /aria-expanded/u);
 
   const ai = await readFile(path.join(root, 'dist', 'src', 'ai.js'), 'utf8');
   assert.match(ai, /Qwen3-4B-q4f16_1-MLC/u);
