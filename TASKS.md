@@ -48,6 +48,7 @@ Single source of future work. Completed items describe the active branch.
 - [x] Keep exactly one active model; unload and terminate the previous worker on user-selected model change.
 - [x] Do not use an inactivity timer to unload the model.
 - [x] Keep downloaded weights in the WebLLM browser cache.
+- [x] Request persistent origin storage before a large model download without blocking on denial.
 - [x] Display persistent weight size separately from active runtime memory.
 - [x] Allow model download before entering a question.
 - [x] Add `Экономный` and `Расширенный` modes using deterministic source/character limits.
