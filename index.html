@@ -85,6 +85,7 @@
               <p>Каждый пакет хранится локально и удаляется независимо. После установки поиск не обращается к серверу.</p>
             </div>
             <div class="header-actions">
+              <button class="primary-button button-with-icon" type="button" data-action="create-pack"><i class="ph ph-plus-circle icon" aria-hidden="true"></i>Создать свой пакет</button>
               <button class="secondary-button button-with-icon" type="button" data-action="toggle-library-view" aria-pressed="false"><i class="ph ph-share-network icon" aria-hidden="true"></i>Граф</button>
               <label class="secondary-button file-button file-button-with-icon"><i class="ph ph-upload-simple icon" aria-hidden="true"></i>Импортировать .json<input id="pack-file-input" type="file" accept="application/json,.json" /></label>
             </div>
@@ -92,6 +93,51 @@
           <div id="storage-summary" class="storage-summary"></div>
           <section id="catalog-grid" class="catalog-grid" aria-live="polite"></section>
           <section id="knowledge-graph-view" class="knowledge-graph-view hidden" aria-live="polite"></section>
+        </section>
+
+        <section class="page" data-page="create-pack">
+          <header class="page-header">
+            <div>
+              <p class="eyebrow">Локальная подготовка</p>
+              <h1>Создать свой пакет знаний</h1>
+              <p>Выберите Markdown, TXT или JSON-файлы. L-Note сохранит исходный текст, разделы и найденные сокращения, затем соберёт устанавливаемый пакет прямо в браузере.</p>
+            </div>
+            <button class="secondary-button button-with-icon" type="button" data-action="back-to-library"><i class="ph ph-arrow-left icon" aria-hidden="true"></i>К пакетам</button>
+          </header>
+
+          <div class="pack-creator-layout">
+            <form id="pack-creator-form" class="pack-creator-form">
+              <section class="pack-creator-panel">
+                <div class="pack-creator-grid">
+                  <label>Название пакета<input id="pack-creator-title" required maxlength="160" placeholder="Например: Моя рабочая справка" /></label>
+                  <label>Идентификатор<input id="pack-creator-id" required maxlength="180" pattern="[A-Za-z0-9._-]+" placeholder="user.my-knowledge" /></label>
+                  <label>Версия<input id="pack-creator-version" required maxlength="64" /></label>
+                  <label>Язык<select id="pack-creator-language"><option value="ru">Русский</option><option value="en">English</option><option value="multi">Несколько языков</option></select></label>
+                </div>
+                <label>Описание<textarea id="pack-creator-description" rows="3" maxlength="1200" placeholder="Что входит в пакет и для чего он нужен"></textarea></label>
+                <label class="pack-creator-dropzone">
+                  <span><strong>Выбрать исходные файлы</strong><small>Markdown, TXT или JSON · до 32 МБ на файл · до 64 МБ суммарно</small></span>
+                  <input id="pack-creator-files" type="file" multiple accept=".md,.markdown,.txt,.json,text/markdown,text/plain,application/json" />
+                </label>
+                <div id="pack-creator-file-summary" class="pack-creator-file-summary"></div>
+                <label>Или вставить текст<textarea id="pack-creator-text" rows="10" placeholder="# Заголовок документа&#10;&#10;## Раздел&#10;Текст, который должен войти в локальную базу знаний."></textarea></label>
+                <div class="pack-creator-actions">
+                  <button id="pack-creator-build" class="primary-button button-with-icon" type="submit"><i class="ph ph-package icon" aria-hidden="true"></i>Собрать пакет</button>
+                  <button id="pack-creator-reset" class="secondary-button" type="button">Очистить</button>
+                </div>
+                <p id="pack-creator-status" class="pack-creator-status" aria-live="polite"></p>
+              </section>
+            </form>
+
+            <aside class="pack-creator-output" aria-live="polite">
+              <section id="pack-creator-preview" class="pack-creator-preview" hidden></section>
+              <div id="pack-creator-result-actions" class="pack-creator-result-actions" hidden>
+                <button id="pack-creator-download" class="secondary-button button-with-icon" type="button"><i class="ph ph-download-simple icon" aria-hidden="true"></i>Скачать JSON</button>
+                <button id="pack-creator-install" class="primary-button button-with-icon" type="button"><i class="ph ph-check-circle icon" aria-hidden="true"></i>Установить в L-Note</button>
+              </div>
+              <p class="pack-creator-privacy">Вся подготовка выполняется локально. Файлы не отправляются на сервер и не требуют загруженной LLM.</p>
+            </aside>
+          </div>
         </section>
 
         <section class="page" data-page="notes">
