@@ -20,20 +20,40 @@ function formatBytes(bytes) {
   return `${value >= 10 || unit === 0 ? value.toFixed(0) : value.toFixed(1)} ${units[unit]}`;
 }
 
-function textInput({ value = '', placeholder = '', required = false } = {}) {
-  return element('input', { type: 'text', value, placeholder, required });
+function versionForToday(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}.${month}.${day}`;
 }
 
-function fileSummary(files) {
+function textInput({ value = '', placeholder = '', required = false, maxLength = 180 } = {}) {
+  return element('input', { type: 'text', value, placeholder, required, maxLength });
+}
+
+function virtualMarkdownFile(title, text) {
+  const content = String(text ?? '').trim();
+  return Object.freeze({
+    name: `${proposedBrowserPackId(title).replace(/^user\./u, '') || 'notes'}.md`,
+    size: new TextEncoder().encode(content).byteLength,
+    async text() {
+      return content;
+    },
+  });
+}
+
+function sourceSummary(files, manualText) {
   const selected = [...(files ?? [])];
-  if (!selected.length) return 'Файлы ещё не выбраны.';
-  const total = selected.reduce((sum, file) => sum + Number(file.size ?? 0), 0);
-  return `${selected.length} файл(а) · ${formatBytes(total)}`;
+  const manualSize = new TextEncoder().encode(String(manualText ?? '').trim()).byteLength;
+  const count = selected.length + (manualSize ? 1 : 0);
+  if (!count) return 'Добавьте файлы или вставьте текст.';
+  const total = selected.reduce((sum, file) => sum + Number(file.size ?? 0), manualSize);
+  return `${count} источник(а) · ${formatBytes(total)}`;
 }
 
 function progressText(progress) {
   if (progress.stage === 'reading') return `Чтение: ${progress.filename ?? 'файл'}`;
-  if (progress.stage === 'indexing') return 'Поиск сокращений и построение локального индекса…';
+  if (progress.stage === 'indexing') return 'Разметка разделов и поиск сокращений…';
   if (progress.stage === 'ready') return 'Пакет собран и проверен.';
   return 'Подготовка…';
 }
@@ -47,6 +67,15 @@ function progressValue(progress) {
 
 function renderStats(container, pack) {
   const stats = browserPackStats(pack);
+  const documents = pack.documents.slice(0, 12).map((documentRecord) => element('article', {
+    className: 'pack-builder-document',
+  }, [
+    Text({ variant: 'label', as: 'strong', text: documentRecord.title }),
+    Text({
+      variant: 'caption',
+      text: `${documentRecord.sections?.length ?? 0} разделов · ${documentRecord.source?.title ?? 'локальный источник'}`,
+    }),
+  ]));
   container.replaceChildren(
     Text({ variant: 'label', text: pack.title }),
     element('div', { className: 'pack-builder-stats' }, [
@@ -55,95 +84,117 @@ function renderStats(container, pack) {
       element('span', { className: 'pill muted', text: `${stats.entities} понятий` }),
       element('span', { className: 'pill muted', text: formatBytes(stats.bytes) }),
     ]),
+    element('div', { className: 'pack-builder-documents' }, documents),
     Text({
       variant: 'caption',
       text: stats.entities
-        ? 'Сокращения, найденные в тексте, уже связаны с разделами. Утверждения и сложные связи можно добавить при последующей LLM-подготовке.'
+        ? 'Явные сокращения уже связаны с разделами. Утверждения и сложные связи можно добавить при последующей LLM-подготовке.'
         : 'Документы готовы для локального поиска. Сложную LLM-разметку можно добавить позднее на более мощном устройстве.',
     }),
   );
   container.hidden = false;
 }
 
-export function renderPackageBuilderResource({
-  dialogView,
-  onInstall,
-  onDownload,
-} = {}) {
+export function renderPackageBuilderResource({ dialogView, onInstall, onDownload } = {}) {
   if (!dialogView?.replaceBody || !dialogView?.show) throw new TypeError('A routed dialog view is required.');
   if (typeof onInstall !== 'function' || typeof onDownload !== 'function') {
     throw new TypeError('Package builder actions are required.');
   }
 
-  const title = textInput({ placeholder: 'Например: Мой рабочий справочник', required: true });
+  const title = textInput({ placeholder: 'Например: Мой рабочий справочник', required: true, maxLength: 160 });
   const id = textInput({ placeholder: 'user.moy-spravochnik' });
-  const version = textInput({ value: '1.0.0', required: true });
-  const language = textInput({ value: 'ru', required: true });
+  const version = textInput({ value: versionForToday(), required: true, maxLength: 64 });
+  const language = element('select', {}, [
+    element('option', { value: 'ru', text: 'Русский' }),
+    element('option', { value: 'en', text: 'English' }),
+    element('option', { value: 'multi', text: 'Несколько языков' }),
+  ]);
   const description = element('textarea', {
     rows: 3,
     value: 'Пользовательский пакет знаний',
     placeholder: 'Кратко опишите содержимое пакета',
+    maxLength: 1200,
   });
   const files = element('input', {
     type: 'file',
     multiple: true,
     accept: BROWSER_PACK_EXTENSIONS.join(','),
   });
-  const selectedFiles = Text({ variant: 'caption', text: fileSummary(files.files) });
+  const manualText = element('textarea', {
+    rows: 7,
+    placeholder: '# Заголовок документа\n\n## Раздел\nТекст, который должен войти в локальную базу знаний.',
+  });
+  const selectedSources = Text({ variant: 'caption', text: sourceSummary(files.files, manualText.value) });
   const status = Text({ variant: 'muted', text: 'Все данные обрабатываются локально и не отправляются на сервер.' });
   const progress = element('progress', { className: 'pack-builder-progress', max: 1, value: 0, hidden: true });
   const preview = element('section', { className: 'pack-builder-preview', hidden: true });
   const buildButton = Button({ variant: 'primary', icon: 'package', text: 'Собрать пакет' });
-  const installButton = Button({
-    variant: 'primary',
-    icon: 'download',
-    text: 'Установить и открыть',
-    hidden: true,
-  });
-  const downloadButton = Button({
-    variant: 'secondary',
-    icon: 'download',
-    text: 'Скачать JSON',
-    hidden: true,
-  });
+  const resetButton = Button({ variant: 'secondary', text: 'Очистить' });
+  const installButton = Button({ variant: 'primary', icon: 'download', text: 'Установить и открыть', hidden: true });
+  const downloadButton = Button({ variant: 'secondary', icon: 'download', text: 'Скачать JSON', hidden: true });
   let builtPack = null;
   let idEdited = false;
 
+  const setStatus = (message, type = 'info') => {
+    status.textContent = message;
+    status.classList.toggle('is-error', type === 'error');
+    status.classList.toggle('is-success', type === 'success');
+  };
   const setBusy = (busy) => {
-    buildButton.disabled = busy;
-    installButton.disabled = busy;
-    downloadButton.disabled = busy;
-    title.disabled = busy;
-    id.disabled = busy;
-    version.disabled = busy;
-    language.disabled = busy;
-    description.disabled = busy;
-    files.disabled = busy;
+    for (const control of [buildButton, resetButton, installButton, downloadButton, title, id, version, language, description, files, manualText]) {
+      control.disabled = busy;
+    }
+  };
+  const clearResult = () => {
+    builtPack = null;
+    preview.hidden = true;
+    preview.replaceChildren();
+    installButton.hidden = true;
+    downloadButton.hidden = true;
+  };
+  const sourceFiles = () => {
+    const list = [...(files.files ?? [])];
+    if (manualText.value.trim()) list.push(virtualMarkdownFile(title.value, manualText.value));
+    return list;
+  };
+  const syncSources = () => {
+    selectedSources.textContent = sourceSummary(files.files, manualText.value);
+    clearResult();
+    setStatus('Источники изменены. Соберите пакет заново.');
   };
 
   title.addEventListener('input', () => {
     if (!idEdited) id.value = proposedBrowserPackId(title.value);
   });
   id.addEventListener('input', () => {
-    idEdited = true;
+    idEdited = Boolean(id.value.trim());
   });
-  files.addEventListener('change', () => {
-    selectedFiles.textContent = fileSummary(files.files);
-    builtPack = null;
-    preview.hidden = true;
-    installButton.hidden = true;
-    downloadButton.hidden = true;
-    status.textContent = 'Файлы выбраны. Сборка выполняется локально в браузере.';
+  files.addEventListener('change', syncSources);
+  manualText.addEventListener('input', syncSources);
+  resetButton.addEventListener('click', () => {
+    title.value = '';
+    id.value = '';
+    version.value = versionForToday();
+    language.value = 'ru';
+    description.value = 'Пользовательский пакет знаний';
+    files.value = '';
+    manualText.value = '';
+    idEdited = false;
+    progress.hidden = true;
+    clearResult();
+    selectedSources.textContent = sourceSummary([], '');
+    setStatus('Все данные обрабатываются локально и не отправляются на сервер.');
   });
 
   buildButton.addEventListener('click', async () => {
     setBusy(true);
+    clearResult();
     progress.hidden = false;
     progress.value = 0;
-    status.textContent = 'Подготовка пакета…';
+    setStatus('Подготовка пакета…');
     try {
       builtPack = await buildPackFromBrowserFiles({
-        files: files.files,
+        files: sourceFiles(),
         id: id.value,
         version: version.value,
         title: title.value,
@@ -151,7 +202,7 @@ export function renderPackageBuilderResource({
         language: language.value,
         onProgress(update) {
           progress.value = progressValue(update);
-          status.textContent = progressText(update);
+          setStatus(progressText(update));
         },
       });
       title.value = builtPack.title;
@@ -161,27 +212,22 @@ export function renderPackageBuilderResource({
       renderStats(preview, builtPack);
       installButton.hidden = false;
       downloadButton.hidden = false;
+      setStatus('Пакет готов: скачайте JSON или установите его сразу.', 'success');
     } catch (error) {
-      builtPack = null;
-      preview.hidden = true;
-      installButton.hidden = true;
-      downloadButton.hidden = true;
-      status.textContent = error instanceof Error ? error.message : String(error);
-      status.classList.add('is-error');
+      clearResult();
+      setStatus(error instanceof Error ? error.message : String(error), 'error');
     } finally {
       setBusy(false);
     }
   });
-
   installButton.addEventListener('click', async () => {
     if (!builtPack) return;
     setBusy(true);
-    status.textContent = 'Установка пакета в локальную библиотеку…';
+    setStatus('Установка пакета в локальную библиотеку…');
     try {
       await onInstall(builtPack);
     } catch (error) {
-      status.textContent = error instanceof Error ? error.message : String(error);
-      status.classList.add('is-error');
+      setStatus(error instanceof Error ? error.message : String(error), 'error');
       setBusy(false);
     }
   });
@@ -190,7 +236,7 @@ export function renderPackageBuilderResource({
   const root = element('section', { className: 'pack-builder' }, [
     Text({
       variant: 'muted',
-      text: 'Выберите Markdown, TXT или JSON. L-Note разобьёт документы на разделы, найдёт явные сокращения и соберёт устанавливаемый пакет без сети.',
+      text: 'Выберите Markdown, TXT или JSON либо вставьте текст. L-Note разобьёт материалы на разделы, найдёт явные сокращения и соберёт пакет без сети.',
     }),
     element('div', { className: 'pack-builder-grid' }, [
       Field({ label: 'Название', control: title, required: true }),
@@ -204,11 +250,12 @@ export function renderPackageBuilderResource({
       control: files,
       hint: 'До 32 МБ на файл и 64 МБ суммарно. Большие корпуса лучше готовить через CLI.',
     }),
-    selectedFiles,
+    selectedSources,
+    Field({ label: 'Или вставьте текст', control: manualText }),
     progress,
     status,
     preview,
-    element('div', { className: 'pack-builder-actions' }, [buildButton, installButton, downloadButton]),
+    element('div', { className: 'pack-builder-actions' }, [buildButton, resetButton, installButton, downloadButton]),
   ]);
 
   dialogView.replaceHeading([
