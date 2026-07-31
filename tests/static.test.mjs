@@ -30,9 +30,11 @@ const offlineModules = [
   'src/domain-plugins/minimed.js',
   'src/integrations/minimed-adapter.js',
   'src/helpers/model-formatters.js',
+  'src/pages/local-answer-view.js',
   'src/pages/model-lab-elements.js',
   'src/pages/model-lab-view.js',
   'src/services/answer-modes.js',
+  'src/services/local-model-loader.js',
   'src/services/model-action.js',
   'src/services/model-lifecycle.js',
   'src/services/model-preferences.js',
@@ -91,6 +93,8 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /buildKnowledgeGraph/u);
   assert.match(app, /beginLocalModelLoad/u);
   assert.match(app, /createModelLabView/u);
+  assert.match(app, /loadSelectedLocalModel/u);
+  assert.match(app, /renderGeneratedLocalAnswer/u);
   assert.match(app, /MODEL_SELECTION_SETTING_KEY/u);
   assert.match(app, /markLocalModelCached/u);
   assert.match(app, /createRoutedDialogController/u);
