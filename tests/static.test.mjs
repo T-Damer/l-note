@@ -29,6 +29,7 @@ test('static build contains the complete offline shell', async () => {
     'vendor/phosphor/Phosphor.woff2',
     'packs/catalog.json',
     'src/app.js',
+    'src/ai.js',
     'src/router.js',
     'src/relations.js',
     'src/core/contracts.js',
@@ -39,9 +40,11 @@ test('static build contains the complete offline shell', async () => {
     'src/adapters/runtime-adapters.js',
     'src/domain-plugins/minimed.js',
     'src/integrations/minimed-adapter.js',
+    'src/services/answer-modes.js',
     'src/services/model-action.js',
     'src/services/model-progress.js',
     'src/services/welcome-note.js',
+    'src/workers/webllm-worker.js',
     'src/ui/text.js',
     'src/ui/icons.js',
     'src/ui/components.js',
@@ -58,6 +61,7 @@ test('static build contains the complete offline shell', async () => {
   assert.match(css, /\.dialog-close-button/u);
   assert.match(css, /\.source-card__action/u);
   assert.match(css, /\.model-progress-track/u);
+  assert.match(css, /\.answer-mode-panel/u);
   assert.match(css, /\.knowledge-graph-node/u);
   assert.match(css, /\.ui-switch__track/u);
 
@@ -72,6 +76,8 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /SourceCard\(\{/u);
   assert.match(app, /buildKnowledgeGraph/u);
   assert.match(app, /beginLocalModelLoad/u);
+  assert.match(app, /ANSWER_MODE_PROFILES/u);
+  assert.match(app, /Qwen3-4B-q4f16_1-MLC/u);
   assert.match(app, /createRoutedDialogController/u);
   assert.match(app, /ensureWelcomeNote/u);
 
@@ -80,6 +86,14 @@ test('static build contains the complete offline shell', async () => {
     encoding: 'utf8',
   });
   assert.equal(syntax.status, 0, `${syntax.stderr}\n\nAssembled app tail:\n${numberedTail(app)}`);
+
+  for (const relative of ['src/ai.js', 'src/services/answer-modes.js', 'src/workers/webllm-worker.js']) {
+    const result = spawnSync(process.execPath, ['--check', path.join(root, 'dist', relative)], {
+      cwd: root,
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr);
+  }
 });
 
 test('static builder vendors the installed MiniSearch UMD file', async () => {
