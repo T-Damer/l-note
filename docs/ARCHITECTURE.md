@@ -20,6 +20,47 @@ L-Note is a hosted, offline-first knowledge workspace with:
 
 The outer dialog and shell never scroll. `.dialog-body` is the only vertical scroll container; root and body are locked while a routed card is open. The header reserves Back, title and Close columns.
 
+## Code organization
+
+The intended dependency flow is:
+
+```text
+pages / application shell
+        ↓
+services / integrations
+        ↓
+core contracts and ports
+        ↑
+adapters / domain plugins
+```
+
+Current stable areas:
+
+```text
+src/core/          domain-neutral contracts, ports and headless runtime
+src/adapters/      MiniSearch, IndexedDB and WebLLM port implementations
+src/services/      storage/model/evidence workflows and pure state transitions
+src/pages/         page-specific construction and rendering
+src/ui/            reusable typography, controls, dialogs, graph and safe DOM helpers
+src/helpers/       stateless formatting and mapping
+src/integrations/  MiniMed compatibility boundary
+```
+
+`src/app-parts/` is transitional composition debt. New business logic is not added there. The model page has already been split into:
+
+```text
+src/helpers/model-formatters.js
+src/services/model-lifecycle.js
+src/services/local-model-loader.js
+src/pages/model-lab-elements.js
+src/pages/model-lab-view.js
+src/pages/local-answer-view.js
+```
+
+`src/app-parts/05-model-lab.js` now owns application wiring and event coordination rather than constructing the entire page. Remaining Ask orchestration and resource-specific dialog bodies are the next extraction targets.
+
+`npm run check:structure` enforces modular file limits, selected dependency boundaries, safe DOM insertion and decreasing budgets for touched transitional files. Detailed rules live in `AGENTS.md`.
+
 ## L-Note Core and MiniMed
 
 L-Note is the domain-neutral runtime. MiniMed consumes it through adapters; clinical policy does not move into L-Note.
@@ -162,11 +203,12 @@ Model output may propose structure but never silently replace source text. The c
 
 ## Next ordered work
 
-1. Replace remaining resource-specific renderers and split transitional app fragments into pages/services/helpers.
-2. Add internal PDF assets with exact anchors.
-3. Add SQLite/FTS5 behind `SearchPort` and `StoragePort`.
-4. Add a user-facing local pack-preparation workflow over the existing CLI contract.
-5. Add safe cancellation and persisted download state where browser/runtime APIs support it.
-6. Connect L-Note Core to MiniMed and require MiniMed retrieval, dose and safety benchmarks before migration.
+1. Move remaining Ask/model orchestration out of transitional app parts.
+2. Replace resource-specific dialog bodies with one routed resource renderer.
+3. Add internal PDF assets with exact anchors.
+4. Add SQLite/FTS5 behind `SearchPort` and `StoragePort`.
+5. Add a user-facing local pack-preparation workflow over the existing CLI contract.
+6. Add safe cancellation and persisted download state where browser/runtime APIs support it.
+7. Connect L-Note Core to MiniMed and require MiniMed retrieval, dose and safety benchmarks before migration.
 
 Android and iOS remain deferred until the hosted web core is stable, while memory and storage decisions remain compatible with mid-range 8–12 GB devices.
