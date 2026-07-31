@@ -29,11 +29,16 @@ const offlineModules = [
   'src/adapters/runtime-adapters.js',
   'src/domain-plugins/minimed.js',
   'src/integrations/minimed-adapter.js',
+  'src/helpers/entity-terms.js',
   'src/helpers/model-formatters.js',
+  'src/pages/concept-resource-view.js',
+  'src/pages/document-resource-view.js',
   'src/pages/evidence-view.js',
   'src/pages/local-answer-view.js',
   'src/pages/model-lab-elements.js',
   'src/pages/model-lab-view.js',
+  'src/pages/routed-resource-renderer.js',
+  'src/pages/statement-resource-view.js',
   'src/services/answer-modes.js',
   'src/services/evidence-query.js',
   'src/services/local-model-loader.js',
@@ -98,6 +103,11 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /renderEvidenceView/u);
   assert.match(app, /loadSelectedLocalModel/u);
   assert.match(app, /renderGeneratedLocalAnswer/u);
+  assert.match(app, /createRoutedResourceRenderer/u);
+  assert.match(app, /renderDocumentResource/u);
+  assert.match(app, /renderConceptResource/u);
+  assert.match(app, /renderStatementResource/u);
+  assert.match(app, /detectEntitiesInText/u);
   assert.match(app, /MODEL_SELECTION_SETTING_KEY/u);
   assert.match(app, /markLocalModelCached/u);
   assert.match(app, /createRoutedDialogController/u);
@@ -106,6 +116,14 @@ test('static build contains the complete offline shell', async () => {
   const evidenceView = await readFile(path.join(root, 'dist', 'src', 'pages', 'evidence-view.js'), 'utf8');
   assert.match(evidenceView, /SourceCard\(\{/u);
   assert.match(evidenceView, /renderEvidenceView/u);
+
+  const resourceRegistry = await readFile(path.join(root, 'dist', 'src', 'pages', 'routed-resource-renderer.js'), 'utf8');
+  assert.match(resourceRegistry, /createRoutedResourceRenderer/u);
+  assert.match(resourceRegistry, /registry\.get/u);
+
+  const documentView = await readFile(path.join(root, 'dist', 'src', 'pages', 'document-resource-view.js'), 'utf8');
+  assert.match(documentView, /renderDocumentResource/u);
+  assert.match(documentView, /Открыть внешний первоисточник/u);
 
   const ai = await readFile(path.join(root, 'dist', 'src', 'ai.js'), 'utf8');
   assert.match(ai, /Qwen3-4B-q4f16_1-MLC/u);
