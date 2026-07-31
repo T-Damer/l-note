@@ -27,7 +27,7 @@ import {
   MODEL_CATALOG_STATUS,
   indexModelCatalog,
   isModelAvailable,
-  markModelCached,
+  markModelCached as updateModelCachedCatalog,
   resolveModelLifecycle,
 } from './services/model-lifecycle.js';
 import { requestPersistentStorage, storagePersistenceLabel } from './services/storage-persistence.js';
