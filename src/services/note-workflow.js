@@ -45,7 +45,7 @@ export function createNoteRecord({
   const relation = normalizeNoteRelation(draft.relation);
   const suppliedId = textValue(draft.id, 160);
   return Object.freeze({
-    id: previous?.id ?? suppliedId || createId(),
+    id: previous?.id ?? (suppliedId || createId()),
     title,
     body,
     relation,
