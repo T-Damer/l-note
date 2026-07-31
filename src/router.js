@@ -1,4 +1,4 @@
-export const BASE_ROUTES = Object.freeze(['search', 'ask', 'library', 'create-pack', 'notes']);
+export const BASE_ROUTES = Object.freeze(['search', 'ask', 'library', 'notes']);
 export const RESOURCE_ROUTES = Object.freeze(['concept', 'statement', 'package', 'note', 'document']);
 
 const DEFAULT_BASE_BY_RESOURCE = Object.freeze({
