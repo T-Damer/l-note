@@ -91,7 +91,6 @@ test('static build contains the complete offline shell', async () => {
   assert.match(html, /dialog-close-button/u);
 
   const app = await readFile(path.join(root, 'dist', 'src', 'app.js'), 'utf8');
-  assert.match(app, /SourceCard\(\{/u);
   assert.match(app, /buildKnowledgeGraph/u);
   assert.match(app, /beginLocalModelLoad/u);
   assert.match(app, /createModelLabView/u);
@@ -103,6 +102,10 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /markLocalModelCached/u);
   assert.match(app, /createRoutedDialogController/u);
   assert.match(app, /ensureWelcomeNote/u);
+
+  const evidenceView = await readFile(path.join(root, 'dist', 'src', 'pages', 'evidence-view.js'), 'utf8');
+  assert.match(evidenceView, /SourceCard\(\{/u);
+  assert.match(evidenceView, /renderEvidenceView/u);
 
   const ai = await readFile(path.join(root, 'dist', 'src', 'ai.js'), 'utf8');
   assert.match(ai, /Qwen3-4B-q4f16_1-MLC/u);
