@@ -171,6 +171,10 @@ MiniMed
 
 Any future MiniMed migration requires separate approval and must pass MiniMed's existing retrieval, dose and safety suites through the adapter.
 
+## Validation
+
+The routed package creator, browser parser/builder, static offline shell and existing Chromium routing/modal/graph scenarios are included in `npm run check`.
+
 ## Limitations
 
 The hosted prototype does not yet provide PDF/DOCX parsing, OCR, SQLite/FTS5, signed publisher catalogs, delta updates, encrypted notes or cross-device sync. Native Android/iOS packaging is deferred until the web core and storage adapters are stable.
