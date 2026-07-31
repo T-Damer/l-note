@@ -6,7 +6,7 @@ import {
 } from './ports.js';
 import { composeKnowledgeRuntime } from './runtime.js';
 
-export const KNOWLEDGE_APPLICATION_ADAPTER_VERSION = '0.1.0';
+export const KNOWLEDGE_APPLICATION_ADAPTER_VERSION = '0.2.0';
 
 function nonEmptyString(value, name) {
   if (typeof value !== 'string' || value.trim().length === 0) {
