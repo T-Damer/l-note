@@ -75,12 +75,13 @@ async function loadOrRunLocalAi(button) {
   });
 
   if (action === LOCAL_MODEL_ACTION.LOAD) {
-    const persistence = await requestPersistentStorage();
     beginLocalModelLoad(selectedProfile);
     try {
-      const loaded = await state.localAi.load({
+      const { loaded, persistence } = await loadSelectedLocalModel({
+        modelPort: state.localAi,
         modelId: selectedModelId,
         onProgress: reportLocalModelProgress,
+        requestPersistence: requestPersistentStorage,
       });
       state.lastModelLoad = loaded;
       state.localAiReady = true;
@@ -121,41 +122,11 @@ async function loadOrRunLocalAi(button) {
       { modeId: selectedMode.id },
     );
     const profile = localModelProfile(answer.modelId);
-    const panel = create('article', { className: 'answer-panel' });
-    panel.append(create('h2', { text: `Ответ ${profile?.label ?? answer.modelId} · ${answer.modeLabel}` }));
-    const body = create('p', { className: 'ai-answer', text: answer.text || 'Модель вернула пустой ответ.' });
-    panel.append(body);
-    const metrics = create('div', { className: 'storage-summary' });
-    metrics.append(
-      create('span', { text: `Ответ: ${formatModelDuration(answer.durationMs)}` }),
-      create('span', { text: formatGenerationSpeed(answer.tokensPerSecond) }),
-      create('span', { text: answer.completionTokens ? `${answer.completionTokens} токенов` : 'Токены не сообщены' }),
-      create('span', { text: `контекст ≈${answer.evidenceChars.toLocaleString('ru-RU')} знаков` }),
-      create('span', { text: answer.grounded ? 'Ссылки прошли проверку' : 'Ссылки не подтверждены' }),
-    );
-    panel.append(metrics);
-    if (!answer.grounded) {
-      panel.append(create('div', {
-        className: 'conflict-box',
-        text: answer.invalidCitations.length
-          ? `Ответ содержит неизвестные ссылки: ${answer.invalidCitations.join(', ')}. Проверяйте его вручную.`
-          : 'Ответ не содержит проверяемых ссылок на локальные источники и не считается grounded.',
-      }));
-    }
-    dom.answerOutput.prepend(panel);
-    state.localAiRuns.unshift({
-      modelId: answer.modelId,
-      modeId: answer.modeId,
-      loadMs: state.lastModelLoad?.modelId === answer.modelId ? state.lastModelLoad.loadMs : null,
-      durationMs: answer.durationMs,
-      tokensPerSecond: answer.tokensPerSecond,
-      completionTokens: answer.completionTokens,
-      grounded: answer.grounded,
-      createdAt: new Date().toISOString(),
-    });
-    state.localAiRuns = state.localAiRuns.slice(0, 6);
+    const rendered = renderGeneratedLocalAnswer({ answer, profile, output: dom.answerOutput });
+    const record = createModelRunRecord(answer, state.lastModelLoad);
+    state.localAiRuns = prependModelRun(state.localAiRuns, record);
     renderModelRunHistory();
-    dom.aiStatus.textContent = `${profile?.label ?? answer.modelId} · ${answer.modeLabel}: ответ за ${formatModelDuration(answer.durationMs)}, ${formatGenerationSpeed(answer.tokensPerSecond)}.`;
+    dom.aiStatus.textContent = rendered.statusText;
   } catch (error) {
     toast(error instanceof Error ? error.message : String(error), 'error');
   } finally {
