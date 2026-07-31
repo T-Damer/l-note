@@ -14,7 +14,7 @@ import {
 
 test('package entrypoints expose the stable core, browser adapters and MiniMed boundary', () => {
   assert.equal(LNOTE_CONTRACT_VERSION, '0.1.0');
-  assert.equal(KNOWLEDGE_APPLICATION_ADAPTER_VERSION, '0.1.0');
+  assert.equal(KNOWLEDGE_APPLICATION_ADAPTER_VERSION, '0.2.0');
   assert.equal(MINIMED_ADAPTER_CONTRACT_VERSION, '0.1.0');
   assert.equal(typeof defineKnowledgeApplicationAdapter, 'function');
   assert.equal(typeof createMiniSearchPort, 'function');
