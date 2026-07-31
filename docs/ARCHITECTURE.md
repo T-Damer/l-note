@@ -63,12 +63,13 @@ Routed knowledge resources use one registry and separate renderers:
 
 ```text
 src/pages/routed-resource-renderer.js
+src/pages/package-resource-view.js
 src/pages/document-resource-view.js
 src/pages/concept-resource-view.js
 src/pages/statement-resource-view.js
 ```
 
-The registry owns dispatch and missing-resource handling. The shared routed-dialog controller owns lifecycle, Back/Close availability and the heading/body surfaces. Resource renderers only resolve data and build content. Package and note renderers currently enter the same registry through compatibility functions and are the next candidates for extraction.
+The registry owns dispatch and missing-resource handling. The shared routed-dialog controller owns lifecycle, Back/Close availability and the heading/body surfaces. Resource renderers only resolve data and build content. Only the note editor still enters the registry through a transitional compatibility function.
 
 The legacy local DOM builder and resource-type switch were removed from the shell. Modular rendering uses `src/ui/dom.js`, which inserts text and nodes rather than raw HTML.
 
@@ -209,7 +210,7 @@ Model output may propose structure but never silently replace source text. The c
 
 ## Next ordered work
 
-1. Extract package, note and remaining Ask coordination from transitional app parts.
+1. Extract the note editor and remaining Ask coordination from transitional app parts.
 2. Add internal PDF assets and exact page/section anchors.
 3. Add SQLite/FTS5 behind `SearchPort` and `StoragePort`.
 4. Add a user-facing local pack-preparation workflow over the existing CLI contract.
