@@ -2,35 +2,6 @@
   }
 }
 
-async function importNotesFile(file) {
-  try {
-    const payload = JSON.parse(await file.text());
-    const notes = Array.isArray(payload) ? payload : payload.notes;
-    if (!Array.isArray(notes)) throw new Error('Файл не содержит массива notes.');
-    let imported = 0;
-    for (const input of notes) {
-      if (!input || typeof input.title !== 'string' || typeof input.body !== 'string') continue;
-      const now = new Date().toISOString();
-      await storagePort.putOne('notes', {
-        id: typeof input.id === 'string' ? input.id : crypto.randomUUID(),
-        title: input.title.slice(0, 160),
-        body: input.body.slice(0, 12000),
-        relation: ['observation', 'refines', 'contradicts', 'supports', 'supersedes'].includes(input.relation) ? input.relation : 'observation',
-        relationLabel: relationLabel(input.relation),
-        targetClaimId: typeof input.targetClaimId === 'string' ? input.targetClaimId : null,
-        relatedEntityIds: Array.isArray(input.relatedEntityIds) ? input.relatedEntityIds.filter((id) => typeof id === 'string') : [],
-        createdAt: input.createdAt ?? now,
-        updatedAt: input.updatedAt ?? now,
-      });
-      imported += 1;
-    }
-    await refreshState();
-    toast(`Импортировано заметок: ${imported}.`);
-  } catch (error) {
-    toast(error instanceof Error ? error.message : String(error), 'error');
-  }
-}
-
 function bindDialogCloseBehavior(dialog) {
   return bindRoutedDialog(dialog, () => closeResourceChain());
 }
@@ -53,15 +24,9 @@ function bindEvents() {
   dom.askForm.addEventListener('submit', handleAsk);
   document.querySelector('[data-action="load-local-ai"]').addEventListener('click', (event) => loadOrRunLocalAi(event.currentTarget));
   dom.noteForm.addEventListener('submit', saveCurrentNote);
-  dom.noteTitle.addEventListener('input', updateNoteRelatedPreview);
-  dom.noteBody.addEventListener('input', updateNoteRelatedPreview);
-  dom.deleteNoteButton.addEventListener('click', async () => {
-    const id = dom.noteId.value;
-    if (!id || !confirm('Удалить эту заметку?')) return;
-    closeResourceChain();
-    await storagePort.deleteOne('notes', id);
-    await refreshState();
-  });
+  dom.noteTitle.addEventListener('input', () => noteResourceView.renderPreview());
+  dom.noteBody.addEventListener('input', () => noteResourceView.renderPreview());
+  dom.deleteNoteButton.addEventListener('click', deleteCurrentNote);
   dom.packFileInput.addEventListener('change', async () => {
     const file = dom.packFileInput.files?.[0];
     if (file) await importPackFile(file);
