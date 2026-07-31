@@ -75,6 +75,7 @@ async function loadOrRunLocalAi(button) {
   });
 
   if (action === LOCAL_MODEL_ACTION.LOAD) {
+    const persistence = await requestPersistentStorage();
     beginLocalModelLoad(selectedProfile);
     try {
       const loaded = await state.localAi.load({
@@ -83,9 +84,10 @@ async function loadOrRunLocalAi(button) {
       });
       state.lastModelLoad = loaded;
       state.localAiReady = true;
+      state.storagePersistence = persistence;
       finishLocalModelLoad();
-      dom.aiStatus.textContent = `${selectedProfile.label} включена в Web Worker. Загрузка заняла ${formatModelDuration(loaded.loadMs)}${loaded.reused ? '; использован браузерный кэш' : ''}. Веса сохранены на диске.`;
-      toast(`${selectedProfile.label} включена. В памяти находится только одна модель.`);
+      dom.aiStatus.textContent = `${selectedProfile.label} включена в Web Worker. Загрузка заняла ${formatModelDuration(loaded.loadMs)}${loaded.reused ? '; использован браузерный кэш' : ''}. ${storagePersistenceLabel(persistence)}.`;
+      toast(`${selectedProfile.label} включена. В памяти находится только одна модель; веса остаются на диске.`);
     } catch (error) {
       state.localAiReady = false;
       rejectLocalModelLoad(error);
