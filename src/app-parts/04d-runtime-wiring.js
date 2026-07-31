@@ -31,12 +31,12 @@ state.localAi = applicationAdapter.localModelPort;
 state.applicationAdapter = applicationAdapter;
 
 renderSidebarStatus = function renderSidebarStatusThroughStoragePort() {
-  const enabled = state.packRecords.filter((record) => record.enabled);
   const offline = !navigator.onLine;
+  const persistent = applicationAdapter.storagePort.mode() === 'persistent';
   dom.sidebarStatus.replaceChildren(
     create('strong', { text: offline ? 'Оффлайн-режим' : 'Локальное хранилище' }),
     create('span', {
-      text: `${enabled.length} пак. · ${applicationAdapter.storagePort.mode() === 'persistent' ? 'IndexedDB' : 'память вкладки'}`,
+      text: persistent ? 'Данные сохраняются в IndexedDB' : 'Данные живут до закрытия вкладки',
     }),
   );
 };
