@@ -1,41 +1,15 @@
-  sourcePanel.append(Text({ variant: 'title', as: 'h2', text: 'Источники' }));
-  for (const source of evidence.sources) {
-    sourcePanel.append(SourceCard({
-      sourceId: source.id,
-      title: `${source.result.documentTitle} — ${source.result.title}`,
-      type: source.document?.source?.title ?? source.result.packTitle ?? 'Справочный источник',
-      excerpt: `${source.result.body.slice(0, 340)}${source.result.body.length > 340 ? '…' : ''}`,
-      onOpen: () => navigateResource('document', source.result.documentId, { sectionId: source.result.sectionId }),
-    }));
-  }
-  if (!evidence.sources.length) sourcePanel.append(Text({ variant: 'muted', text: 'Нет справочных источников для ответа.' }));
-  dom.answerOutput.append(sourcePanel);
-
-  if (evidence.relatedNotes.length) {
-    const notesPanel = create('article', { className: 'answer-panel' });
-    notesPanel.append(create('h2', { text: 'Личный слой' }));
-    const list = create('ul');
-    for (const note of evidence.relatedNotes) {
-      const item = create('li', {}, [
-        create('strong', { text: `${relationLabel(note.relation)}: ` }),
-        document.createTextNode(`${note.title} — ${note.body.slice(0, 260)}`),
-      ]);
-      list.append(item);
-    }
-    notesPanel.append(list);
-    dom.answerOutput.append(notesPanel);
-  }
-}
-
 function buildEvidenceForQuestion(query) {
   const mode = selectedAnswerModeProfile();
-  const results = state.search.search(query, {
-    limit: Math.max(18, mode.sourceLimit * 4),
-    personalPriority: true,
+  const collected = collectQuestionEvidence({
+    query,
+    mode,
+    searchPort: state.search,
+    knowledgeState: state.knowledge,
+    collectEvidence,
   });
-  state.currentEvidence = collectEvidence(query, results, state.knowledge, { sourceLimit: mode.sourceLimit });
-  state.currentEvidenceModeId = mode.id;
-  return state.currentEvidence;
+  state.currentEvidence = collected.evidence;
+  state.currentEvidenceModeId = collected.modeId;
+  return collected.evidence;
 }
 
 async function handleAsk(event) {
@@ -63,14 +37,14 @@ async function loadOrRunLocalAi(button) {
   const selectedMode = selectedAnswerModeProfile();
   const selectedReady = state.localAiReady && state.localAi.modelId === selectedModelId;
   const query = dom.askInput.value.trim();
-  const evidenceMatchesQuestion = Boolean(
-    state.currentEvidence
-      && state.currentEvidence.query === query
-      && state.currentEvidenceModeId === selectedMode.id,
-  );
   const action = resolveLocalModelAction({
     modelReady: selectedReady,
-    hasEvidence: evidenceMatchesQuestion,
+    hasEvidence: evidenceMatchesRequest(
+      state.currentEvidence,
+      query,
+      state.currentEvidenceModeId,
+      selectedMode.id,
+    ),
     hasQuestion: Boolean(query),
   });
 
