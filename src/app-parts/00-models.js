@@ -13,3 +13,4 @@ import {
   startModelLoad,
   updateModelLoadProgress,
 } from './services/model-progress.js';
+import { requestPersistentStorage, storagePersistenceLabel } from './services/storage-persistence.js';
