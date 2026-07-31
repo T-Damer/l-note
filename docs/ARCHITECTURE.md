@@ -15,6 +15,7 @@ L-Note is a hosted, offline-first knowledge workspace with:
 - persistent model weights in the WebLLM Cache API;
 - explicit model states: not downloaded, downloaded/off and loaded/on;
 - manual unload with no inactivity timer;
+- a persisted collapsible desktop sidebar;
 - SCSS partials and a deterministic static-PWA build.
 
 A routed dialog has one vertical scroll container: `.dialog-body`. The page root and body remain locked behind it, and the header reserves Back, title and Close columns.
@@ -42,10 +43,12 @@ src/services/      use-case workflows and pure state transitions
 src/pages/         page and routed-resource construction/rendering
 src/ui/            reusable typography, controls, dialogs, graph and safe DOM helpers
 src/helpers/       stateless formatting, matching and mapping
-src/integrations/  product boundaries such as MiniMed
+src/integrations/  isolated product boundaries such as MiniMed compatibility
 ```
 
-`src/app-parts/` is temporary composition and wiring. New business logic does not belong there. The model and Ask slices are now split into:
+`src/app-parts/` is temporary composition and wiring. New business logic does not belong there. Decreasing file budgets are enforced for every transitional fragment touched during extraction.
+
+The model and Ask slices are split into:
 
 ```text
 src/helpers/model-formatters.js
@@ -53,13 +56,27 @@ src/services/model-lifecycle.js
 src/services/model-preferences.js
 src/services/local-model-loader.js
 src/services/evidence-query.js
+src/services/ask-workflow.js
 src/pages/model-lab-elements.js
 src/pages/model-lab-view.js
+src/pages/ask-page-controller.js
 src/pages/evidence-view.js
 src/pages/local-answer-view.js
 ```
 
-Routed knowledge resources use one registry and separate renderers:
+`ask-workflow` decides whether an action loads a model, requests a question, collects evidence or generates an answer. It has no DOM access. `ask-page-controller` owns form/status/button behavior and receives lifecycle callbacks from the shell.
+
+Notes are split into:
+
+```text
+src/services/note-workflow.js
+src/pages/note-resource-view.js
+src/pages/notes-list-view.js
+```
+
+The service normalizes saved and imported records. The routed editor resolves statements and concept links through accessors supplied by the shell. The list renderer owns note cards and timestamps.
+
+Routed knowledge resources use one registry and separate renderers/controllers:
 
 ```text
 src/pages/routed-resource-renderer.js
@@ -67,9 +84,12 @@ src/pages/package-resource-view.js
 src/pages/document-resource-view.js
 src/pages/concept-resource-view.js
 src/pages/statement-resource-view.js
+src/pages/note-resource-view.js
 ```
 
-The registry owns dispatch and missing-resource handling. The shared routed-dialog controller owns lifecycle, Back/Close availability and the heading/body surfaces. Resource renderers only resolve data and build content. Only the note editor still enters the registry through a transitional compatibility function.
+The registry owns dispatch and missing-resource handling. The shared routed-dialog controller owns lifecycle, Back/Close availability and heading/body surfaces. Resource renderers only resolve data and construct content.
+
+The desktop shell uses `src/pages/sidebar-controller.js`. It prepares accessible labels, persists the collapsed state through `StoragePort` and exposes CSS tooltips without adding sidebar state to routing.
 
 The legacy local DOM builder and resource-type switch were removed from the shell. Modular rendering uses `src/ui/dom.js`, which inserts text and nodes rather than raw HTML.
 
@@ -84,7 +104,7 @@ Detailed rules and preferred 200-line/30-line targets live in `AGENTS.md`.
 
 ## L-Note Core and MiniMed
 
-L-Note is the domain-neutral runtime. MiniMed consumes it through adapters; clinical policy does not move into L-Note.
+L-Note remains the domain-neutral runtime. A compatibility boundary exists, but connecting the active L-Note core to the MiniMed application is intentionally deferred until explicit approval. Current work must not migrate MiniMed behavior or data into L-Note.
 
 L-Note owns:
 
@@ -101,7 +121,7 @@ generic knowledge-graph projection
 shared UI primitives
 ```
 
-MiniMed owns:
+MiniMed retains ownership of:
 
 ```text
 medical query parsing and negation
@@ -112,7 +132,7 @@ clinical abstention and safety gates
 medical benchmark suites and source policy
 ```
 
-The MiniMed compatibility adapter requires MiniMed-owned analysis, ranking, dose verification, abstention and benchmark identifiers.
+Any future connection must first satisfy MiniMed-owned retrieval, dose and safety benchmarks. The compatibility adapter must not be treated as a completed product integration.
 
 ## Public adapter API
 
@@ -128,7 +148,7 @@ l-note/integrations/minimed
 
 ```text
 MiniSearch + IndexedDB   current small/medium browser implementation
-SQLite + FTS5            planned large-pack and MiniMed implementation
+SQLite + FTS5            planned large-pack implementation
 optional vector adapter  planned semantic/hybrid layer
 ```
 
@@ -210,11 +230,11 @@ Model output may propose structure but never silently replace source text. The c
 
 ## Next ordered work
 
-1. Extract the note editor and remaining Ask coordination from transitional app parts.
+1. Continue reducing the remaining transitional catalog/search/runtime shell.
 2. Add internal PDF assets and exact page/section anchors.
 3. Add SQLite/FTS5 behind `SearchPort` and `StoragePort`.
 4. Add a user-facing local pack-preparation workflow over the existing CLI contract.
 5. Add safe cancellation and persisted transfer state where browser/runtime APIs support it.
-6. Connect L-Note Core to MiniMed and require MiniMed retrieval, dose and safety benchmarks before migration.
+6. Continue interaction-state and click-target auditing.
 
-Android and iOS remain deferred until the hosted web core is stable, while memory and storage decisions remain compatible with mid-range 8–12 GB devices.
+Live MiniMed integration is excluded from this sequence. Android and iOS remain deferred until the hosted web core is stable, while memory and storage decisions remain compatible with mid-range 8–12 GB devices.
