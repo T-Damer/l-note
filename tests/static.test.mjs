@@ -17,6 +17,37 @@ function numberedTail(source, count = 120) {
   return lines.slice(start).map((line, index) => `${start + index + 1}: ${line}`).join('\n');
 }
 
+const offlineModules = [
+  'src/ai.js',
+  'src/router.js',
+  'src/relations.js',
+  'src/core/contracts.js',
+  'src/core/ports.js',
+  'src/core/runtime.js',
+  'src/core/application-adapter.js',
+  'src/core/knowledge-graph.js',
+  'src/adapters/runtime-adapters.js',
+  'src/domain-plugins/minimed.js',
+  'src/integrations/minimed-adapter.js',
+  'src/helpers/model-formatters.js',
+  'src/pages/model-lab-elements.js',
+  'src/pages/model-lab-view.js',
+  'src/services/answer-modes.js',
+  'src/services/model-action.js',
+  'src/services/model-lifecycle.js',
+  'src/services/model-preferences.js',
+  'src/services/model-progress.js',
+  'src/services/storage-persistence.js',
+  'src/services/welcome-note.js',
+  'src/workers/webllm-worker.js',
+  'src/ui/dom.js',
+  'src/ui/text.js',
+  'src/ui/icons.js',
+  'src/ui/components.js',
+  'src/ui/routed-dialog.js',
+  'src/ui/knowledge-graph.js',
+];
+
 test('static build contains the complete offline shell', async () => {
   const result = buildStatic();
   assert.equal(result.status, 0, result.stderr);
@@ -29,32 +60,11 @@ test('static build contains the complete offline shell', async () => {
     'vendor/phosphor/Phosphor.woff2',
     'packs/catalog.json',
     'src/app.js',
-    'src/ai.js',
-    'src/router.js',
-    'src/relations.js',
-    'src/core/contracts.js',
-    'src/core/ports.js',
-    'src/core/runtime.js',
-    'src/core/application-adapter.js',
-    'src/core/knowledge-graph.js',
-    'src/adapters/runtime-adapters.js',
-    'src/domain-plugins/minimed.js',
-    'src/integrations/minimed-adapter.js',
-    'src/services/answer-modes.js',
-    'src/services/model-action.js',
-    'src/services/model-preferences.js',
-    'src/services/model-progress.js',
-    'src/services/storage-persistence.js',
-    'src/services/welcome-note.js',
-    'src/workers/webllm-worker.js',
-    'src/ui/text.js',
-    'src/ui/icons.js',
-    'src/ui/components.js',
-    'src/ui/routed-dialog.js',
-    'src/ui/knowledge-graph.js',
+    ...offlineModules,
   ]) {
     await access(path.join(root, 'dist', relative));
   }
+
   const css = await readFile(path.join(root, 'dist', 'styles.css'), 'utf8');
   assert.match(css, /Generated from styles\/main\.scss/u);
   assert.match(css, /--palette-dark-paper/u);
@@ -80,10 +90,9 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /SourceCard\(\{/u);
   assert.match(app, /buildKnowledgeGraph/u);
   assert.match(app, /beginLocalModelLoad/u);
-  assert.match(app, /ANSWER_MODE_PROFILES/u);
+  assert.match(app, /createModelLabView/u);
   assert.match(app, /MODEL_SELECTION_SETTING_KEY/u);
   assert.match(app, /markLocalModelCached/u);
-  assert.match(app, /Выгрузить из памяти/u);
   assert.match(app, /createRoutedDialogController/u);
   assert.match(app, /ensureWelcomeNote/u);
 
@@ -93,18 +102,22 @@ test('static build contains the complete offline shell', async () => {
   assert.match(ai, /hasModelInCache/u);
   assert.match(ai, /cacheBackend:\s*this\.cacheBackend/u);
 
-  const syntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
+  const modelElements = await readFile(path.join(root, 'dist', 'src', 'pages', 'model-lab-elements.js'), 'utf8');
+  assert.match(modelElements, /Выгрузить из памяти/u);
+  assert.match(modelElements, /createModelLabElements/u);
+
+  const appSyntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
     cwd: root,
     encoding: 'utf8',
   });
-  assert.equal(syntax.status, 0, `${syntax.stderr}\n\nAssembled app tail:\n${numberedTail(app)}`);
+  assert.equal(appSyntax.status, 0, `${appSyntax.stderr}\n\nAssembled app tail:\n${numberedTail(app)}`);
 
-  for (const relative of ['src/ai.js', 'src/services/answer-modes.js', 'src/workers/webllm-worker.js']) {
+  for (const relative of offlineModules) {
     const check = spawnSync(process.execPath, ['--check', path.join(root, 'dist', relative)], {
       cwd: root,
       encoding: 'utf8',
     });
-    assert.equal(check.status, 0, check.stderr);
+    assert.equal(check.status, 0, `${relative}: ${check.stderr}`);
   }
 });
 
