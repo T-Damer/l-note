@@ -1,6 +1,8 @@
 const defaultLocalModelProfile = localModelProfile(DEFAULT_LOCAL_MODEL_ID);
 Object.assign(state, {
   selectedLocalModelId: DEFAULT_LOCAL_MODEL_ID,
+  answerModeId: DEFAULT_ANSWER_MODE_ID,
+  currentEvidenceModeId: null,
   lastModelLoad: null,
   localAiRuns: [],
   modelLoadState: createModelLoadState(defaultLocalModelProfile),
@@ -16,17 +18,19 @@ for (const profile of LOCAL_MODEL_PROFILES) {
     create('option', {
       value: profile.modelId,
       selected: profile.modelId === DEFAULT_LOCAL_MODEL_ID,
-      text: profile.label,
+      text: `${profile.label} · ${profile.role}`,
     }),
   );
 }
 
 const modelParameters = create('span', { className: 'model-compact-meta' });
 const modelSize = create('span', { className: 'model-compact-meta' });
+const modelRuntimeMemory = create('span', { className: 'model-compact-meta' });
 const modelPower = create('span', { className: 'model-power is-off' }, [
   create('span', { className: 'model-power-dot', 'aria-hidden': 'true' }),
   document.createTextNode('Выкл'),
 ]);
+const modelProfileNote = create('p', { className: 'model-profile-note' });
 const modelProgressText = create('span', { className: 'model-progress-text', text: 'Модель выключена' });
 const modelProgressPercent = create('strong', { className: 'model-progress-percent', text: '0%' });
 const modelProgressBar = create('span', { className: 'model-progress-value' });
@@ -62,21 +66,50 @@ const modelLab = create('section', { className: 'model-control-panel' }, [
     }),
     modelParameters,
     modelSize,
+    modelRuntimeMemory,
     modelPower,
   ]),
+  modelProfileNote,
   modelDownloadPanel,
+]);
+
+const answerModeSelect = create('select', {
+  id: 'local-answer-mode',
+  className: 'answer-mode-select',
+  'aria-label': 'Режим локального ответа',
+});
+for (const mode of ANSWER_MODE_PROFILES) {
+  answerModeSelect.append(create('option', {
+    value: mode.id,
+    selected: mode.id === DEFAULT_ANSWER_MODE_ID,
+    text: mode.label,
+  }));
+}
+const answerModeHint = create('p', { className: 'answer-mode-hint' });
+const answerModePanel = create('section', { className: 'answer-mode-panel' }, [
+  Field({
+    label: 'Режим работы',
+    control: answerModeSelect,
+    className: 'answer-mode-field',
+  }),
+  answerModeHint,
 ]);
 
 const modelControlSlot = document.querySelector('#model-control-slot');
 const modelWorkspace = document.querySelector('#model-workspace');
 const modelRunHistory = create('section', { className: 'answer-panel hidden', 'aria-live': 'polite' });
 modelControlSlot?.replaceChildren(modelLab);
+modelWorkspace?.prepend(answerModePanel);
 dom.aiStatus.after(modelRunHistory);
 Object.assign(dom, {
   localAiModel,
+  answerModeSelect,
+  answerModeHint,
   modelParameters,
   modelSize,
+  modelRuntimeMemory,
   modelPower,
+  modelProfileNote,
   modelProgressText,
   modelProgressPercent,
   modelProgressBar,
@@ -94,6 +127,10 @@ function selectedLocalModelProfile() {
   return localModelProfile(dom.localAiModel.value) ?? defaultLocalModelProfile;
 }
 
+function selectedAnswerModeProfile() {
+  return answerModeProfile(dom.answerModeSelect.value);
+}
+
 function formatModelDuration(value) {
   if (!Number.isFinite(value)) return '—';
   if (value < 1000) return `${Math.round(value)} мс`;
@@ -106,6 +143,10 @@ function formatDownloadSpeed(value) {
 
 function formatGenerationSpeed(value) {
   return Number.isFinite(value) ? `${value.toFixed(1)} ток/с` : 'скорость не сообщена';
+}
+
+function formatModelGigabytes(value) {
+  return `${(Number(value ?? 0) / 1024).toFixed(1)} ГБ`;
 }
 
 function modelIsReady(profile = selectedLocalModelProfile()) {
@@ -143,12 +184,20 @@ function renderLocalModelDetails() {
   state.selectedLocalModelId = profile.modelId;
   const ready = modelIsReady(profile);
   dom.modelParameters.textContent = profile.parameters;
-  dom.modelSize.textContent = `≈${(profile.sizeMB / 1024).toFixed(1)} ГБ`;
+  dom.modelSize.textContent = `веса ≈${formatModelGigabytes(profile.downloadSizeMB)}`;
+  dom.modelRuntimeMemory.textContent = `память ≈${formatModelGigabytes(profile.runtimeMemoryMB)}`;
   dom.modelPower.className = `model-power ${ready ? 'is-on' : 'is-off'}`;
   dom.modelPower.replaceChildren(
     create('span', { className: 'model-power-dot', 'aria-hidden': 'true' }),
     document.createTextNode(ready ? 'Вкл' : 'Выкл'),
   );
+  dom.modelProfileNote.textContent = `${profile.role} · ${profile.recommendedRamGB} ГБ+ общей памяти · ${profile.quantization} · контекст ${profile.contextWindow / 1024}K. ${profile.description}`;
+}
+
+function renderAnswerModeDetails() {
+  const mode = selectedAnswerModeProfile();
+  state.answerModeId = mode.id;
+  dom.answerModeHint.textContent = `${mode.description} Используется приблизительный символьный бюджет, без предварительной токенизации документов.`;
 }
 
 function renderModelProgress() {
@@ -159,7 +208,7 @@ function renderModelProgress() {
   dom.modelProgressBar.style.width = `${percent}%`;
   dom.modelProgressTrack.setAttribute('aria-valuenow', String(percent));
   dom.modelProgressStats.replaceChildren(
-    create('span', { text: `≈${formatBytes(progressState.loadedMB * 1024 * 1024)} / ${formatBytes(progressState.totalMB * 1024 * 1024)}` }),
+    create('span', { text: `на диск ≈${formatBytes(progressState.loadedMB * 1024 * 1024)} / ${formatBytes(progressState.totalMB * 1024 * 1024)}` }),
     create('span', { text: `осталось ≈${formatBytes(progressState.remainingMB * 1024 * 1024)}` }),
     create('span', { text: formatDownloadSpeed(progressState.speedMBps) }),
   );
@@ -184,6 +233,7 @@ function renderModelPageState() {
   const ready = modelIsReady(profile);
   const loading = state.modelLoadState.status === MODEL_LOAD_STATUS.LOADING;
   renderLocalModelDetails();
+  renderAnswerModeDetails();
   renderModelProgress();
   dom.localAiModel.disabled = loading;
   dom.modelLoadButton.disabled = loading || !state.localAi.available;
@@ -191,12 +241,13 @@ function renderModelPageState() {
   dom.modelWorkspace?.classList.toggle('hidden', !ready);
   dom.answerOutput.classList.toggle('hidden', !ready);
   if (!state.localAi.available && !ready) {
-    dom.modelProgressText.textContent = 'WebGPU недоступен';
+    dom.modelProgressText.textContent = 'WebGPU или Web Worker недоступен';
     dom.modelLoadError.classList.remove('hidden');
     dom.modelLoadError.textContent = 'Этот браузер не может запустить локальную WebLLM-модель. Поиск по базе остаётся доступен на отдельной странице.';
   }
   if (ready) {
-    dom.aiStatus.textContent = `${profile.label} ${profile.parameters} включена. Сформулируйте вопрос и соберите локальные источники.`;
+    const mode = selectedAnswerModeProfile();
+    dom.aiStatus.textContent = `${profile.label} включена в Web Worker. Режим «${mode.label}». Веса остаются в браузерном дисковом кэше.`;
   }
   syncLocalAiButton();
 }
@@ -213,22 +264,42 @@ function renderModelRunHistory() {
   );
   for (const run of state.localAiRuns.slice(0, 6)) {
     const profile = localModelProfile(run.modelId);
+    const mode = answerModeProfile(run.modeId);
     const status = run.grounded ? 'ссылки валидны' : 'нужна ручная проверка';
     dom.modelRunHistory.append(
       Text({
         variant: 'muted',
-        text: `${profile?.label ?? run.modelId}: загрузка ${formatModelDuration(run.loadMs)}, ответ ${formatModelDuration(run.durationMs)}, ${formatGenerationSpeed(run.tokensPerSecond)}, ${status}.`,
+        text: `${profile?.label ?? run.modelId} · ${mode.label}: загрузка ${formatModelDuration(run.loadMs)}, ответ ${formatModelDuration(run.durationMs)}, ${formatGenerationSpeed(run.tokensPerSecond)}, ${status}.`,
       }),
     );
   }
 }
 
 dom.modelLoadButton.addEventListener('click', () => loadOrRunLocalAi(dom.modelLoadButton));
-dom.localAiModel.addEventListener('change', () => {
-  state.selectedLocalModelId = dom.localAiModel.value;
-  state.localAiReady = Boolean(state.localAi.engine && state.localAi.modelId === state.selectedLocalModelId);
+dom.localAiModel.addEventListener('change', async () => {
+  const nextModelId = dom.localAiModel.value;
+  const previousModelId = state.localAi.modelId;
+  state.selectedLocalModelId = nextModelId;
+  state.localAiReady = false;
+  if (previousModelId && previousModelId !== nextModelId) {
+    dom.localAiModel.disabled = true;
+    dom.modelProgressText.textContent = 'Выгрузка предыдущей модели…';
+    try {
+      await state.localAi.unload();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : String(error), 'error');
+    }
+  }
   resetModelLoadState();
   renderModelPageState();
+});
+dom.answerModeSelect.addEventListener('change', () => {
+  state.answerModeId = selectedAnswerModeProfile().id;
+  state.currentEvidenceModeId = null;
+  renderAnswerModeDetails();
+  if (modelIsReady()) {
+    dom.aiStatus.textContent = `Режим изменён на «${selectedAnswerModeProfile().label}». Источники будут собраны заново при следующем ответе.`;
+  }
 });
 
 resetModelLoadState();
