@@ -31,6 +31,7 @@ const offlineModules = [
   'src/integrations/minimed-adapter.js',
   'src/helpers/entity-terms.js',
   'src/helpers/model-formatters.js',
+  'src/pages/ask-page-controller.js',
   'src/pages/concept-resource-view.js',
   'src/pages/document-resource-view.js',
   'src/pages/evidence-view.js',
@@ -43,6 +44,7 @@ const offlineModules = [
   'src/pages/routed-resource-renderer.js',
   'src/pages/statement-resource-view.js',
   'src/services/answer-modes.js',
+  'src/services/ask-workflow.js',
   'src/services/evidence-query.js',
   'src/services/local-model-loader.js',
   'src/services/model-action.js',
@@ -103,9 +105,9 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /buildKnowledgeGraph/u);
   assert.match(app, /beginLocalModelLoad/u);
   assert.match(app, /createModelLabView/u);
-  assert.match(app, /collectQuestionEvidence/u);
+  assert.match(app, /createAskWorkflow/u);
+  assert.match(app, /createAskPageController/u);
   assert.match(app, /renderEvidenceView/u);
-  assert.match(app, /loadSelectedLocalModel/u);
   assert.match(app, /renderGeneratedLocalAnswer/u);
   assert.match(app, /createRoutedResourceRenderer/u);
   assert.match(app, /renderDocumentResource/u);
@@ -120,6 +122,15 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /markLocalModelCached/u);
   assert.match(app, /createRoutedDialogController/u);
   assert.match(app, /ensureWelcomeNote/u);
+
+  const askController = await readFile(path.join(root, 'dist', 'src', 'pages', 'ask-page-controller.js'), 'utf8');
+  assert.match(askController, /createAskPageController/u);
+  assert.match(askController, /Генерация и проверка ссылок/u);
+
+  const askWorkflow = await readFile(path.join(root, 'dist', 'src', 'services', 'ask-workflow.js'), 'utf8');
+  assert.match(askWorkflow, /createAskWorkflow/u);
+  assert.match(askWorkflow, /loadSelectedLocalModel/u);
+  assert.match(askWorkflow, /collectQuestionEvidence/u);
 
   const evidenceView = await readFile(path.join(root, 'dist', 'src', 'pages', 'evidence-view.js'), 'utf8');
   assert.match(evidenceView, /SourceCard\(\{/u);
