@@ -43,6 +43,7 @@ test('static build contains the complete offline shell', async () => {
     'src/services/answer-modes.js',
     'src/services/model-action.js',
     'src/services/model-progress.js',
+    'src/services/storage-persistence.js',
     'src/services/welcome-note.js',
     'src/workers/webllm-worker.js',
     'src/ui/text.js',
@@ -77,6 +78,7 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /buildKnowledgeGraph/u);
   assert.match(app, /beginLocalModelLoad/u);
   assert.match(app, /ANSWER_MODE_PROFILES/u);
+  assert.match(app, /requestPersistentStorage/u);
   assert.match(app, /createRoutedDialogController/u);
   assert.match(app, /ensureWelcomeNote/u);
 
@@ -91,7 +93,12 @@ test('static build contains the complete offline shell', async () => {
   });
   assert.equal(syntax.status, 0, `${syntax.stderr}\n\nAssembled app tail:\n${numberedTail(app)}`);
 
-  for (const relative of ['src/ai.js', 'src/services/answer-modes.js', 'src/workers/webllm-worker.js']) {
+  for (const relative of [
+    'src/ai.js',
+    'src/services/answer-modes.js',
+    'src/services/storage-persistence.js',
+    'src/workers/webllm-worker.js',
+  ]) {
     const result = spawnSync(process.execPath, ['--check', path.join(root, 'dist', relative)], {
       cwd: root,
       encoding: 'utf8',
