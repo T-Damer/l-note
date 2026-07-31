@@ -129,10 +129,12 @@ async function renderStorageSummary() {
 }
 
 function detectRelatedEntities(text) {
-  const normalized = normalizeText(text);
-  return [...state.knowledge.entities.values()]
-    .filter((entity) => entityTerms(entity).some((term) => normalized.includes(normalizeText(term))))
-    .slice(0, 16);
+  return detectEntitiesInText({
+    entities: state.knowledge.entities.values(),
+    text,
+    normalizeText,
+    limit: 16,
+  });
 }
 
 function renderNoteTarget(claimId) {
