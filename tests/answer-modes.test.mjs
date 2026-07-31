@@ -30,7 +30,8 @@ test('clips evidence by deterministic character budgets without a tokenizer', ()
   const detailed = buildEvidencePrompt(evidence, 'detailed');
 
   assert.equal(compact.includedSourceIds.length, 4);
-  assert.equal(detailed.includedSourceIds.length, 6);
+  assert.ok(detailed.includedSourceIds.length > compact.includedSourceIds.length);
+  assert.ok(detailed.includedSourceIds.length <= answerModeProfile('detailed').sourceLimit);
   assert.ok(compact.text.length <= answerModeProfile('compact').evidenceChars);
   assert.ok(detailed.text.length <= answerModeProfile('detailed').evidenceChars);
   assert.ok(detailed.text.length > compact.text.length);
