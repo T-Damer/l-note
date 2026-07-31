@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** continue shrinking the remaining transitional shell, then add local PDF assets, SQLite/FTS5 and a user-facing pack preparer. Android/iOS and live MiniMed integration remain deferred.
+**Current focus:** finish user-facing functionality rather than continue broad refactoring. Next are local PDF/document assets, SQLite/FTS5 for large packs, reviewed LLM-assisted pack enrichment and reliable transfer state. Android/iOS and live MiniMed integration remain deferred.
 
 ## Universal core and MiniMed
 
@@ -10,21 +10,14 @@ Single source of future work. Completed items describe the active branch.
 - [x] Version contracts for packs, resources, notes, search and evidence.
 - [x] Add storage, search, domain-planner, local-model and evidence-verifier ports.
 - [x] Run the web shell through `KnowledgeApplicationAdapter`.
-- [x] Add a MiniMed compatibility adapter while keeping clinical parsing, ranking, dose validation, abstention and benchmarks in MiniMed.
+- [x] Keep the MiniMed compatibility boundary isolated while clinical parsing, ranking, dose validation, abstention and benchmarks remain MiniMed-owned.
 - [x] Define dependency direction, file/function limits and extraction rules in `AGENTS.md`.
 - [x] Add automated modular line-limit, dependency-boundary and safe-DOM checks.
-- [x] Extract model formatting, lifecycle and preferences into `helpers` and `services`.
-- [x] Extract model-page construction and rendering into `src/pages/`.
-- [x] Extract persistent-storage/model-load orchestration into a service.
-- [x] Extract evidence retrieval, evidence rendering and generated-answer rendering.
-- [x] Extract Ask planning/execution into `ask-workflow` and DOM coordination into `ask-page-controller`.
-- [x] Extract note creation/import normalization, the routed editor and notes-list rendering.
-- [x] Remove the shell-local DOM builder in favor of `src/ui/dom.js`.
-- [x] Extract package rendering from transitional app parts.
-- [ ] Split the remaining transitional shell into pages, services, helpers and components.
+- [x] Extract model, Ask, note and routed-resource workflows enough to keep new features modular.
+- [ ] Refactor remaining transitional shell only when required by a functional change.
 - [ ] Add SQLite/FTS5 for large packs without moving medical policy into L-Note.
 - [ ] Add an optional vector adapter behind the same search boundary.
-- [ ] Connect the core to MiniMed only after explicit approval and require MiniMed retrieval, dose and safety benchmarks before migration.
+- [ ] Connect the core to MiniMed only after explicit approval and MiniMed retrieval, dose and safety gates.
 
 ## Search, routes and readers
 
@@ -35,10 +28,9 @@ Single source of future work. Completed items describe the active branch.
 - [x] Use stable hash routes, nested browser history, Back and full-chain Close.
 - [x] Add browser E2E for direct links, reload, modal scrolling and close-chain behavior.
 - [x] Use one routed-resource registry for package, document, concept, statement and note routes.
-- [x] Extract package, document, concept, statement and note content into separate page renderers/controllers.
-- [x] Remove the legacy resource-type switch and obsolete `02b.js`/`04c-package-viewer.js` fragments.
+- [x] Add the restorable `#/create-pack` page route while keeping the Packages nav item active.
 - [ ] Add broader non-demo and large-corpus retrieval regressions.
-- [ ] Add internal PDF assets with exact page/section anchors.
+- [ ] Add internal PDF/document assets with exact page/section anchors.
 
 ## UI and graph
 
@@ -47,10 +39,8 @@ Single source of future work. Completed items describe the active branch.
 - [x] Add package list/graph switching and routed graph nodes.
 - [x] Support weighted category gradients and the mixed pediatric/dentistry example.
 - [x] Add the one-time `Привет, коллега` note and routed note links.
-- [x] Add a safe reusable DOM element helper without raw HTML insertion.
-- [x] Centralize the external-source Phosphor icon.
-- [x] Make the desktop sidebar collapsible, persist its state and show labels as tooltips while collapsed.
-- [x] Remove package/record counters from the sidebar storage status.
+- [x] Make the desktop sidebar collapsible, persist its state and show tooltips while collapsed.
+- [x] Add a primary `Создать свой пакет` action to the existing Packages page.
 - [ ] Finish interaction-state, click-target and legacy-glyph auditing.
 - [ ] Let the local model propose note links with explicit user review.
 
@@ -63,13 +53,11 @@ Single source of future work. Completed items describe the active branch.
 - [x] Keep exactly one active model; unload and terminate the previous worker on user-selected model change.
 - [x] Do not use an inactivity timer.
 - [x] Keep downloaded weights in the WebLLM browser cache.
-- [x] Request persistent origin storage before a large model download without blocking on denial.
-- [x] Distinguish `not downloaded`, `downloaded/off` and `loaded/on` through WebLLM cache inspection.
+- [x] Distinguish `not downloaded`, `downloaded/off` and `loaded/on`.
 - [x] Add explicit manual unload without deleting cached weights.
 - [x] Persist selected model and answer mode through `StoragePort`.
-- [x] Display persistent weight size separately from active runtime memory.
 - [x] Allow model download before entering a question.
-- [x] Add `Экономный` and `Расширенный` modes using deterministic source/character limits.
+- [x] Add `Экономный` and `Расширенный` evidence modes.
 - [x] Show progress, estimated bytes, speed, errors and retry.
 - [ ] Add safe cancellation when supported by the runtime.
 - [ ] Persist a download queue with up to four model/document transfers; still allow only one active inference model.
@@ -78,16 +66,20 @@ Single source of future work. Completed items describe the active branch.
 
 ## Universal pack preparation
 
-- [x] Build reviewed JSON or Markdown/TXT/JSON into portable packs with provenance.
-- [x] Allow optional local OpenAI-compatible or Replicate extraction proposals.
+- [x] Build reviewed JSON or Markdown/TXT/JSON into portable packs with provenance through the desktop/server CLI.
+- [x] Allow optional local OpenAI-compatible or Replicate extraction proposals in the heavy preparation workflow.
 - [x] Require exact evidence quotes before proposed statements enter a pack.
 - [x] Allow heavy preparation on a stronger desktop/server for weaker offline clients.
+- [x] Add a browser-local creator reachable from the existing Packages page.
+- [x] Accept multiple Markdown/TXT/JSON files or pasted Markdown text without uploading them.
+- [x] Preserve document titles, headings and source text; split large sections and discover common abbreviation patterns.
+- [x] Preview package statistics, download the JSON or install it immediately through the existing pack storage path.
+- [x] Validate ready-made pack JSON and enforce 32 MiB per file / 64 MiB total browser limits.
 - [ ] Add PDF/DOCX parsing, reviewed OCR and database exporters.
 - [ ] Add optional prebuilt FTS/search artifacts to large packs.
-- [ ] Add a user-facing local preparation page for selecting files and exporting an installable pack.
-- [ ] Let the user choose deterministic-only or LLM-assisted preparation.
-- [ ] Review proposed concepts, statements, aliases and relations before export.
-- [ ] Keep preparation jobs and intermediate corpora on disk rather than in application RAM.
+- [ ] Let the user choose deterministic-only or LLM-assisted enrichment in the creator.
+- [ ] Review, accept, edit or remove proposed concepts, statements, aliases and relations before export.
+- [ ] Keep heavy preparation jobs and intermediate corpora on disk rather than in application RAM.
 
 ## Documentation
 
