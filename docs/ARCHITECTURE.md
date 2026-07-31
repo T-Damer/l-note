@@ -7,9 +7,10 @@ L-Note is a hosted, offline-first knowledge workspace with:
 - checksummed installable packs stored in IndexedDB;
 - exact, prefix, alias and fuzzy retrieval through MiniSearch with deterministic fallback;
 - optional domain query planners outside the generic search engine;
-- hash-routed packages, documents, concepts, statements and notes;
+- hash-routed packages, documents, concepts, statements, notes and the local pack creator;
 - source-linked statements, relations, backlinks and personal-note overlays;
 - list and graph views over the same resources;
+- a browser-local creator for Markdown/TXT/JSON sources and pasted Markdown text;
 - optional browser-local WebLLM over a bounded evidence envelope;
 - one active model in a dedicated Web Worker;
 - persistent model weights in the WebLLM Cache API;
@@ -42,56 +43,25 @@ src/adapters/      MiniSearch, IndexedDB and WebLLM port implementations
 src/services/      use-case workflows and pure state transitions
 src/pages/         page and routed-resource construction/rendering
 src/ui/            reusable typography, controls, dialogs, graph and safe DOM helpers
-src/helpers/       stateless formatting, matching and mapping
+src/helpers/       stateless parsing, formatting, matching and mapping
 src/integrations/  isolated product boundaries such as MiniMed compatibility
 ```
 
-`src/app-parts/` is temporary composition and wiring. New business logic does not belong there. Decreasing file budgets are enforced for every transitional fragment touched during extraction.
+`src/app-parts/` is temporary composition and wiring. New business logic does not belong there. Refactoring is performed only where needed to deliver a feature safely; decreasing file budgets prevent touched transitional files from growing again.
 
-The model and Ask slices are split into:
+The model and Ask slices are split into focused helpers, services and pages. Notes are separated into `note-workflow`, routed editor and list renderer. Routed resources use one registry with package, document, concept, statement and note renderers.
 
-```text
-src/helpers/model-formatters.js
-src/services/model-lifecycle.js
-src/services/model-preferences.js
-src/services/local-model-loader.js
-src/services/evidence-query.js
-src/services/ask-workflow.js
-src/pages/model-lab-elements.js
-src/pages/model-lab-view.js
-src/pages/ask-page-controller.js
-src/pages/evidence-view.js
-src/pages/local-answer-view.js
-```
-
-`ask-workflow` decides whether an action loads a model, requests a question, collects evidence or generates an answer. It has no DOM access. `ask-page-controller` owns form/status/button behavior and receives lifecycle callbacks from the shell.
-
-Notes are split into:
+The local pack creator is split into:
 
 ```text
-src/services/note-workflow.js
-src/pages/note-resource-view.js
-src/pages/notes-list-view.js
+src/helpers/pack-source-parser.js      Markdown/TXT/JSON parsing and safe IDs
+src/services/browser-pack-builder.js   limits, documents, abbreviation entities and validation
+src/pages/pack-creator-page.js         form, progress, preview, download/install actions
 ```
 
-The service normalizes saved and imported records. The routed editor resolves statements and concept links through accessors supplied by the shell. The list renderer owns note cards and timestamps.
+The browser builder has no server dependency. It accepts several `.md`, `.markdown`, `.txt` or `.json` files, or a virtual Markdown file created from pasted text. It preserves source text and headings, splits oversized sections, discovers common abbreviation patterns and emits the same schema-v1 package accepted by normal import. The current limits are 32 MiB per source and 64 MiB total.
 
-Routed knowledge resources use one registry and separate renderers/controllers:
-
-```text
-src/pages/routed-resource-renderer.js
-src/pages/package-resource-view.js
-src/pages/document-resource-view.js
-src/pages/concept-resource-view.js
-src/pages/statement-resource-view.js
-src/pages/note-resource-view.js
-```
-
-The registry owns dispatch and missing-resource handling. The shared routed-dialog controller owns lifecycle, Back/Close availability and heading/body surfaces. Resource renderers only resolve data and construct content.
-
-The desktop shell uses `src/pages/sidebar-controller.js`. It prepares accessible labels, persists the collapsed state through `StoragePort` and exposes CSS tooltips without adding sidebar state to routing.
-
-The legacy local DOM builder and resource-type switch were removed from the shell. Modular rendering uses `src/ui/dom.js`, which inserts text and nodes rather than raw HTML.
+The desktop/server CLI remains the heavier preparation path for larger corpora, model-assisted extraction and future PDF/database pipelines.
 
 `npm run check:structure` enforces:
 
@@ -110,7 +80,7 @@ L-Note owns:
 
 ```text
 portable contracts and stable IDs
-pack installation and composition
+pack preparation, installation and composition
 storage/search/model ports
 concepts, statements, relations and backlinks
 personal overlay
@@ -202,6 +172,7 @@ Stable routes:
 #/search
 #/ask
 #/library
+#/create-pack
 #/notes
 #/package/:id
 #/document/:id
@@ -210,9 +181,20 @@ Stable routes:
 #/note/:id
 ```
 
-Browser history owns nested card traversal. Back moves through the chain; full Close returns to the recorded base page and removes forward card routes. Direct links and reload restore the route. Graph nodes use the same registry and route contract.
+Browser history owns nested card traversal. Back moves through the chain; full Close returns to the recorded base page and removes forward card routes. Direct links and reload restore the route. The creator is a normal base page launched from Packages; it does not duplicate package installation or catalog UI.
 
 ## Preparation and distribution
+
+The lightweight on-device path is:
+
+```text
+Markdown / TXT / JSON / pasted text
+  → local parsing and deterministic sectioning
+  → abbreviation discovery
+  → schema and reference validation
+  → preview
+  → download JSON or install through StoragePort
+```
 
 Heavy preparation may run on a stronger desktop or server:
 
@@ -222,19 +204,20 @@ raw files / PDF / database export / notes
   → optional strong local/server LLM proposals
   → chunks, aliases, concepts, statements and relations
   → exact-quote and referential validation
+  → human review
   → optional prebuilt search/database artifacts
   → installable L-Note pack
 ```
 
-Model output may propose structure but never silently replace source text. The current CLI accepts reviewed JSON and direct Markdown/TXT/JSON.
+Model output may propose structure but never silently replace source text.
 
 ## Next ordered work
 
-1. Continue reducing the remaining transitional catalog/search/runtime shell.
-2. Add internal PDF assets and exact page/section anchors.
-3. Add SQLite/FTS5 behind `SearchPort` and `StoragePort`.
-4. Add a user-facing local pack-preparation workflow over the existing CLI contract.
-5. Add safe cancellation and persisted transfer state where browser/runtime APIs support it.
-6. Continue interaction-state and click-target auditing.
+1. Add internal PDF/document assets and exact page/section anchors.
+2. Add SQLite/FTS5 behind `SearchPort` and `StoragePort`.
+3. Add reviewed LLM-assisted enrichment to the pack creator without making it mandatory.
+4. Add safe cancellation and persisted transfer state where browser/runtime APIs support it.
+5. Continue interaction-state and click-target auditing.
+6. Refactor transitional shell only when one of these features requires it.
 
 Live MiniMed integration is excluded from this sequence. Android and iOS remain deferred until the hosted web core is stable, while memory and storage decisions remain compatible with mid-range 8–12 GB devices.
