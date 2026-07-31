@@ -126,7 +126,7 @@ async function loadOrRunLocalAi(button) {
       create('span', { text: `Ответ: ${formatModelDuration(answer.durationMs)}` }),
       create('span', { text: formatGenerationSpeed(answer.tokensPerSecond) }),
       create('span', { text: answer.completionTokens ? `${answer.completionTokens} токенов` : 'Токены не сообщены' }),
-      create('span', { text: `контекст ≈${formatBytes(answer.evidenceChars)}` }),
+      create('span', { text: `контекст ≈${answer.evidenceChars.toLocaleString('ru-RU')} знаков` }),
       create('span', { text: answer.grounded ? 'Ссылки прошли проверку' : 'Ссылки не подтверждены' }),
     );
     panel.append(metrics);
