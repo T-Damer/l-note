@@ -32,7 +32,20 @@ const routedResourceRenderer = createRoutedResourceRenderer({
         relationLabel,
       });
     },
-    package: (route) => renderPackageDialog(route.resourceId),
+    package(route) {
+      return renderPackageResource({
+        packId: route.resourceId,
+        packRecords: state.packRecords,
+        catalog: state.catalog,
+        dialogView: documentDialogView,
+        navigate: navigateResource,
+        onInstall: downloadAndInstall,
+        async onEnable(installed) {
+          await storagePort.putOne('packs', { ...installed, enabled: true });
+          await refreshState();
+        },
+      });
+    },
     note: (route) => renderNoteRoute(route),
   },
   onMissing(route) {
