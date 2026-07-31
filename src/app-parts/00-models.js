@@ -1,8 +1,7 @@
 import { DEFAULT_LOCAL_MODEL_ID, LOCAL_MODEL_PROFILES, localModelProfile } from './ai.js';
 import { ANSWER_MODE_PROFILES, DEFAULT_ANSWER_MODE_ID, answerModeProfile } from './services/answer-modes.js';
 import { formatDurationMs as formatModelDuration, formatGenerationSpeed } from './helpers/model-formatters.js';
-import { LOCAL_MODEL_ACTION, resolveLocalModelAction } from './services/model-action.js';
-import { createModelRunRecord, loadSelectedLocalModel, prependModelRun } from './services/local-model-loader.js';
+import { createModelRunRecord, prependModelRun } from './services/local-model-loader.js';
 import {
   MODEL_LOAD_STATUS,
   completeModelLoad,
