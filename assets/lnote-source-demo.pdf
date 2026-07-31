@@ -1,0 +1,72 @@
+%PDF-1.4
+%ASCII
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 7 0 R >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 7 0 R >> >> /Contents 6 0 R >>
+endobj
+5 0 obj
+<< /Length 269 >>
+stream
+BT
+/F1 18 Tf
+72 720 Td
+/F1 20 Tf
+(L-Note local source demo) Tj
+0 -32 Td
+/F1 14 Tf
+(Page 1 - Installable knowledge packs) Tj
+0 -32 Td
+/F1 12 Tf
+(Packages preserve source text and can be used offline.) Tj
+0 -32 Td
+/F1 12 Tf
+(This PDF is bundled with the web demo.) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Length 271 >>
+stream
+BT
+/F1 18 Tf
+72 720 Td
+/F1 20 Tf
+(L-Note local source demo) Tj
+0 -32 Td
+/F1 14 Tf
+(Page 2 - Fuzzy search) Tj
+0 -32 Td
+/F1 12 Tf
+(Prefix and fuzzy matching help retrieve terms with typing errors.) Tj
+0 -32 Td
+/F1 12 Tf
+(The document route can open this exact page.) Tj
+ET
+endstream
+endobj
+7 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000016 00000 n 
+0000000065 00000 n 
+0000000128 00000 n 
+0000000254 00000 n 
+0000000380 00000 n 
+0000000699 00000 n 
+0000001020 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+1090
+%%EOF
