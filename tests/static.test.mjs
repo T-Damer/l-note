@@ -41,7 +41,7 @@ const offlineModules = [
   'src/pages/model-lab-view.js',
   'src/pages/note-resource-view.js',
   'src/pages/notes-list-view.js',
-  'src/pages/pack-creator-page.js',
+  'src/pages/package-builder-view.js',
   'src/pages/package-resource-view.js',
   'src/pages/routed-resource-renderer.js',
   'src/pages/sidebar-controller.js',
@@ -100,18 +100,16 @@ test('static build contains the complete offline shell', async () => {
   assert.match(css, /\.sidebar\.is-collapsed/u);
   assert.match(css, /\.workspace\.is-sidebar-collapsed/u);
   assert.match(css, /content:\s*attr\(data-tooltip\)/u);
-  assert.match(css, /\.pack-creator-layout/u);
-  assert.match(css, /\.pack-creator-dropzone/u);
+  assert.match(css, /\.pack-builder/u);
+  assert.match(css, /\.pack-builder-progress/u);
 
   const html = await readFile(path.join(root, 'dist', 'index.html'), 'utf8');
   assert.match(html, /ph-magnifying-glass/u);
   assert.match(html, /ph-note-pencil/u);
   assert.match(html, /data-action="toggle-library-view"/u);
   assert.match(html, /data-action="create-pack"/u);
-  assert.match(html, /data-page="create-pack"/u);
-  assert.match(html, /id="pack-creator-form"/u);
-  assert.match(html, /id="pack-creator-install"/u);
-  assert.match(html, /Установить в L-Note/u);
+  assert.match(html, /Создать свой пакет/u);
+  assert.doesNotMatch(html, /data-page="create-pack"/u);
   assert.match(html, /id="model-workspace" class="model-workspace hidden"/u);
   assert.match(html, /dialog-close-button/u);
 
@@ -123,7 +121,7 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /createAskPageController/u);
   assert.match(app, /renderEvidenceView/u);
   assert.match(app, /renderGeneratedLocalAnswer/u);
-  assert.match(app, /createPackCreatorPage/u);
+  assert.match(app, /renderPackageBuilderResource/u);
   assert.match(app, /createRoutedResourceRenderer/u);
   assert.match(app, /renderDocumentResource/u);
   assert.match(app, /renderConceptResource/u);
@@ -148,10 +146,11 @@ test('static build contains the complete offline shell', async () => {
   assert.match(askWorkflow, /loadSelectedLocalModel/u);
   assert.match(askWorkflow, /collectQuestionEvidence/u);
 
-  const packCreator = await readFile(path.join(root, 'dist', 'src', 'pages', 'pack-creator-page.js'), 'utf8');
-  assert.match(packCreator, /createPackCreatorPage/u);
-  assert.match(packCreator, /buildPackFromBrowserFiles/u);
-  assert.match(packCreator, /Пакет установлен/u);
+  const packageBuilder = await readFile(path.join(root, 'dist', 'src', 'pages', 'package-builder-view.js'), 'utf8');
+  assert.match(packageBuilder, /renderPackageBuilderResource/u);
+  assert.match(packageBuilder, /buildPackFromBrowserFiles/u);
+  assert.match(packageBuilder, /Установить и открыть/u);
+  assert.match(packageBuilder, /Или вставьте текст/u);
 
   const packBuilder = await readFile(path.join(root, 'dist', 'src', 'services', 'browser-pack-builder.js'), 'utf8');
   assert.match(packBuilder, /buildPackFromBrowserFiles/u);
