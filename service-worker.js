@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v23';
-const RUNTIME_CACHE = 'l-note-runtime-v23';
+const SHELL_CACHE = 'l-note-shell-v24';
+const RUNTIME_CACHE = 'l-note-runtime-v24';
 const SHELL = [
   './',
   './index.html',
@@ -25,11 +25,16 @@ const SHELL = [
   './src/adapters/runtime-adapters.js',
   './src/domain-plugins/minimed.js',
   './src/integrations/minimed-adapter.js',
+  './src/helpers/entity-terms.js',
   './src/helpers/model-formatters.js',
+  './src/pages/concept-resource-view.js',
+  './src/pages/document-resource-view.js',
   './src/pages/evidence-view.js',
   './src/pages/local-answer-view.js',
   './src/pages/model-lab-elements.js',
   './src/pages/model-lab-view.js',
+  './src/pages/routed-resource-renderer.js',
+  './src/pages/statement-resource-view.js',
   './src/services/answer-modes.js',
   './src/services/evidence-query.js',
   './src/services/local-model-loader.js',
