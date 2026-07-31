@@ -13,4 +13,10 @@ import {
   startModelLoad,
   updateModelLoadProgress,
 } from './services/model-progress.js';
+import {
+  ANSWER_MODE_SETTING_KEY,
+  MODEL_SELECTION_SETTING_KEY,
+  modeAfterModelChange,
+  resolveLocalModelPreferences,
+} from './services/model-preferences.js';
 import { requestPersistentStorage, storagePersistenceLabel } from './services/storage-persistence.js';

@@ -1,10 +1,14 @@
 const defaultLocalModelProfile = localModelProfile(DEFAULT_LOCAL_MODEL_ID);
+
 Object.assign(state, {
   selectedLocalModelId: DEFAULT_LOCAL_MODEL_ID,
   answerModeId: DEFAULT_ANSWER_MODE_ID,
   currentEvidenceModeId: null,
   lastModelLoad: null,
   localAiRuns: [],
+  localModelCatalog: new Map(),
+  localModelCatalogStatus: 'idle',
+  localModelCatalogError: null,
   modelLoadState: createModelLoadState(defaultLocalModelProfile),
 });
 
@@ -26,12 +30,12 @@ for (const profile of LOCAL_MODEL_PROFILES) {
 const modelParameters = create('span', { className: 'model-compact-meta' });
 const modelSize = create('span', { className: 'model-compact-meta' });
 const modelRuntimeMemory = create('span', { className: 'model-compact-meta' });
-const modelPower = create('span', { className: 'model-power is-off' }, [
+const modelPower = create('span', { className: 'model-power is-checking' }, [
   create('span', { className: 'model-power-dot', 'aria-hidden': 'true' }),
-  document.createTextNode('Выкл'),
+  document.createTextNode('Проверка'),
 ]);
 const modelProfileNote = create('p', { className: 'model-profile-note' });
-const modelProgressText = create('span', { className: 'model-progress-text', text: 'Модель выключена' });
+const modelProgressText = create('span', { className: 'model-progress-text', text: 'Проверка локального хранилища…' });
 const modelProgressPercent = create('strong', { className: 'model-progress-percent', text: '0%' });
 const modelProgressBar = create('span', { className: 'model-progress-value' });
 const modelProgressTrack = create('div', {
@@ -47,7 +51,7 @@ const modelLoadError = create('p', { className: 'model-load-error hidden' });
 const modelLoadButton = Button({
   variant: 'primary',
   className: 'model-load-button',
-  children: [Icon({ name: 'download', className: 'icon' }), document.createTextNode('Загрузить и включить')],
+  children: [Icon({ name: 'download', className: 'icon' }), document.createTextNode('Скачать и включить')],
 });
 const modelDownloadPanel = create('section', { className: 'model-download-panel' }, [
   create('div', { className: 'model-progress-heading' }, [modelProgressText, modelProgressPercent]),
@@ -55,6 +59,22 @@ const modelDownloadPanel = create('section', { className: 'model-download-panel'
   modelProgressStats,
   modelLoadError,
   modelLoadButton,
+]);
+
+const modelActiveText = Text({
+  variant: 'muted',
+  as: 'p',
+  text: 'Модель загружена в выделенный Web Worker. Веса останутся на диске после выгрузки из памяти.',
+});
+const modelUnloadButton = Button({
+  variant: 'secondary',
+  icon: 'unload',
+  text: 'Выгрузить из памяти',
+  className: 'model-unload-button',
+});
+const modelActivePanel = create('section', { className: 'model-active-panel hidden' }, [
+  modelActiveText,
+  modelUnloadButton,
 ]);
 
 const modelLab = create('section', { className: 'model-control-panel' }, [
@@ -71,6 +91,7 @@ const modelLab = create('section', { className: 'model-control-panel' }, [
   ]),
   modelProfileNote,
   modelDownloadPanel,
+  modelActivePanel,
 ]);
 
 const answerModeSelect = create('select', {
@@ -118,6 +139,9 @@ Object.assign(dom, {
   modelLoadError,
   modelLoadButton,
   modelDownloadPanel,
+  modelActivePanel,
+  modelActiveText,
+  modelUnloadButton,
   modelWorkspace,
   modelRunHistory,
   localAiButton: document.querySelector('[data-action="load-local-ai"]'),
@@ -129,6 +153,10 @@ function selectedLocalModelProfile() {
 
 function selectedAnswerModeProfile() {
   return answerModeProfile(dom.answerModeSelect.value);
+}
+
+function selectedLocalModelRecord(profile = selectedLocalModelProfile()) {
+  return state.localModelCatalog.get(profile.modelId) ?? null;
 }
 
 function formatModelDuration(value) {
@@ -151,6 +179,31 @@ function formatModelGigabytes(value) {
 
 function modelIsReady(profile = selectedLocalModelProfile()) {
   return Boolean(state.localAiReady && state.localAi.modelId === profile.modelId);
+}
+
+function modelIsCached(profile = selectedLocalModelProfile()) {
+  return selectedLocalModelRecord(profile)?.cached === true;
+}
+
+function modelIsAvailable(profile = selectedLocalModelProfile()) {
+  return selectedLocalModelRecord(profile)?.available !== false;
+}
+
+function localModelLifecycle(profile = selectedLocalModelProfile()) {
+  if (modelIsReady(profile)) return { id: 'loaded', label: 'В памяти', className: 'is-on' };
+  if (modelIsCached(profile)) return { id: 'cached', label: 'На диске', className: 'is-cached' };
+  if (state.localModelCatalogStatus === 'loading') return { id: 'checking', label: 'Проверка', className: 'is-checking' };
+  if (!modelIsAvailable(profile)) return { id: 'unavailable', label: 'Недоступна', className: 'is-off' };
+  if (state.localModelCatalogStatus === 'error') return { id: 'unknown', label: 'Статус неизвестен', className: 'is-off' };
+  return { id: 'missing', label: 'Не скачана', className: 'is-off' };
+}
+
+function markLocalModelCached(modelId, cached = true) {
+  const profile = localModelProfile(modelId);
+  const previous = state.localModelCatalog.get(modelId) ?? (profile ? { ...profile, available: true } : null);
+  if (!previous) return;
+  state.localModelCatalog.set(modelId, { ...previous, cached: Boolean(cached) });
+  state.localModelCatalogStatus = 'ready';
 }
 
 function resetModelLoadState(profile = selectedLocalModelProfile()) {
@@ -181,15 +234,15 @@ function rejectLocalModelLoad(error) {
 
 function renderLocalModelDetails() {
   const profile = selectedLocalModelProfile();
+  const lifecycle = localModelLifecycle(profile);
   state.selectedLocalModelId = profile.modelId;
-  const ready = modelIsReady(profile);
   dom.modelParameters.textContent = profile.parameters;
   dom.modelSize.textContent = `веса ≈${formatModelGigabytes(profile.downloadSizeMB)}`;
   dom.modelRuntimeMemory.textContent = `память ≈${formatModelGigabytes(profile.runtimeMemoryMB)}`;
-  dom.modelPower.className = `model-power ${ready ? 'is-on' : 'is-off'}`;
+  dom.modelPower.className = `model-power ${lifecycle.className}`;
   dom.modelPower.replaceChildren(
     create('span', { className: 'model-power-dot', 'aria-hidden': 'true' }),
-    document.createTextNode(ready ? 'Вкл' : 'Выкл'),
+    document.createTextNode(lifecycle.label),
   );
   dom.modelProfileNote.textContent = `${profile.role} · ${profile.recommendedRamGB} ГБ+ общей памяти · ${profile.quantization} · контекст ${profile.contextWindow / 1024}K. ${profile.description}`;
 }
@@ -201,23 +254,62 @@ function renderAnswerModeDetails() {
 }
 
 function renderModelProgress() {
+  const profile = selectedLocalModelProfile();
   const progressState = state.modelLoadState;
-  const percent = Math.round(Math.max(0, Math.min(1, progressState.progress ?? 0)) * 100);
-  dom.modelProgressText.textContent = progressState.text;
+  const lifecycle = localModelLifecycle(profile);
+  const loading = progressState.status === MODEL_LOAD_STATUS.LOADING;
+  const hasError = progressState.status === MODEL_LOAD_STATUS.ERROR && progressState.error;
+  const cachedIdle = lifecycle.id === 'cached' && !loading && !hasError;
+  const checking = lifecycle.id === 'checking' && !loading;
+  const progress = cachedIdle ? 1 : Math.max(0, Math.min(1, progressState.progress ?? 0));
+  const percent = Math.round(progress * 100);
+
+  if (cachedIdle) dom.modelProgressText.textContent = 'Веса уже сохранены на устройстве';
+  else if (checking) dom.modelProgressText.textContent = 'Проверка локального хранилища…';
+  else if (progressState.status === MODEL_LOAD_STATUS.IDLE) dom.modelProgressText.textContent = 'Модель ещё не скачана';
+  else dom.modelProgressText.textContent = progressState.text;
+
   dom.modelProgressPercent.textContent = `${percent}%`;
   dom.modelProgressBar.style.width = `${percent}%`;
   dom.modelProgressTrack.setAttribute('aria-valuenow', String(percent));
-  dom.modelProgressStats.replaceChildren(
-    create('span', { text: `на диск ≈${formatBytes(progressState.loadedMB * 1024 * 1024)} / ${formatBytes(progressState.totalMB * 1024 * 1024)}` }),
-    create('span', { text: `осталось ≈${formatBytes(progressState.remainingMB * 1024 * 1024)}` }),
-    create('span', { text: formatDownloadSpeed(progressState.speedMBps) }),
-  );
-  const hasError = progressState.status === MODEL_LOAD_STATUS.ERROR && progressState.error;
-  dom.modelLoadError.classList.toggle('hidden', !hasError);
-  dom.modelLoadError.textContent = hasError ? progressState.error : '';
+  dom.modelDownloadPanel.classList.toggle('is-cached', cachedIdle);
+
+  if (cachedIdle) {
+    dom.modelProgressStats.replaceChildren(
+      create('span', { text: `на диске ≈${formatModelGigabytes(profile.downloadSizeMB)}` }),
+      create('span', { text: 'повторное скачивание не требуется' }),
+      create('span', { text: 'после включения работает один Web Worker' }),
+    );
+  } else if (!loading && !hasError) {
+    dom.modelProgressStats.replaceChildren(
+      create('span', { text: `загрузка ≈${formatModelGigabytes(profile.downloadSizeMB)}` }),
+      create('span', { text: `активная память ≈${formatModelGigabytes(profile.runtimeMemoryMB)}` }),
+      create('span', { text: checking ? 'чтение состояния кэша' : 'первая загрузка требует сеть' }),
+    );
+  } else {
+    dom.modelProgressStats.replaceChildren(
+      create('span', { text: `на диск ≈${formatBytes(progressState.loadedMB * 1024 * 1024)} / ${formatBytes(progressState.totalMB * 1024 * 1024)}` }),
+      create('span', { text: `осталось ≈${formatBytes(progressState.remainingMB * 1024 * 1024)}` }),
+      create('span', { text: formatDownloadSpeed(progressState.speedMBps) }),
+    );
+  }
+
+  dom.modelLoadError.classList.toggle('hidden', !hasError && state.localModelCatalogStatus !== 'error');
+  dom.modelLoadError.textContent = hasError
+    ? progressState.error
+    : state.localModelCatalogStatus === 'error'
+      ? `Не удалось проверить дисковый кэш: ${state.localModelCatalogError ?? 'неизвестная ошибка'}. Модель всё равно можно загрузить.`
+      : '';
+
+  const retry = progressState.status === MODEL_LOAD_STATUS.ERROR;
+  const buttonLabel = retry
+    ? 'Повторить загрузку'
+    : cachedIdle
+      ? 'Включить из кэша'
+      : 'Скачать и включить';
   dom.modelLoadButton.replaceChildren(
-    Icon({ name: progressState.status === MODEL_LOAD_STATUS.ERROR ? 'retry' : 'download', className: 'icon' }),
-    document.createTextNode(progressState.status === MODEL_LOAD_STATUS.ERROR ? 'Повторить загрузку' : 'Загрузить и включить'),
+    Icon({ name: retry ? 'retry' : cachedIdle ? 'model' : 'download', className: 'icon' }),
+    document.createTextNode(buttonLabel),
   );
 }
 
@@ -230,24 +322,37 @@ function syncLocalAiButton() {
 
 function renderModelPageState() {
   const profile = selectedLocalModelProfile();
-  const ready = modelIsReady(profile);
+  const lifecycle = localModelLifecycle(profile);
+  const ready = lifecycle.id === 'loaded';
   const loading = state.modelLoadState.status === MODEL_LOAD_STATUS.LOADING;
   renderLocalModelDetails();
   renderAnswerModeDetails();
   renderModelProgress();
   dom.localAiModel.disabled = loading;
-  dom.modelLoadButton.disabled = loading || !state.localAi.available;
+  dom.modelLoadButton.disabled = loading || !state.localAi.available || !modelIsAvailable(profile);
   dom.modelDownloadPanel.classList.toggle('hidden', ready);
+  dom.modelActivePanel.classList.toggle('hidden', !ready);
+  dom.modelUnloadButton.disabled = !ready || loading;
   dom.modelWorkspace?.classList.toggle('hidden', !ready);
   dom.answerOutput.classList.toggle('hidden', !ready);
+
   if (!state.localAi.available && !ready) {
     dom.modelProgressText.textContent = 'WebGPU или Web Worker недоступен';
     dom.modelLoadError.classList.remove('hidden');
     dom.modelLoadError.textContent = 'Этот браузер не может запустить локальную WebLLM-модель. Поиск по базе остаётся доступен на отдельной странице.';
+  } else if (!modelIsAvailable(profile)) {
+    dom.modelLoadError.classList.remove('hidden');
+    dom.modelLoadError.textContent = 'Выбранная модель отсутствует во встроенном каталоге закреплённой версии WebLLM.';
   }
+
   if (ready) {
     const mode = selectedAnswerModeProfile();
-    dom.aiStatus.textContent = `${profile.label} включена в Web Worker. Режим «${mode.label}». Веса остаются в браузерном дисковом кэше.`;
+    dom.modelActiveText.textContent = `${profile.label} работает в выделенном Web Worker. В памяти находится только эта модель; её веса останутся на диске после ручной выгрузки.`;
+    dom.aiStatus.textContent = `${profile.label} включена. Режим «${mode.label}». Веса остаются в браузерном дисковом кэше.`;
+  } else if (lifecycle.id === 'cached') {
+    dom.aiStatus.textContent = `${profile.label}: веса найдены на диске. Включите модель, чтобы открыть форму вопроса.`;
+  } else if (lifecycle.id === 'missing') {
+    dom.aiStatus.textContent = `${profile.label}: сначала скачайте и включите модель. Поиск по базе работает отдельно без LLM.`;
   }
   syncLocalAiButton();
 }
@@ -275,10 +380,81 @@ function renderModelRunHistory() {
   }
 }
 
+async function refreshLocalModelCatalogState() {
+  state.localModelCatalogStatus = 'loading';
+  state.localModelCatalogError = null;
+  renderModelPageState();
+  try {
+    const records = await state.localAi.inspectModels();
+    state.localModelCatalog = new Map(records.map((record) => [record.modelId, record]));
+    state.localModelCatalogStatus = 'ready';
+  } catch (error) {
+    state.localModelCatalogStatus = 'error';
+    state.localModelCatalogError = error instanceof Error ? error.message : String(error);
+  }
+  renderModelPageState();
+}
+
+async function restoreLocalModelPreferences() {
+  const [storedModelId, storedModeId] = await Promise.all([
+    storagePort.getSetting(MODEL_SELECTION_SETTING_KEY, DEFAULT_LOCAL_MODEL_ID),
+    storagePort.getSetting(ANSWER_MODE_SETTING_KEY, DEFAULT_ANSWER_MODE_ID),
+  ]);
+  const preferences = resolveLocalModelPreferences({
+    storedModelId,
+    storedModeId,
+    modelProfiles: LOCAL_MODEL_PROFILES,
+    answerModes: ANSWER_MODE_PROFILES,
+    defaultModelId: DEFAULT_LOCAL_MODEL_ID,
+    defaultModeId: DEFAULT_ANSWER_MODE_ID,
+  });
+  dom.localAiModel.value = preferences.modelId;
+  dom.answerModeSelect.value = preferences.modeId;
+  state.selectedLocalModelId = preferences.modelId;
+  state.answerModeId = preferences.modeId;
+}
+
+async function persistLocalModelPreferences() {
+  await Promise.all([
+    storagePort.setSetting(MODEL_SELECTION_SETTING_KEY, dom.localAiModel.value),
+    storagePort.setSetting(ANSWER_MODE_SETTING_KEY, dom.answerModeSelect.value),
+  ]);
+}
+
+async function unloadActiveLocalModel() {
+  if (!modelIsReady()) return;
+  dom.modelUnloadButton.disabled = true;
+  dom.localAiModel.disabled = true;
+  dom.aiStatus.textContent = 'Выгрузка модели из памяти…';
+  try {
+    const unloadedModelId = state.localAi.modelId;
+    await state.localAi.unload();
+    state.localAiReady = false;
+    state.lastModelLoad = null;
+    if (unloadedModelId) markLocalModelCached(unloadedModelId, true);
+    resetModelLoadState();
+    renderModelPageState();
+    toast('Модель выгружена из памяти. Загруженные веса сохранены на диске.');
+  } catch (error) {
+    toast(error instanceof Error ? error.message : String(error), 'error');
+  } finally {
+    dom.localAiModel.disabled = false;
+    dom.modelUnloadButton.disabled = false;
+  }
+}
+
 dom.modelLoadButton.addEventListener('click', () => loadOrRunLocalAi(dom.modelLoadButton));
+dom.modelUnloadButton.addEventListener('click', unloadActiveLocalModel);
 dom.localAiModel.addEventListener('change', async () => {
   const nextModelId = dom.localAiModel.value;
+  const previousSelectedProfile = localModelProfile(state.selectedLocalModelId);
+  const nextProfile = selectedLocalModelProfile();
   const previousModelId = state.localAi.modelId;
+  const nextModeId = modeAfterModelChange({
+    currentModeId: dom.answerModeSelect.value,
+    previousProfile: previousSelectedProfile,
+    nextProfile,
+  });
   state.selectedLocalModelId = nextModelId;
   state.localAiReady = false;
   if (previousModelId && previousModelId !== nextModelId) {
@@ -286,16 +462,24 @@ dom.localAiModel.addEventListener('change', async () => {
     dom.modelProgressText.textContent = 'Выгрузка предыдущей модели…';
     try {
       await state.localAi.unload();
+      markLocalModelCached(previousModelId, true);
     } catch (error) {
       toast(error instanceof Error ? error.message : String(error), 'error');
     }
   }
+  if (nextModeId && nextModeId !== dom.answerModeSelect.value) {
+    dom.answerModeSelect.value = nextModeId;
+    state.answerModeId = nextModeId;
+    state.currentEvidenceModeId = null;
+  }
+  await persistLocalModelPreferences();
   resetModelLoadState();
   renderModelPageState();
 });
-dom.answerModeSelect.addEventListener('change', () => {
+dom.answerModeSelect.addEventListener('change', async () => {
   state.answerModeId = selectedAnswerModeProfile().id;
   state.currentEvidenceModeId = null;
+  await storagePort.setSetting(ANSWER_MODE_SETTING_KEY, state.answerModeId);
   renderAnswerModeDetails();
   if (modelIsReady()) {
     dom.aiStatus.textContent = `Режим изменён на «${selectedAnswerModeProfile().label}». Источники будут собраны заново при следующем ответе.`;
@@ -305,3 +489,15 @@ dom.answerModeSelect.addEventListener('change', () => {
 resetModelLoadState();
 renderModelPageState();
 renderModelRunHistory();
+
+Promise.all([
+  restoreLocalModelPreferences(),
+  refreshLocalModelCatalogState(),
+]).then(() => {
+  resetModelLoadState();
+  renderModelPageState();
+}).catch((error) => {
+  state.localModelCatalogStatus = 'error';
+  state.localModelCatalogError = error instanceof Error ? error.message : String(error);
+  renderModelPageState();
+});

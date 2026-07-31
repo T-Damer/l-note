@@ -46,15 +46,17 @@ Single source of future work. Completed items describe the active branch.
 - [x] Retain Phi-4 Mini as a mathematics/formal-reasoning comparison.
 - [x] Run inference in a dedicated Web Worker.
 - [x] Keep exactly one active model; unload and terminate the previous worker on user-selected model change.
-- [x] Do not use an inactivity timer to unload the model.
+- [x] Do not use an inactivity timer.
 - [x] Keep downloaded weights in the WebLLM browser cache.
 - [x] Request persistent origin storage before a large model download without blocking on denial.
+- [x] Distinguish `not downloaded`, `downloaded/off` and `loaded/on` through WebLLM cache inspection.
+- [x] Add explicit manual unload without deleting cached weights.
+- [x] Persist selected model and answer mode through `StoragePort`.
 - [x] Display persistent weight size separately from active runtime memory.
 - [x] Allow model download before entering a question.
 - [x] Add `Экономный` and `Расширенный` modes using deterministic source/character limits.
 - [x] Show progress, estimated bytes, speed, errors and retry.
 - [ ] Add safe cancellation when supported by the runtime.
-- [ ] Distinguish `not downloaded`, `downloaded/off` and `loaded/on` through cache inspection.
 - [ ] Persist a download queue with up to four model/document transfers; still allow only one active inference model.
 - [ ] Improve validation from citation-ID existence to statement-to-evidence support.
 - [ ] Benchmark representative Snapdragon 7-class 8 GB and 12 GB devices before selecting a mobile default.

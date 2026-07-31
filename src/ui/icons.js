@@ -7,6 +7,7 @@ const ICONS = Object.freeze({
   forward: 'arrow-right',
   close: 'x',
   download: 'download-simple',
+  unload: 'power',
   retry: 'arrow-clockwise',
   spinner: 'spinner-gap',
   import: 'upload-simple',

@@ -85,8 +85,10 @@ async function loadOrRunLocalAi(button) {
       state.lastModelLoad = loaded;
       state.localAiReady = true;
       state.storagePersistence = persistence;
+      markLocalModelCached(selectedModelId, true);
       finishLocalModelLoad();
-      dom.aiStatus.textContent = `${selectedProfile.label} включена в Web Worker. Загрузка заняла ${formatModelDuration(loaded.loadMs)}${loaded.reused ? '; использован браузерный кэш' : ''}. ${storagePersistenceLabel(persistence)}.`;
+      const loadKind = loaded.cachedBeforeLoad ? 'включена из дискового кэша' : 'скачана и включена';
+      dom.aiStatus.textContent = `${selectedProfile.label} ${loadKind} в Web Worker за ${formatModelDuration(loaded.loadMs)}. ${storagePersistenceLabel(persistence)}.`;
       toast(`${selectedProfile.label} включена. В памяти находится только одна модель; веса остаются на диске.`);
     } catch (error) {
       state.localAiReady = false;

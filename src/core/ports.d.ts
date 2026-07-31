@@ -39,25 +39,31 @@ export interface DomainQueryPlannerPort {
   expandQuery(query: string): string[];
 }
 
+export interface LocalModelInspection {
+  modelId: string;
+  available: boolean;
+  cached: boolean | null;
+  [metadata: string]: unknown;
+}
+
 export interface LocalModelLoadResult {
   modelId: string;
   profile?: unknown;
   loadMs: number;
   reused: boolean;
+  cachedBeforeLoad?: boolean | null;
   runtime?: string;
   cacheBackend?: string;
 }
 
-export interface LocalModelAnswerOptions {
-  modeId?: string;
+export interface LocalModelUnloadResult {
+  modelId: string | null;
+  unloaded: boolean;
 }
 
 export interface LocalModelAnswer {
   text: string;
   modelId: string;
-  modeId?: string;
-  modeLabel?: string;
-  evidenceChars?: number;
   durationMs: number;
   completionTokens: number | null;
   tokensPerSecond: number | null;
@@ -71,10 +77,15 @@ export interface LocalModelPort {
   readonly available: boolean;
   readonly modelId?: string | null;
   readonly engine?: unknown;
-  inspectModels?(): Promise<unknown[]>;
+  inspectModels?(options?: { includeCache?: boolean }): Promise<LocalModelInspection[]>;
+  isModelCached?(modelId: string): Promise<boolean | null>;
   load(options?: { modelId?: string; onProgress?: (progress: unknown) => void }): Promise<LocalModelLoadResult>;
-  unload(): Promise<void>;
-  answer(query: string, evidence: EvidenceEnvelope, options?: LocalModelAnswerOptions): Promise<LocalModelAnswer>;
+  unload(): Promise<LocalModelUnloadResult>;
+  answer(
+    query: string,
+    evidence: EvidenceEnvelope,
+    options?: { modeId?: string },
+  ): Promise<LocalModelAnswer>;
 }
 
 export interface EvidenceVerificationResult {

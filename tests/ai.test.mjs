@@ -40,6 +40,42 @@ test('marks models unavailable when a WebLLM catalog does not contain them', () 
   assert.deepEqual(resolved.map((profile) => profile.available), [true, false, true]);
 });
 
+test('inspects persistent WebLLM cache state without loading a model', async () => {
+  const module = {
+    prebuiltAppConfig: {
+      model_list: LOCAL_MODEL_PROFILES.map((profile) => ({ model_id: profile.modelId })),
+    },
+    async hasModelInCache(modelId, appConfig) {
+      assert.equal(appConfig.cacheBackend, 'cache');
+      return modelId === 'Qwen3-4B-q4f16_1-MLC';
+    },
+  };
+  const adapter = new BrowserLocalAi({ moduleLoader: async () => module });
+  const inspected = await adapter.inspectModels();
+
+  assert.deepEqual(inspected.map((profile) => profile.cached), [false, true, false]);
+  assert.equal(await adapter.isModelCached('Qwen3-4B-q4f16_1-MLC'), true);
+  assert.equal(adapter.engine, null);
+});
+
+test('explicit unload releases the worker but keeps cache management separate', async () => {
+  const worker = { terminated: false, terminate() { this.terminated = true; } };
+  const engine = { unloaded: false, async unload() { this.unloaded = true; } };
+  const adapter = new BrowserLocalAi();
+  adapter.worker = worker;
+  adapter.engine = engine;
+  adapter.modelId = 'Qwen3-1.7B-q4f16_1-MLC';
+
+  const result = await adapter.unload();
+
+  assert.deepEqual(result, { modelId: 'Qwen3-1.7B-q4f16_1-MLC', unloaded: true });
+  assert.equal(worker.terminated, true);
+  assert.equal(engine.unloaded, true);
+  assert.equal(adapter.worker, null);
+  assert.equal(adapter.engine, null);
+  assert.equal(adapter.modelId, null);
+});
+
 test('browser adapter exposes explicit unload and requires WebGPU plus Worker', () => {
   const adapter = new BrowserLocalAi();
   assert.equal(typeof adapter.unload, 'function');

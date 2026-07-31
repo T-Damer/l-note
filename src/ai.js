@@ -124,11 +124,16 @@ function defaultWorkerFactory() {
   return new Worker(WEBLLM_WORKER_URL, { type: 'module', name: 'l-note-webllm' });
 }
 
+function defaultModuleLoader() {
+  return import(WEBLLM_URL);
+}
+
 export class BrowserLocalAi {
-  constructor({ workerFactory = defaultWorkerFactory } = {}) {
+  constructor({ workerFactory = defaultWorkerFactory, moduleLoader = defaultModuleLoader } = {}) {
     this.engine = null;
     this.worker = null;
     this.workerFactory = workerFactory;
+    this.moduleLoader = moduleLoader;
     this.modelId = null;
     this.module = null;
     this.cacheBackend = 'cache';
@@ -138,14 +143,55 @@ export class BrowserLocalAi {
     return Boolean(globalThis.navigator?.gpu && typeof Worker === 'function');
   }
 
-  async inspectModels() {
-    this.module ??= await import(WEBLLM_URL);
-    return resolveLocalModelProfiles(this.module.prebuiltAppConfig?.model_list ?? []);
+  async getModule() {
+    this.module ??= await this.moduleLoader();
+    return this.module;
+  }
+
+  appConfig(webllm) {
+    return {
+      ...webllm.prebuiltAppConfig,
+      cacheBackend: this.cacheBackend,
+    };
+  }
+
+  async inspectModels({ includeCache = true } = {}) {
+    const webllm = await this.getModule();
+    const appConfig = this.appConfig(webllm);
+    const profiles = resolveLocalModelProfiles(appConfig.model_list ?? []);
+    if (!includeCache || typeof webllm.hasModelInCache !== 'function') {
+      return profiles.map((profile) => ({ ...profile, cached: null }));
+    }
+
+    return Promise.all(profiles.map(async (profile) => {
+      if (!profile.available) return { ...profile, cached: false };
+      try {
+        return {
+          ...profile,
+          cached: Boolean(await webllm.hasModelInCache(profile.modelId, appConfig)),
+        };
+      } catch {
+        return { ...profile, cached: null };
+      }
+    }));
+  }
+
+  async isModelCached(modelId) {
+    const webllm = await this.getModule();
+    if (typeof webllm.hasModelInCache !== 'function') return null;
+    const appConfig = this.appConfig(webllm);
+    if (!(appConfig.model_list ?? []).some((record) => record.model_id === modelId)) return false;
+    try {
+      return Boolean(await webllm.hasModelInCache(modelId, appConfig));
+    } catch {
+      return null;
+    }
   }
 
   async unload() {
     const engine = this.engine;
     const worker = this.worker;
+    const modelId = this.modelId;
     this.engine = null;
     this.worker = null;
     this.modelId = null;
@@ -154,14 +200,19 @@ export class BrowserLocalAi {
     } finally {
       worker?.terminate?.();
     }
+    return {
+      modelId,
+      unloaded: Boolean(engine || worker),
+    };
   }
 
   async load({ modelId = DEFAULT_LOCAL_MODEL_ID, onProgress } = {}) {
     if (!this.available) {
       throw new Error('WebGPU или Web Worker недоступен. Поиск и доказательная сводка продолжат работать без модели.');
     }
-    const webllm = (this.module ??= await import(WEBLLM_URL));
-    const modelList = webllm.prebuiltAppConfig?.model_list ?? [];
+    const webllm = await this.getModule();
+    const appConfig = this.appConfig(webllm);
+    const modelList = appConfig.model_list ?? [];
     const selectedRecord = modelList.find((record) => record.model_id === modelId);
     if (!selectedRecord) throw new Error(`Модель ${modelId} отсутствует во встроенном каталоге WebLLM ${WEBLLM_URL.split('@').at(-1)}.`);
 
@@ -172,6 +223,7 @@ export class BrowserLocalAi {
         profile,
         loadMs: 0,
         reused: true,
+        cachedBeforeLoad: true,
         runtime: 'web-worker',
         cacheBackend: this.cacheBackend,
       };
@@ -179,13 +231,18 @@ export class BrowserLocalAi {
 
     if (this.engine || this.worker) await this.unload();
 
+    let cachedBeforeLoad = null;
+    if (typeof webllm.hasModelInCache === 'function') {
+      try {
+        cachedBeforeLoad = Boolean(await webllm.hasModelInCache(modelId, appConfig));
+      } catch {
+        cachedBeforeLoad = null;
+      }
+    }
+
     const worker = this.workerFactory();
     const startedAt = monotonicNow();
     try {
-      const appConfig = {
-        ...webllm.prebuiltAppConfig,
-        cacheBackend: this.cacheBackend,
-      };
       const engine = await webllm.CreateWebWorkerMLCEngine(
         worker,
         modelId,
@@ -203,6 +260,7 @@ export class BrowserLocalAi {
         profile,
         loadMs: monotonicNow() - startedAt,
         reused: false,
+        cachedBeforeLoad,
         runtime: 'web-worker',
         cacheBackend: this.cacheBackend,
       };

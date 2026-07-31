@@ -42,6 +42,7 @@ test('static build contains the complete offline shell', async () => {
     'src/integrations/minimed-adapter.js',
     'src/services/answer-modes.js',
     'src/services/model-action.js',
+    'src/services/model-preferences.js',
     'src/services/model-progress.js',
     'src/services/storage-persistence.js',
     'src/services/welcome-note.js',
@@ -62,6 +63,8 @@ test('static build contains the complete offline shell', async () => {
   assert.match(css, /\.dialog-close-button/u);
   assert.match(css, /\.source-card__action/u);
   assert.match(css, /\.model-progress-track/u);
+  assert.match(css, /\.model-active-panel/u);
+  assert.match(css, /\.model-power\.is-cached/u);
   assert.match(css, /\.answer-mode-panel/u);
   assert.match(css, /\.knowledge-graph-node/u);
   assert.match(css, /\.ui-switch__track/u);
@@ -78,13 +81,16 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /buildKnowledgeGraph/u);
   assert.match(app, /beginLocalModelLoad/u);
   assert.match(app, /ANSWER_MODE_PROFILES/u);
-  assert.match(app, /requestPersistentStorage/u);
+  assert.match(app, /MODEL_SELECTION_SETTING_KEY/u);
+  assert.match(app, /markLocalModelCached/u);
+  assert.match(app, /Выгрузить из памяти/u);
   assert.match(app, /createRoutedDialogController/u);
   assert.match(app, /ensureWelcomeNote/u);
 
   const ai = await readFile(path.join(root, 'dist', 'src', 'ai.js'), 'utf8');
   assert.match(ai, /Qwen3-4B-q4f16_1-MLC/u);
   assert.match(ai, /CreateWebWorkerMLCEngine/u);
+  assert.match(ai, /hasModelInCache/u);
   assert.match(ai, /cacheBackend:\s*this\.cacheBackend/u);
 
   const syntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
@@ -93,17 +99,12 @@ test('static build contains the complete offline shell', async () => {
   });
   assert.equal(syntax.status, 0, `${syntax.stderr}\n\nAssembled app tail:\n${numberedTail(app)}`);
 
-  for (const relative of [
-    'src/ai.js',
-    'src/services/answer-modes.js',
-    'src/services/storage-persistence.js',
-    'src/workers/webllm-worker.js',
-  ]) {
-    const result = spawnSync(process.execPath, ['--check', path.join(root, 'dist', relative)], {
+  for (const relative of ['src/ai.js', 'src/services/answer-modes.js', 'src/workers/webllm-worker.js']) {
+    const check = spawnSync(process.execPath, ['--check', path.join(root, 'dist', relative)], {
       cwd: root,
       encoding: 'utf8',
     });
-    assert.equal(result.status, 0, result.stderr);
+    assert.equal(check.status, 0, check.stderr);
   }
 });
 
