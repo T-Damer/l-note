@@ -9,10 +9,10 @@ import {
 
 test('parses base pages and falls back to search', () => {
   assert.equal(parseHashRoute('#/ask').page, 'ask');
-  assert.equal(parseHashRoute('#/create-pack').page, 'create-pack');
+  assert.equal(parseHashRoute('#/create-pack').page, 'search');
   assert.equal(parseHashRoute('#/unknown').page, 'search');
   assert.equal(baseRouteHash('library'), '#/library');
-  assert.equal(baseRouteHash('create-pack'), '#/create-pack');
+  assert.equal(baseRouteHash('create-pack'), '#/search');
 });
 
 test('creates and parses a restorable document route', () => {
@@ -43,4 +43,13 @@ test('resource routes choose a sensible base when opened directly', () => {
   assert.equal(parseHashRoute('#/package/example').base, 'library');
   assert.equal(parseHashRoute('#/note/note-1').base, 'notes');
   assert.equal(parseHashRoute('#/concept/example').base, 'search');
+});
+
+test('custom pack creation uses the package resource route on the library base', () => {
+  const route = parseHashRoute(resourceRouteHash('package', 'new', { base: 'library', depth: 1 }));
+  assert.equal(route.kind, 'resource');
+  assert.equal(route.resourceType, 'package');
+  assert.equal(route.resourceId, 'new');
+  assert.equal(route.base, 'library');
+  assert.equal(route.depth, 1);
 });
