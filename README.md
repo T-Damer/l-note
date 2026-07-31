@@ -1,8 +1,8 @@
 # L-Note
 
-L-Note is an offline-first knowledge workspace built around independently installable knowledge packs. Users download only the domains they need, search them locally, follow linked concepts and sources, keep a separate personal-note layer, and optionally run a local model over retrieved evidence.
+L-Note is an offline-first knowledge workspace built around independently installable knowledge packs. Users download only the domains they need, search them locally, follow linked concepts and sources, keep a separate personal-note layer, create their own packs, and optionally run a local model over retrieved evidence.
 
-The runtime and pack format are domain-neutral. MiniMed-derived packs are the main demonstration corpus, while clinical query parsing, ranking, dose validation, abstention and medical benchmarks remain owned by MiniMed.
+The runtime and pack format are domain-neutral. MiniMed-derived packs are the main demonstration corpus, while clinical query parsing, ranking, dose validation, abstention and medical benchmarks remain owned by MiniMed. The active L-Note core is not connected to the MiniMed application in this PR.
 
 ## Hosted demo
 
@@ -14,9 +14,10 @@ https://t-damer.github.io/l-note/
 
 - checksummed JSON packs installed independently into IndexedDB;
 - exact, prefix, alias and fuzzy retrieval through MiniSearch with a deterministic fallback;
-- hash-routed packages, documents, concepts, statements and notes;
+- hash-routed packages, documents, concepts, statements, notes and pack creation;
 - linked statements, relations, backlinks and personal overrides;
 - list and graph views of installed/available knowledge;
+- browser-local creation of installable packs from Markdown, TXT, JSON or pasted text;
 - deterministic evidence collection before generation;
 - browser-local WebLLM in a dedicated Web Worker;
 - one active inference model at a time;
@@ -37,7 +38,21 @@ npm run check
 npm run serve
 ```
 
-Open `http://127.0.0.1:4173/`, then install the required packs on the **Пакеты** page.
+Open `http://127.0.0.1:4173/`, then install or create the required packs on the **Пакеты** page.
+
+## Create a pack in the browser
+
+Open **Пакеты → Создать свой пакет**. The browser creator can:
+
+- combine multiple `.md`, `.markdown`, `.txt` and `.json` files;
+- include Markdown text pasted directly into the form;
+- preserve document titles, headings and source text;
+- split oversized sections;
+- discover common definitions such as `Полное название (СОКР)`;
+- preview package documents, sections, entities and size;
+- download the resulting JSON or install it immediately.
+
+The lightweight creator is deterministic and does not require a local model. Source files stay in the browser. Current limits are 32 MiB per file and 64 MiB total. PDF/DOCX, OCR, database exports and reviewed LLM-assisted enrichment remain part of the heavier preparation roadmap.
 
 ## Browser-local models
 
@@ -87,9 +102,9 @@ active search index        JavaScript memory (current MiniSearch adapter)
 active model               WebGPU/shared device memory
 ```
 
-The planned SQLite/FTS5 adapter will keep large corpora and indexes on disk and materialize only the active result/evidence working set. MiniMed will consume that adapter through L-Note ports while retaining medical query planning and safeguards.
+The planned SQLite/FTS5 adapter will keep large corpora and indexes on disk and materialize only the active result/evidence working set. A future MiniMed connection may use the same ports only after separate approval and MiniMed-owned retrieval, dose and safety gates.
 
-## Build a custom pack
+## Build a custom pack on a stronger device
 
 ### Reviewed normalized records
 
@@ -113,7 +128,7 @@ node tools/build-pack.mjs ./my-knowledge \
 
 ```bash
 OPENAI_BASE_URL=http://127.0.0.1:11434/v1 \
-node tools/build-pack.mjs ./my-knowlede \
+node tools/build-pack.mjs ./my-knowledge \
   --id com.example.enriched \
   --title "Enriched pack" \
   --output ./dist/enriched.pack.json \
@@ -141,7 +156,7 @@ See `docs/PACK_FORMAT.md` for the portable format and `docs/ARCHITECTURE.md` for
 ```text
 L-Note Core
   contracts + stable IDs
-  pack installation/composition
+  pack preparation/installation/composition
   storage/search/model ports
   graph, notes, evidence and routing
 
@@ -152,7 +167,7 @@ MiniMed
   abstention and safety benchmarks
 ```
 
-Migration of MiniMed to L-Note Core is accepted only after MiniMed's existing retrieval, dose and safety suites pass through the adapter.
+Any future MiniMed migration requires separate approval and must pass MiniMed's existing retrieval, dose and safety suites through the adapter.
 
 ## Limitations
 
