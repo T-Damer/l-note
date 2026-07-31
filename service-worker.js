@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v28';
-const RUNTIME_CACHE = 'l-note-runtime-v28';
+const SHELL_CACHE = 'l-note-shell-v29';
+const RUNTIME_CACHE = 'l-note-runtime-v29';
 const SHELL = [
   './',
   './index.html',
@@ -27,6 +27,7 @@ const SHELL = [
   './src/integrations/minimed-adapter.js',
   './src/helpers/entity-terms.js',
   './src/helpers/model-formatters.js',
+  './src/helpers/pack-source-parser.js',
   './src/pages/ask-page-controller.js',
   './src/pages/concept-resource-view.js',
   './src/pages/document-resource-view.js',
@@ -36,12 +37,14 @@ const SHELL = [
   './src/pages/model-lab-view.js',
   './src/pages/note-resource-view.js',
   './src/pages/notes-list-view.js',
+  './src/pages/pack-creator-page.js',
   './src/pages/package-resource-view.js',
   './src/pages/routed-resource-renderer.js',
   './src/pages/sidebar-controller.js',
   './src/pages/statement-resource-view.js',
   './src/services/answer-modes.js',
   './src/services/ask-workflow.js',
+  './src/services/browser-pack-builder.js',
   './src/services/evidence-query.js',
   './src/services/local-model-loader.js',
   './src/services/model-action.js',
