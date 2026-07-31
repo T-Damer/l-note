@@ -24,6 +24,17 @@ test('tracks approximate model bytes and a smoothed speed from progress callback
   assert.equal(halfway.text, 'Загрузка весов');
 });
 
+test('uses persistent download size separately from active runtime memory', () => {
+  const state = createModelLoadState({
+    modelId: 'qwen-4b',
+    downloadSizeMB: 2300,
+    runtimeMemoryMB: 3431.59,
+    sizeMB: 9999,
+  });
+  assert.equal(state.totalMB, 2300);
+  assert.equal(state.runtimeMemoryMB, 3431.59);
+});
+
 test('does not let a multi-stage callback move the progress bar backwards', () => {
   const loading = startModelLoad(createModelLoadState(profile, 1000), profile, 1000);
   const first = updateModelLoadProgress(loading, { progress: 0.8 }, 2000);
