@@ -136,9 +136,3 @@ function detectRelatedEntities(text) {
     limit: 16,
   });
 }
-
-function renderNoteTarget(claimId) {
-  dom.noteTargetSummary.replaceChildren();
-  if (!claimId) return;
-  const claim = state.knowledge.claims.get(claimId);
-  if (!claim) {
