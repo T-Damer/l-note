@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** continue shrinking transitional `app-parts`. Next are note-page extraction, local PDF assets, SQLite/FTS5 and a user-facing pack preparer. Android/iOS remain deferred.
+**Current focus:** continue shrinking the remaining transitional shell, then add local PDF assets, SQLite/FTS5 and a user-facing pack preparer. Android/iOS and live MiniMed integration remain deferred.
 
 ## Universal core and MiniMed
 
@@ -17,13 +17,14 @@ Single source of future work. Completed items describe the active branch.
 - [x] Extract model-page construction and rendering into `src/pages/`.
 - [x] Extract persistent-storage/model-load orchestration into a service.
 - [x] Extract evidence retrieval, evidence rendering and generated-answer rendering.
+- [x] Extract Ask planning/execution into `ask-workflow` and DOM coordination into `ask-page-controller`.
+- [x] Extract note creation/import normalization, the routed editor and notes-list rendering.
 - [x] Remove the shell-local DOM builder in favor of `src/ui/dom.js`.
 - [x] Extract package rendering from transitional app parts.
-- [ ] Extract the note editor and remaining Ask coordination from transitional app parts.
 - [ ] Split the remaining transitional shell into pages, services, helpers and components.
 - [ ] Add SQLite/FTS5 for large packs without moving medical policy into L-Note.
 - [ ] Add an optional vector adapter behind the same search boundary.
-- [ ] Require MiniMed retrieval, dose and safety benchmarks before migration.
+- [ ] Connect the core to MiniMed only after explicit approval and require MiniMed retrieval, dose and safety benchmarks before migration.
 
 ## Search, routes and readers
 
@@ -34,10 +35,9 @@ Single source of future work. Completed items describe the active branch.
 - [x] Use stable hash routes, nested browser history, Back and full-chain Close.
 - [x] Add browser E2E for direct links, reload, modal scrolling and close-chain behavior.
 - [x] Use one routed-resource registry for package, document, concept, statement and note routes.
-- [x] Extract package, document, concept and statement content into separate page renderers.
+- [x] Extract package, document, concept, statement and note content into separate page renderers/controllers.
 - [x] Remove the legacy resource-type switch and obsolete `02b.js`/`04c-package-viewer.js` fragments.
 - [ ] Add broader non-demo and large-corpus retrieval regressions.
-- [ ] Extract the note renderer fully into the routed-resource layer.
 - [ ] Add internal PDF assets with exact page/section anchors.
 
 ## UI and graph
@@ -49,8 +49,9 @@ Single source of future work. Completed items describe the active branch.
 - [x] Add the one-time `Привет, коллега` note and routed note links.
 - [x] Add a safe reusable DOM element helper without raw HTML insertion.
 - [x] Centralize the external-source Phosphor icon.
+- [x] Make the desktop sidebar collapsible, persist its state and show labels as tooltips while collapsed.
+- [x] Remove package/record counters from the sidebar storage status.
 - [ ] Finish interaction-state, click-target and legacy-glyph auditing.
-- [ ] Make the desktop sidebar collapsible with tooltips.
 - [ ] Let the local model propose note links with explicit user review.
 
 ## Local models
