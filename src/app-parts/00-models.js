@@ -19,4 +19,12 @@ import {
   modeAfterModelChange,
   resolveLocalModelPreferences,
 } from './services/model-preferences.js';
+import {
+  MODEL_CATALOG_STATUS,
+  indexModelCatalog,
+  isModelAvailable,
+  markModelCached,
+  resolveModelLifecycle,
+} from './services/model-lifecycle.js';
 import { requestPersistentStorage, storagePersistenceLabel } from './services/storage-persistence.js';
+import { createModelLabView } from './pages/model-lab-view.js';
