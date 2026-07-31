@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** continue shrinking transitional `app-parts` into pages, services, helpers and reusable components. Next are the routed resource renderer, local PDF assets, SQLite/FTS5 and a user-facing pack preparer. Android/iOS remain deferred.
+**Current focus:** continue shrinking transitional `app-parts` into pages, services, helpers and reusable components. Next are the remaining Ask orchestration, routed resource renderer, local PDF assets, SQLite/FTS5 and a user-facing pack preparer. Android/iOS remain deferred.
 
 ## Universal core and MiniMed
 
@@ -12,9 +12,12 @@ Single source of future work. Completed items describe the active branch.
 - [x] Run the web shell through `KnowledgeApplicationAdapter`.
 - [x] Add a MiniMed compatibility adapter while keeping clinical parsing, ranking, dose validation, abstention and benchmarks in MiniMed.
 - [x] Define dependency direction, file/function limits and extraction rules in `AGENTS.md`.
+- [x] Add automated modular line-limit, dependency-boundary and safe-DOM checks.
 - [x] Extract model formatting and lifecycle state into `helpers` and `services`.
 - [x] Extract model-page element construction and rendering into `src/pages/`.
-- [ ] Move remaining Ask/model orchestration out of `src/app-parts/04a.js` and `05-model-lab.js`.
+- [x] Extract persistent-storage/model-load orchestration into a service.
+- [x] Extract generated-answer rendering and model-run record creation.
+- [ ] Move evidence collection and remaining Ask action coordination out of `src/app-parts/04a.js`.
 - [ ] Split the remaining transitional shell into pages, services, helpers and components.
 - [ ] Add SQLite/FTS5 for large packs without moving medical policy into L-Note.
 - [ ] Add an optional vector adapter behind the same search boundary.
