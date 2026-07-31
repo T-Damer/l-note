@@ -37,6 +37,7 @@ const offlineModules = [
   'src/pages/local-answer-view.js',
   'src/pages/model-lab-elements.js',
   'src/pages/model-lab-view.js',
+  'src/pages/package-resource-view.js',
   'src/pages/routed-resource-renderer.js',
   'src/pages/statement-resource-view.js',
   'src/services/answer-modes.js',
@@ -106,6 +107,7 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /createRoutedResourceRenderer/u);
   assert.match(app, /renderDocumentResource/u);
   assert.match(app, /renderConceptResource/u);
+  assert.match(app, /renderPackageResource/u);
   assert.match(app, /renderStatementResource/u);
   assert.match(app, /detectEntitiesInText/u);
   assert.match(app, /MODEL_SELECTION_SETTING_KEY/u);
@@ -124,6 +126,10 @@ test('static build contains the complete offline shell', async () => {
   const documentView = await readFile(path.join(root, 'dist', 'src', 'pages', 'document-resource-view.js'), 'utf8');
   assert.match(documentView, /renderDocumentResource/u);
   assert.match(documentView, /Открыть внешний первоисточник/u);
+
+  const packageView = await readFile(path.join(root, 'dist', 'src', 'pages', 'package-resource-view.js'), 'utf8');
+  assert.match(packageView, /renderPackageResource/u);
+  assert.match(packageView, /Скачать пакет/u);
 
   const ai = await readFile(path.join(root, 'dist', 'src', 'ai.js'), 'utf8');
   assert.match(ai, /Qwen3-4B-q4f16_1-MLC/u);
