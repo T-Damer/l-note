@@ -37,6 +37,8 @@ const offlineModules = [
   'src/pages/local-answer-view.js',
   'src/pages/model-lab-elements.js',
   'src/pages/model-lab-view.js',
+  'src/pages/note-resource-view.js',
+  'src/pages/notes-list-view.js',
   'src/pages/package-resource-view.js',
   'src/pages/routed-resource-renderer.js',
   'src/pages/statement-resource-view.js',
@@ -47,6 +49,7 @@ const offlineModules = [
   'src/services/model-lifecycle.js',
   'src/services/model-preferences.js',
   'src/services/model-progress.js',
+  'src/services/note-workflow.js',
   'src/services/storage-persistence.js',
   'src/services/welcome-note.js',
   'src/workers/webllm-worker.js',
@@ -109,6 +112,9 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /renderConceptResource/u);
   assert.match(app, /renderPackageResource/u);
   assert.match(app, /renderStatementResource/u);
+  assert.match(app, /createNoteResourceView/u);
+  assert.match(app, /renderNotesList/u);
+  assert.match(app, /createNoteRecord/u);
   assert.match(app, /detectEntitiesInText/u);
   assert.match(app, /MODEL_SELECTION_SETTING_KEY/u);
   assert.match(app, /markLocalModelCached/u);
@@ -130,6 +136,14 @@ test('static build contains the complete offline shell', async () => {
   const packageView = await readFile(path.join(root, 'dist', 'src', 'pages', 'package-resource-view.js'), 'utf8');
   assert.match(packageView, /renderPackageResource/u);
   assert.match(packageView, /Скачать пакет/u);
+
+  const noteView = await readFile(path.join(root, 'dist', 'src', 'pages', 'note-resource-view.js'), 'utf8');
+  assert.match(noteView, /createNoteResourceView/u);
+  assert.match(noteView, /Связанное утверждение/u);
+
+  const noteWorkflow = await readFile(path.join(root, 'dist', 'src', 'services', 'note-workflow.js'), 'utf8');
+  assert.match(noteWorkflow, /createNoteRecord/u);
+  assert.match(noteWorkflow, /normalizeImportedNotes/u);
 
   const ai = await readFile(path.join(root, 'dist', 'src', 'ai.js'), 'utf8');
   assert.match(ai, /Qwen3-4B-q4f16_1-MLC/u);
