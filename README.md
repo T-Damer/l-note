@@ -1,39 +1,32 @@
 # L-Note
 
-L-Note is an offline-first web knowledge workspace built around **installable knowledge packs**. A user selects only the domains they need, downloads them once, and then searches, follows links, writes notes, and assembles source-grounded answers without a backend.
+L-Note is an offline-first knowledge workspace built around independently installable packs. Users download only the domains they need, search them locally, follow linked concepts and sources, maintain a separate personal-note layer, and optionally run a browser-local model over retrieved evidence.
 
-The current repository is a working browser/PWA prototype. Its runtime and pack format are domain-neutral; the first demonstration catalog uses several independently installable MiniMed-derived packs. The current product phase deliberately focuses on hosted web search and browser-local LLM experiments. Native Android work is deferred until the search and grounded-answer workflow is stable.
+The runtime and pack format are domain-neutral. MiniMed-derived packs are the main demonstration corpus, while MiniMed-specific clinical parsing, ranking, dose validation and safety policy remain outside L-Note Core.
 
 ## Hosted demo
 
-The canonical hosted preview is published through GitHub Pages when the Pages workflow succeeds:
+The current GitHub Pages preview is published from `agent/universal-offline-kb` while PR #3 remains active:
 
 https://t-damer.github.io/l-note/
 
-While PR #3 is active, Pages is built from `agent/universal-offline-kb`. After the PR is merged, `main` becomes the only deployment line.
+## Current capabilities
 
-## What works
-
-- independent JSON knowledge packs with catalog metadata and SHA-256 verification;
-- persistent offline storage in IndexedDB and a Service Worker application shell;
-- MiniSearch full-text, prefix, alias, abbreviation, and fuzzy retrieval;
-- deterministic Damerau–Levenshtein fallback when MiniSearch is unavailable;
-- entities, relations, exact evidence quotes, and backlinks;
-- personal notes that can support, refine, contradict, or locally supersede a reference claim;
-- deterministic evidence collection before any generation;
-- three selectable browser-local model families through WebLLM, loaded only on explicit request;
-- load and generation timing, completion-token throughput when reported, and deterministic citation-ID validation;
-- import/export of arbitrary compatible packs and personal notes;
-- pack updates without deleting the user's personal layer;
-- a zero-dependency CLI for reviewed authoring JSON or direct Markdown/TXT/JSON preparation;
-- optional enrichment through a local OpenAI-compatible server or Replicate;
-- a static build suitable for GitHub Pages or any file host.
-
-The demo catalog contains a non-medical L-Note guide plus four thematic medical packs: respiratory medicine, infectious diseases, nephrology/urology, and a small medication-registry example. They are navigation examples, not a complete clinical corpus and not prescribing guidance.
+- checksummed JSON packs installed independently into IndexedDB;
+- MiniSearch exact, prefix, alias and fuzzy retrieval with deterministic fallback;
+- hash-routed packages, documents, concepts, statements and notes;
+- linked statements, relations, backlinks and personal overrides;
+- list/graph package views;
+- deterministic evidence collection before generation;
+- browser-local WebLLM in a dedicated Web Worker;
+- one active inference model at a time, with downloaded weights retained in browser storage;
+- two evidence modes: `Экономный` and `Расширенный`;
+- CLI preparation from reviewed JSON or Markdown/TXT/JSON;
+- optional local OpenAI-compatible or Replicate enrichment with exact-quote validation.
 
 ## Run locally
 
-Requirements: Node.js 20 or newer.
+Requires Node.js 20 or newer.
 
 ```bash
 npm ci
@@ -41,29 +34,60 @@ npm run check
 npm run serve
 ```
 
-Open `http://127.0.0.1:4173/`, go to **Packs**, and install only the domains you want. Once installed, pack contents are read from IndexedDB rather than fetched for every query.
+Open `http://127.0.0.1:4173/`, then install the required packs on the **Пакеты** page.
 
-`npm ci` installs only the pinned MiniSearch runtime. The static build vendors it into the application shell, so installed search does not depend on a CDN. The built-in fuzzy fallback remains available when developing without dependencies. WebLLM is optional and downloaded only after the user activates it.
+## Browser-local model matrix
 
-## Browser-local model test matrix
+All current profiles are built into the pinned WebLLM catalog and use `q4f16_1` artifacts. Qwen3 1.7B remains the default because the target class includes mid-range 8 GB devices without a strong discrete GPU.
 
-The **Ask** page exposes three deliberately different model families from WebLLM. All use the `q4f16_1` runtime format so the first comparison is practical rather than tied to one vendor:
+| Profile | WebLLM model ID | Intended tier | Approx. weights | Approx. active memory |
+| --- | --- | --- | ---: | ---: |
+| Qwen3 1.7B | `Qwen3-1.7B-q4f16_1-MLC` | default for about 8 GB | 1.0 GB | 2.0 GB |
+| Qwen3 4B | `Qwen3-4B-q4f16_1-MLC` | quality profile for about 12 GB | 2.3 GB | 3.4 GB |
+| Phi-4 Mini | `Phi-4-mini-instruct-q4f16_1-MLC` | mathematics/formal-reasoning comparison | 2.2 GB | 3.4 GB |
 
-| Profile | WebLLM model ID | Test role | WebLLM VRAM estimate |
-| --- | --- | --- | ---: |
-| Gemma 3 1B | `gemma3-1b-it-q4f16_1-MLC` | lightweight independent baseline | about 0.7 GB |
-| Qwen3 1.7B | `Qwen3-1.7B-q4f16_1-MLC` | recommended MiniMed/L-Note default | about 2.0 GB |
-| Phi-4 Mini | `Phi-4-mini-instruct-q4f16_1-MLC` | heavier quality alternative | about 3.4 GB |
+These figures are UI estimates, not hard guarantees. Integrated GPUs and mobile SoCs normally use shared system memory, and the browser/runtime also needs memory for WASM, tokenizer state, staging buffers and the active evidence set.
 
-Qwen3 1.7B remains selected by default. Gemma tests the smallest useful independent architecture, while Phi-4 Mini supplies a stronger non-Qwen comparison. The first load requires network access to fetch the selected model; WebLLM then keeps model assets in the browser cache. Search, evidence collection, source reading, and notes remain usable without loading a model.
+### Model lifecycle
 
-For each run the UI records the model, load time, answer time, completion-token count and tokens per second when WebLLM reports usage. Generated answers receive only retrieved evidence, run with model thinking output disabled, and are checked for invented or missing `[S…]` source identifiers. These checks measure contract compliance; they do not establish that any candidate is clinically or generally reliable.
+```text
+first use
+  → download weights into WebLLM browser cache
+  → load the selected model into one dedicated Web Worker
+  → reveal the question workspace
+  → retrieve bounded local evidence
+  → generate and validate source IDs
+```
+
+Only one model may be active. Selecting another model explicitly unloads the current engine and terminates its worker before loading the replacement. There is no inactivity timer; the model remains active until the user changes it or the page/runtime ends. Cached weights remain on disk.
+
+The built-in `Qwen3-4B-q4f16_1-MLC` is used instead of a custom Qwen3-4B-Instruct-2507 conversion. A 2507 profile can be considered later after a reproducible MLC conversion, integrity pinning and the same retrieval/citation benchmarks.
+
+### Two answer modes
+
+`Экономный` uses fewer retrieved sources, a smaller character budget and a shorter output. It is the default for Qwen3 1.7B and constrained devices.
+
+`Расширенный` includes more evidence and permits a longer answer. It is intended for Qwen3 4B or Phi-4 Mini on devices with more headroom.
+
+The preparer does not tokenize every candidate section just to select a mode. It applies deterministic source and character limits, while WebLLM enforces the final context and generation limits.
+
+## Storage policy
+
+Current browser storage:
+
+```text
+application shell          Service Worker cache
+model artifacts            WebLLM Cache API
+installed packs and notes  IndexedDB
+active search index        JavaScript memory
+active model               WebGPU/shared device memory
+```
+
+The current MiniSearch adapter still builds an in-memory index from enabled packs. The planned SQLite/FTS5 adapter will keep large corpora and indexes on disk and materialize only the current result/evidence working set. MiniMed should consume that adapter through the same L-Note ports while retaining its own medical query planner and safeguards.
 
 ## Build a custom pack
 
-L-Note supports two preparation paths.
-
-### A. Compile reviewed, normalized records
+### Reviewed normalized records
 
 ```bash
 node tools/build-pack.mjs \
@@ -71,23 +95,17 @@ node tools/build-pack.mjs \
   --output dist/example.pack.json
 ```
 
-The directory contains `manifest.json`, optional `entities.json`, `claims.json`, and `relations.json`, plus normalized document JSON under `documents/`. An ETL job, database export, LLM pipeline, or hand-authored workflow can emit this intermediate contract.
-
-### B. Prepare Markdown, TXT, or JSON directly
+### Markdown, TXT or JSON
 
 ```bash
 node tools/build-pack.mjs ./my-knowledge \
   --id com.example.my-pack \
   --title "My knowledge" \
-  --description "Private operational notes" \
+  --description "Private reference data" \
   --output ./dist/my-pack.json
 ```
 
-The deterministic preparer preserves file and section provenance, segments Markdown headings, and detects common `Full term (ABC)` abbreviation patterns.
-
-### Optional local AI enrichment
-
-Any local service exposing an OpenAI-compatible `/v1/chat/completions` endpoint can propose entities, claims, and relations. This works with local runtimes such as Ollama, LM Studio, or vLLM when their compatible API is enabled.
+### Optional local LLM preparation
 
 ```bash
 OPENAI_BASE_URL=http://127.0.0.1:11434/v1 \
@@ -99,76 +117,42 @@ node tools/build-pack.mjs ./my-knowledge \
   --ai-model qwen3:8b
 ```
 
-### Optional Replicate enrichment
-
-Do not commit the token. The CLI accepts either environment name used by common Replicate integrations:
+### Optional Replicate preparation
 
 ```bash
-REPLICATE_API_TOKEN=... node tools/build-pack.mjs ./my-knowledge \
+REPLICATE_API_TOKEN=... \
+node tools/build-pack.mjs ./my-knowledge \
   --id com.example.replicate \
-  --title "Replicate-enriched pack" \
+  --title "Replicate pack" \
   --output ./dist/replicate.pack.json \
   --ai-provider replicate \
   --ai-model owner/model
 ```
 
-Remote or local model prose never replaces source text. A proposed claim is retained only when its `quote` is an exact contiguous substring of the section being processed. AI-derived claims are labelled `proposed` until reviewed.
+Heavy parsing, chunking and LLM-assisted linking may run on a stronger desktop or server. The resulting pack is then installed and used on a weaker offline client. Proposed statements are retained only when their evidence quote exactly matches the source section; model output never silently replaces source text.
 
-See [docs/PACK_FORMAT.md](docs/PACK_FORMAT.md) for the portable format and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the runtime boundary.
+A future user-facing preparer will expose this pipeline in the application: select local files, choose deterministic-only or LLM-assisted processing, review proposed concepts/statements/relations, and export an installable pack.
 
-## Architecture
-
-```text
-catalog.json
-    ↓ download + SHA-256 verification
-portable pack
-    ↓ validation
-IndexedDB
-    ↓
-MiniSearch / deterministic fuzzy fallback
-    ↓
-sections + entities + claims + backlinks + personal notes
-    ↓ optional
-WebLLM over retrieved evidence only
-```
-
-Reference packs and personal notes remain physically and logically separate. `supersedes` changes local ranking policy; it does not mutate or erase the original claim.
-
-The browser app deliberately uses a small open-source stack:
-
-- MiniSearch for the primary text index;
-- IndexedDB and Service Worker browser primitives for persistence and offline operation;
-- WebLLM for optional browser-local generation;
-- plain ES modules, so the application can be hosted statically.
-
-## Repository map
+## Architecture boundary
 
 ```text
-index.html, styles.css       static application shell
-src/                         IndexedDB, search, packs, AI and UI runtime
-packs/                       independently downloadable demo packs and catalog
-tools/build-pack.mjs         structured compiler + raw-data preparer
-tools/lib/pack-builder.mjs   deterministic and optional AI enrichment logic
-tools/validate-packs.mjs     catalog, checksum and provenance validator
-examples/custom-pack/        minimal reviewed-authoring example
-docs/                        pack and architecture contracts
-.github/workflows/           CI and GitHub Pages deployment
+raw sources
+  → reviewed preparation and provenance
+  → portable knowledge pack
+  → StoragePort
+  → SearchPort + optional DomainQueryPlannerPort
+  → versioned evidence envelope
+  → optional LocalModelPort
 ```
 
-## Demo data and limitations
+L-Note owns generic storage, retrieval, graph, notes, evidence and model orchestration. MiniMed owns clinical parsing, medical ranking, dose/regimen verification, abstention and medical benchmarks.
 
-The four MiniMed-derived domains currently contain source-linked cards for urinary tract infection, acute bronchiolitis, community-acquired pneumonia, measles, rotavirus gastroenteritis, meningococcal infection, and one structured medication-registry record. They retain source metadata used by MiniMed and intentionally omit patient-specific prescribing.
+See `docs/ARCHITECTURE.md` for current invariants, `docs/PACK_FORMAT.md` for the portable format, and `TASKS.md` for the single implementation backlog.
 
-The web prototype does not yet include PDF/DOCX parsing, OCR, vector embeddings, signed publisher catalogs, delta updates, cross-device sync, or encrypted personal notes. Native Android inference is intentionally outside the current phase rather than an immediate release target.
+## Limitations
 
-## Privacy and integrity
-
-- Search, notes, installed packs, and deterministic evidence collection stay in the browser.
-- Loading WebLLM downloads model assets only after explicit user action.
-- Replicate or another remote provider receives source text only when explicitly selected during pack preparation.
-- Imported packs and browser notes are not encrypted in this prototype.
-- Bundled catalog packs use SHA-256 integrity checks; publisher signatures and trust policies are future work.
+The current web prototype does not yet include PDF/DOCX ingestion, OCR review, SQLite/FTS5, vector retrieval, signed publisher catalogs, encrypted notes or cross-device sync. Browser-local inference is experimental and must not be treated as clinically validated merely because citation IDs are syntactically valid.
 
 ## License
 
-Application code and the L-Note guide pack are MIT licensed. Each knowledge pack retains its own license and source metadata; an application license does not grant redistribution rights for third-party source material.
+Application code and the L-Note guide pack are MIT licensed. Each knowledge pack retains its own source and license metadata.
