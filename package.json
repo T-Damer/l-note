@@ -28,9 +28,10 @@
     "build:pack": "node tools/build-pack.mjs",
     "build:static": "node tools/build-static.mjs",
     "validate": "node tools/validate-packs.mjs",
+    "check:structure": "node tools/check-code-structure.mjs",
     "test": "node --test",
     "test:e2e": "node tools/browser-e2e.mjs",
-    "check": "npm run validate && npm test && npm run build:static && npm run test:e2e",
+    "check": "npm run validate && npm run check:structure && npm test && npm run build:static && npm run test:e2e",
     "build:example": "node tools/build-pack.mjs --input examples/custom-pack --output dist/example.pack.json"
   },
   "engines": {
