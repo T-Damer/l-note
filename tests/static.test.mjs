@@ -77,9 +77,13 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /buildKnowledgeGraph/u);
   assert.match(app, /beginLocalModelLoad/u);
   assert.match(app, /ANSWER_MODE_PROFILES/u);
-  assert.match(app, /Qwen3-4B-q4f16_1-MLC/u);
   assert.match(app, /createRoutedDialogController/u);
   assert.match(app, /ensureWelcomeNote/u);
+
+  const ai = await readFile(path.join(root, 'dist', 'src', 'ai.js'), 'utf8');
+  assert.match(ai, /Qwen3-4B-q4f16_1-MLC/u);
+  assert.match(ai, /CreateWebWorkerMLCEngine/u);
+  assert.match(ai, /cacheBackend:\s*this\.cacheBackend/u);
 
   const syntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
     cwd: root,
