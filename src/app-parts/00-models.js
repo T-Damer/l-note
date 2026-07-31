@@ -10,6 +10,11 @@ import {
 } from './helpers/model-formatters.js';
 import { LOCAL_MODEL_ACTION, resolveLocalModelAction } from './services/model-action.js';
 import {
+  createModelRunRecord,
+  loadSelectedLocalModel,
+  prependModelRun,
+} from './services/local-model-loader.js';
+import {
   MODEL_LOAD_STATUS,
   completeModelLoad,
   createModelLoadState,
@@ -31,4 +36,5 @@ import {
   resolveModelLifecycle,
 } from './services/model-lifecycle.js';
 import { requestPersistentStorage, storagePersistenceLabel } from './services/storage-persistence.js';
+import { renderGeneratedLocalAnswer } from './pages/local-answer-view.js';
 import { createModelLabView } from './pages/model-lab-view.js';
