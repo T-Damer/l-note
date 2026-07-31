@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** continue shrinking transitional `app-parts`. Next are package/note page extraction, local PDF assets, SQLite/FTS5 and a user-facing pack preparer. Android/iOS remain deferred.
+**Current focus:** continue shrinking transitional `app-parts`. Next are note-page extraction, local PDF assets, SQLite/FTS5 and a user-facing pack preparer. Android/iOS remain deferred.
 
 ## Universal core and MiniMed
 
@@ -18,7 +18,8 @@ Single source of future work. Completed items describe the active branch.
 - [x] Extract persistent-storage/model-load orchestration into a service.
 - [x] Extract evidence retrieval, evidence rendering and generated-answer rendering.
 - [x] Remove the shell-local DOM builder in favor of `src/ui/dom.js`.
-- [ ] Extract package, note and remaining Ask coordination from transitional app parts.
+- [x] Extract package rendering from transitional app parts.
+- [ ] Extract the note editor and remaining Ask coordination from transitional app parts.
 - [ ] Split the remaining transitional shell into pages, services, helpers and components.
 - [ ] Add SQLite/FTS5 for large packs without moving medical policy into L-Note.
 - [ ] Add an optional vector adapter behind the same search boundary.
@@ -33,10 +34,10 @@ Single source of future work. Completed items describe the active branch.
 - [x] Use stable hash routes, nested browser history, Back and full-chain Close.
 - [x] Add browser E2E for direct links, reload, modal scrolling and close-chain behavior.
 - [x] Use one routed-resource registry for package, document, concept, statement and note routes.
-- [x] Extract document, concept and statement content into separate page renderers.
-- [x] Remove the legacy resource-type switch and obsolete `02b.js` renderer fragment.
+- [x] Extract package, document, concept and statement content into separate page renderers.
+- [x] Remove the legacy resource-type switch and obsolete `02b.js`/`04c-package-viewer.js` fragments.
 - [ ] Add broader non-demo and large-corpus retrieval regressions.
-- [ ] Extract package and note renderers fully into the routed-resource layer.
+- [ ] Extract the note renderer fully into the routed-resource layer.
 - [ ] Add internal PDF assets with exact page/section anchors.
 
 ## UI and graph
