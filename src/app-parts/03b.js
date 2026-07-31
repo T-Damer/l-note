@@ -136,11 +136,14 @@ function downloadJson(filename, value) {
 }
 
 function renderEvidence(evidence) {
-  dom.answerOutput.replaceChildren();
-  const overview = create('article', { className: 'answer-panel' });
-  overview.append(
-    Text({ variant: 'title', text: 'Доказательная сводка' }),
-    Text({
-      variant: 'muted',
-      text: evidence.sources.length
-        ? `Найдено ${evidence.sources.length} справочных фрагментов и ${evidence.relatedNotes.length} личных заметок. Генеративная модель пока не использовалась.`
+  return renderEvidenceView({
+    evidence,
+    output: dom.answerOutput,
+    relationLabel,
+    onOpenSource(source) {
+      navigateResource('document', source.result.documentId, {
+        sectionId: source.result.sectionId,
+      });
+    },
+  });
+}
