@@ -5,24 +5,23 @@
 L-Note is a hosted, offline-first knowledge workspace with:
 
 - checksummed installable packs stored in IndexedDB;
-- MiniSearch exact, prefix, alias and fuzzy retrieval with deterministic fallback;
+- exact, prefix, alias and fuzzy retrieval through MiniSearch with deterministic fallback;
 - optional domain query planners outside the generic search engine;
 - hash-routed packages, documents, concepts, statements and notes;
 - source-linked statements, relations, backlinks and personal-note overlays;
-- list/graph views for packages, documents, sections, concepts and relations;
-- optional browser-local WebLLM over a versioned evidence envelope;
+- list and graph views over the same resources;
+- optional browser-local WebLLM over a bounded evidence envelope;
 - one active model in a dedicated Web Worker;
 - persistent model weights in the WebLLM Cache API;
-- explicit model states: not downloaded, downloaded/off, loaded/on;
+- explicit model states: not downloaded, downloaded/off and loaded/on;
 - manual unload with no inactivity timer;
-- two deterministic evidence-size modes;
 - SCSS partials and a deterministic static-PWA build.
 
-The outer dialog and shell never scroll. `.dialog-body` is the only vertical scroll container; root and body are locked while a routed card is open. The header reserves Back, title and Close columns.
+A routed dialog has one vertical scroll container: `.dialog-body`. The page root and body remain locked behind it, and the header reserves Back, title and Close columns.
 
 ## Code organization
 
-The intended dependency flow is:
+Dependency flow:
 
 ```text
 pages / application shell
@@ -34,32 +33,53 @@ core contracts and ports
 adapters / domain plugins
 ```
 
-Current stable areas:
+Directory ownership:
 
 ```text
 src/core/          domain-neutral contracts, ports and headless runtime
 src/adapters/      MiniSearch, IndexedDB and WebLLM port implementations
-src/services/      storage/model/evidence workflows and pure state transitions
-src/pages/         page-specific construction and rendering
+src/services/      use-case workflows and pure state transitions
+src/pages/         page and routed-resource construction/rendering
 src/ui/            reusable typography, controls, dialogs, graph and safe DOM helpers
-src/helpers/       stateless formatting and mapping
-src/integrations/  MiniMed compatibility boundary
+src/helpers/       stateless formatting, matching and mapping
+src/integrations/  product boundaries such as MiniMed
 ```
 
-`src/app-parts/` is transitional composition debt. New business logic is not added there. The model page has already been split into:
+`src/app-parts/` is temporary composition and wiring. New business logic does not belong there. The model and Ask slices are now split into:
 
 ```text
 src/helpers/model-formatters.js
 src/services/model-lifecycle.js
+src/services/model-preferences.js
 src/services/local-model-loader.js
+src/services/evidence-query.js
 src/pages/model-lab-elements.js
 src/pages/model-lab-view.js
+src/pages/evidence-view.js
 src/pages/local-answer-view.js
 ```
 
-`src/app-parts/05-model-lab.js` now owns application wiring and event coordination rather than constructing the entire page. Remaining Ask orchestration and resource-specific dialog bodies are the next extraction targets.
+Routed knowledge resources use one registry and separate renderers:
 
-`npm run check:structure` enforces modular file limits, selected dependency boundaries, safe DOM insertion and decreasing budgets for touched transitional files. Detailed rules live in `AGENTS.md`.
+```text
+src/pages/routed-resource-renderer.js
+src/pages/document-resource-view.js
+src/pages/concept-resource-view.js
+src/pages/statement-resource-view.js
+```
+
+The registry owns dispatch and missing-resource handling. The shared routed-dialog controller owns lifecycle, Back/Close availability and the heading/body surfaces. Resource renderers only resolve data and build content. Package and note renderers currently enter the same registry through compatibility functions and are the next candidates for extraction.
+
+The legacy local DOM builder and resource-type switch were removed from the shell. Modular rendering uses `src/ui/dom.js`, which inserts text and nodes rather than raw HTML.
+
+`npm run check:structure` enforces:
+
+- a 300-line hard limit for modular source;
+- selected dependency boundaries;
+- no raw `innerHTML` assignment in modular source;
+- decreasing budgets for touched transitional files.
+
+Detailed rules and preferred 200-line/30-line targets live in `AGENTS.md`.
 
 ## L-Note Core and MiniMed
 
@@ -75,7 +95,7 @@ concepts, statements, relations and backlinks
 personal overlay
 versioned evidence collection
 generic evidence-verification boundary
-hash-routing primitives
+hash routing and routed-resource contracts
 generic knowledge-graph projection
 shared UI primitives
 ```
@@ -101,19 +121,7 @@ l-note/adapters/browser
 l-note/integrations/minimed
 ```
 
-Important modules:
-
-```text
-src/core/contracts.*               pack/resource/evidence contracts
-src/core/ports.*                   Search, Storage, DomainPlanner, LocalModel, EvidenceVerifier
-src/core/runtime.*                 headless pack/note/search composition
-src/core/application-adapter.*     application bundle of runtime ports
-src/core/knowledge-graph.*         generic graph projection
-src/adapters/runtime-adapters.*    MiniSearch, IndexedDB/memory and WebLLM
-src/integrations/minimed-adapter.* MiniMed compatibility boundary
-```
-
-`KnowledgeApplicationAdapter` composes the hosted application without DOM assumptions in the core.
+`KnowledgeApplicationAdapter` composes the hosted application without DOM assumptions in the core. Search, storage and local-model implementations remain replaceable ports.
 
 ## Storage and retrieval
 
@@ -137,7 +145,7 @@ Retrieval order:
 8. Build a bounded, versioned evidence envelope.
 9. Optionally verify and synthesize through application/domain adapters.
 
-Every ranking failure becomes a regression test. Domain vocabulary belongs in a plugin or pack.
+Every reported ranking failure becomes a regression test. Domain vocabulary belongs in a plugin or pack.
 
 ## Local-model boundary
 
@@ -149,7 +157,7 @@ Qwen3 4B q4f16_1     quality profile for 12 GB
 Phi-4 Mini q4f16_1   mathematics/formal-reasoning comparison
 ```
 
-The browser lifecycle is:
+Lifecycle:
 
 ```text
 WebLLM cache inspection
@@ -161,11 +169,9 @@ WebLLM cache inspection
   → source identifiers are checked
 ```
 
-Selecting another model or pressing manual unload calls `engine.unload()` and terminates the worker. Cached weights remain on disk. There is deliberately no automatic inactivity timer.
+Selecting another model or pressing manual unload calls `engine.unload()` and terminates the worker. Cached weights remain on disk. There is deliberately no inactivity timer.
 
-Model selection and answer mode are stored through `StoragePort`. The UI distinguishes persistent weight size from active runtime-memory estimates.
-
-`Экономный` and `Расширенный` use deterministic source and character limits rather than tokenizing every candidate document. WebLLM applies final context/output limits.
+Model selection and answer mode are stored through `StoragePort`. `Экономный` and `Расширенный` use deterministic source and character limits instead of tokenizing every candidate document; WebLLM applies final context/output limits.
 
 ## Routing, dialogs and graph
 
@@ -183,7 +189,7 @@ Stable routes:
 #/note/:id
 ```
 
-Browser history owns nested card traversal. Back moves through the chain; full Close returns to the recorded base page and removes forward card routes. The package graph uses the same resource routes.
+Browser history owns nested card traversal. Back moves through the chain; full Close returns to the recorded base page and removes forward card routes. Direct links and reload restore the route. Graph nodes use the same registry and route contract.
 
 ## Preparation and distribution
 
@@ -203,12 +209,11 @@ Model output may propose structure but never silently replace source text. The c
 
 ## Next ordered work
 
-1. Move remaining Ask/model orchestration out of transitional app parts.
-2. Replace resource-specific dialog bodies with one routed resource renderer.
-3. Add internal PDF assets with exact anchors.
-4. Add SQLite/FTS5 behind `SearchPort` and `StoragePort`.
-5. Add a user-facing local pack-preparation workflow over the existing CLI contract.
-6. Add safe cancellation and persisted download state where browser/runtime APIs support it.
-7. Connect L-Note Core to MiniMed and require MiniMed retrieval, dose and safety benchmarks before migration.
+1. Extract package, note and remaining Ask coordination from transitional app parts.
+2. Add internal PDF assets and exact page/section anchors.
+3. Add SQLite/FTS5 behind `SearchPort` and `StoragePort`.
+4. Add a user-facing local pack-preparation workflow over the existing CLI contract.
+5. Add safe cancellation and persisted transfer state where browser/runtime APIs support it.
+6. Connect L-Note Core to MiniMed and require MiniMed retrieval, dose and safety benchmarks before migration.
 
 Android and iOS remain deferred until the hosted web core is stable, while memory and storage decisions remain compatible with mid-range 8–12 GB devices.
