@@ -28,8 +28,13 @@
 }
 
 function buildEvidenceForQuestion(query) {
-  const results = state.search.search(query, { limit: 18, personalPriority: true });
-  state.currentEvidence = collectEvidence(query, results, state.knowledge, 8);
+  const mode = selectedAnswerModeProfile();
+  const results = state.search.search(query, {
+    limit: Math.max(18, mode.sourceLimit * 4),
+    personalPriority: true,
+  });
+  state.currentEvidence = collectEvidence(query, results, state.knowledge, { sourceLimit: mode.sourceLimit });
+  state.currentEvidenceModeId = mode.id;
   return state.currentEvidence;
 }
 
@@ -43,21 +48,25 @@ async function handleAsk(event) {
   const evidence = buildEvidenceForQuestion(query);
   renderEvidence(evidence);
   const profile = selectedLocalModelProfile();
-  dom.aiStatus.textContent = `${profile.label} ${profile.parameters}: источники собраны. Можно запустить локальный ответ.`;
+  const mode = selectedAnswerModeProfile();
+  dom.aiStatus.textContent = `${profile.label} · режим «${mode.label}»: источники собраны. Можно запустить локальный ответ.`;
 }
 
 async function loadOrRunLocalAi(button) {
   if (!state.localAi.available) {
-    toast('WebGPU недоступен. Поиск по базе остаётся рабочим на странице «Поиск».', 'error');
+    toast('WebGPU или Web Worker недоступен. Поиск по базе остаётся рабочим на странице «Поиск».', 'error');
     return;
   }
 
   const selectedModelId = dom.localAiModel.value;
   const selectedProfile = selectedLocalModelProfile();
+  const selectedMode = selectedAnswerModeProfile();
   const selectedReady = state.localAiReady && state.localAi.modelId === selectedModelId;
   const query = dom.askInput.value.trim();
   const evidenceMatchesQuestion = Boolean(
-    state.currentEvidence && (!query || state.currentEvidence.query === query),
+    state.currentEvidence
+      && state.currentEvidence.query === query
+      && state.currentEvidenceModeId === selectedMode.id,
   );
   const action = resolveLocalModelAction({
     modelReady: selectedReady,
@@ -75,8 +84,8 @@ async function loadOrRunLocalAi(button) {
       state.lastModelLoad = loaded;
       state.localAiReady = true;
       finishLocalModelLoad();
-      dom.aiStatus.textContent = `${selectedProfile.label} ${selectedProfile.parameters} включена. Загрузка заняла ${formatModelDuration(loaded.loadMs)}${loaded.reused ? '; использован браузерный кэш' : ''}.`;
-      toast(`${selectedProfile.label} включена. Теперь доступна форма вопроса.`);
+      dom.aiStatus.textContent = `${selectedProfile.label} включена в Web Worker. Загрузка заняла ${formatModelDuration(loaded.loadMs)}${loaded.reused ? '; использован браузерный кэш' : ''}. Веса сохранены на диске.`;
+      toast(`${selectedProfile.label} включена. В памяти находится только одна модель.`);
     } catch (error) {
       state.localAiReady = false;
       rejectLocalModelLoad(error);
@@ -98,14 +107,18 @@ async function loadOrRunLocalAi(button) {
 
   button.disabled = true;
   button.replaceChildren(
-    Icon({ name: 'spinner-gap', className: 'icon model-spinner' }),
+    Icon({ name: 'spinner', className: 'icon model-spinner' }),
     document.createTextNode('Генерация и проверка ссылок…'),
   );
   try {
-    const answer = await state.localAi.answer(state.currentEvidence.query, state.currentEvidence);
+    const answer = await state.localAi.answer(
+      state.currentEvidence.query,
+      state.currentEvidence,
+      { modeId: selectedMode.id },
+    );
     const profile = localModelProfile(answer.modelId);
     const panel = create('article', { className: 'answer-panel' });
-    panel.append(create('h2', { text: `Ответ ${profile?.label ?? answer.modelId}` }));
+    panel.append(create('h2', { text: `Ответ ${profile?.label ?? answer.modelId} · ${answer.modeLabel}` }));
     const body = create('p', { className: 'ai-answer', text: answer.text || 'Модель вернула пустой ответ.' });
     panel.append(body);
     const metrics = create('div', { className: 'storage-summary' });
@@ -113,6 +126,7 @@ async function loadOrRunLocalAi(button) {
       create('span', { text: `Ответ: ${formatModelDuration(answer.durationMs)}` }),
       create('span', { text: formatGenerationSpeed(answer.tokensPerSecond) }),
       create('span', { text: answer.completionTokens ? `${answer.completionTokens} токенов` : 'Токены не сообщены' }),
+      create('span', { text: `контекст ≈${formatBytes(answer.evidenceChars)}` }),
       create('span', { text: answer.grounded ? 'Ссылки прошли проверку' : 'Ссылки не подтверждены' }),
     );
     panel.append(metrics);
@@ -127,6 +141,7 @@ async function loadOrRunLocalAi(button) {
     dom.answerOutput.prepend(panel);
     state.localAiRuns.unshift({
       modelId: answer.modelId,
+      modeId: answer.modeId,
       loadMs: state.lastModelLoad?.modelId === answer.modelId ? state.lastModelLoad.loadMs : null,
       durationMs: answer.durationMs,
       tokensPerSecond: answer.tokensPerSecond,
@@ -136,7 +151,7 @@ async function loadOrRunLocalAi(button) {
     });
     state.localAiRuns = state.localAiRuns.slice(0, 6);
     renderModelRunHistory();
-    dom.aiStatus.textContent = `${profile?.label ?? answer.modelId}: ответ за ${formatModelDuration(answer.durationMs)}, ${formatGenerationSpeed(answer.tokensPerSecond)}.`;
+    dom.aiStatus.textContent = `${profile?.label ?? answer.modelId} · ${answer.modeLabel}: ответ за ${formatModelDuration(answer.durationMs)}, ${formatGenerationSpeed(answer.tokensPerSecond)}.`;
   } catch (error) {
     toast(error instanceof Error ? error.message : String(error), 'error');
   } finally {
