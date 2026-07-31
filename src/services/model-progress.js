@@ -12,16 +12,22 @@ function clampProgress(value) {
   return Math.max(0, Math.min(1, normalized));
 }
 
+function estimatedDownloadSize(profile) {
+  return Number(profile?.downloadSizeMB ?? profile?.sizeMB ?? profile?.vramRequiredMB ?? 0);
+}
+
 export function createModelLoadState(profile = null, now = Date.now()) {
+  const totalMB = estimatedDownloadSize(profile);
   return {
     status: MODEL_LOAD_STATUS.IDLE,
     modelId: profile?.modelId ?? null,
     progress: 0,
-    totalMB: Number(profile?.sizeMB ?? profile?.vramRequiredMB ?? 0),
+    totalMB,
+    runtimeMemoryMB: Number(profile?.runtimeMemoryMB ?? profile?.vramRequiredMB ?? 0),
     loadedMB: 0,
-    remainingMB: Number(profile?.sizeMB ?? profile?.vramRequiredMB ?? 0),
+    remainingMB: totalMB,
     speedMBps: null,
-    text: 'Модель выключена',
+    text: 'Модель выключена; веса сохраняются на диске после первой загрузки',
     error: null,
     startedAt: now,
     updatedAt: now,
@@ -70,7 +76,7 @@ export function completeModelLoad(previous, now = Date.now()) {
     progress: 1,
     loadedMB: totalMB,
     remainingMB: 0,
-    text: 'Модель включена',
+    text: 'Модель включена в Web Worker',
     error: null,
     updatedAt: now,
   };
