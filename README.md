@@ -14,7 +14,7 @@ https://t-damer.github.io/l-note/
 
 - checksummed JSON packs installed independently into IndexedDB;
 - exact, prefix, alias and fuzzy retrieval through MiniSearch with a deterministic fallback;
-- hash-routed packages, documents, concepts, statements, notes and pack creation;
+- hash-routed packages, documents, concepts, statements, notes and package creation;
 - linked statements, relations, backlinks and personal overrides;
 - list and graph views of installed/available knowledge;
 - browser-local creation of installable packs from Markdown, TXT, JSON or pasted text;
@@ -42,7 +42,9 @@ Open `http://127.0.0.1:4173/`, then install or create the required packs on the 
 
 ## Create a pack in the browser
 
-Open **Пакеты → Создать свой пакет**. The browser creator can:
+Open **Пакеты → Создать свой пакет**. The creator opens as the routed card `#/package/new`, so reload, browser Back and full modal Close behave like other package/document cards.
+
+The browser creator can:
 
 - combine multiple `.md`, `.markdown`, `.txt` and `.json` files;
 - include Markdown text pasted directly into the form;
