@@ -18,6 +18,7 @@ const sourceRoots = [
 const MAX_LINES = 300;
 const TRANSITIONAL_BUDGETS = new Map([
   ['src/app-parts/00-models.js', 40],
+  ['src/app-parts/02a.js', 110],
   ['src/app-parts/05-model-lab.js', 280],
 ]);
 
