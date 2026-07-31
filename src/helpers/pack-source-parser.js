@@ -9,8 +9,22 @@ export function slugifyPackValue(value, fallback = 'knowledge') {
   return slug || fallback;
 }
 
+function shortHash(value) {
+  let hash = 0x811c9dc5;
+  for (const character of String(value ?? '')) {
+    hash ^= character.codePointAt(0) ?? 0;
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
 export function proposedBrowserPackId(title) {
-  return `user.${slugifyPackValue(title)}`;
+  const readable = slugifyPackValue(title, '')
+    .replace(/[^a-z0-9-]+/gu, '-')
+    .replace(/^-+|-+$/gu, '');
+  return readable
+    ? `user.${readable}`
+    : `user.knowledge-${shortHash(title)}`;
 }
 
 export function cleanPackText(value) {
