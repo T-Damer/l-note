@@ -1,4 +1,8 @@
-export function collectQuestionEvidence({
+function normalizedQuestion(value) {
+  return String(value ?? '').trim().normalize('NFKC').toLocaleLowerCase('ru-RU');
+}
+
+export async function collectQuestionEvidence({
   query,
   mode,
   searchPort,
@@ -17,10 +21,10 @@ export function collectQuestionEvidence({
     throw new TypeError('collectQuestionEvidence requires knowledge state and an evidence collector.');
   }
 
-  const results = searchPort.search(cleanQuery, {
+  const results = await Promise.resolve(searchPort.search(cleanQuery, {
     limit: Math.max(18, mode.sourceLimit * 4),
     personalPriority: true,
-  });
+  }));
   const evidence = collectEvidence(cleanQuery, results, knowledgeState, {
     sourceLimit: mode.sourceLimit,
   });
@@ -30,7 +34,7 @@ export function collectQuestionEvidence({
 export function evidenceMatchesRequest(evidence, query, modeId, currentModeId) {
   return Boolean(
     evidence
-      && evidence.query === String(query ?? '').trim()
+      && normalizedQuestion(evidence.query) === normalizedQuestion(query)
       && modeId === currentModeId,
   );
 }
