@@ -78,6 +78,12 @@ function monotonicNow() {
   return globalThis.performance?.now?.() ?? Date.now();
 }
 
+function abortError(message = 'Загрузка модели отменена.') {
+  const error = new Error(message);
+  error.name = 'AbortError';
+  return error;
+}
+
 function evidenceId(index) {
   return `S${index + 1}`;
 }
@@ -135,12 +141,18 @@ export class BrowserLocalAi {
     this.workerFactory = workerFactory;
     this.moduleLoader = moduleLoader;
     this.modelId = null;
+    this.loadingModelId = null;
+    this.loadEpoch = 0;
     this.module = null;
     this.cacheBackend = 'cache';
   }
 
   get available() {
     return Boolean(globalThis.navigator?.gpu && typeof Worker === 'function');
+  }
+
+  get loading() {
+    return Boolean(this.loadingModelId && !this.engine);
   }
 
   async getModule() {
@@ -189,12 +201,14 @@ export class BrowserLocalAi {
   }
 
   async unload() {
+    this.loadEpoch += 1;
     const engine = this.engine;
     const worker = this.worker;
-    const modelId = this.modelId;
+    const modelId = this.modelId ?? this.loadingModelId;
     this.engine = null;
     this.worker = null;
     this.modelId = null;
+    this.loadingModelId = null;
     try {
       await engine?.unload?.();
     } finally {
@@ -206,21 +220,21 @@ export class BrowserLocalAi {
     };
   }
 
+  async cancelLoad() {
+    const modelId = this.loadingModelId;
+    if (!modelId) return { modelId: null, cancelled: false };
+    await this.unload();
+    return { modelId, cancelled: true };
+  }
+
   async load({ modelId = DEFAULT_LOCAL_MODEL_ID, onProgress } = {}) {
     if (!this.available) {
       throw new Error('WebGPU или Web Worker недоступен. Поиск и доказательная сводка продолжат работать без модели.');
     }
-    const webllm = await this.getModule();
-    const appConfig = this.appConfig(webllm);
-    const modelList = appConfig.model_list ?? [];
-    const selectedRecord = modelList.find((record) => record.model_id === modelId);
-    if (!selectedRecord) throw new Error(`Модель ${modelId} отсутствует во встроенном каталоге WebLLM ${WEBLLM_URL.split('@').at(-1)}.`);
-
-    const profile = localModelProfile(modelId);
     if (this.engine && this.modelId === modelId) {
       return {
         modelId,
-        profile,
+        profile: localModelProfile(modelId),
         loadMs: 0,
         reused: true,
         cachedBeforeLoad: true,
@@ -228,9 +242,22 @@ export class BrowserLocalAi {
         cacheBackend: this.cacheBackend,
       };
     }
+    if (this.engine || this.worker || this.loadingModelId) await this.unload();
 
-    if (this.engine || this.worker) await this.unload();
+    const epoch = this.loadEpoch + 1;
+    this.loadEpoch = epoch;
+    this.loadingModelId = modelId;
+    const webllm = await this.getModule();
+    if (epoch !== this.loadEpoch || this.loadingModelId !== modelId) throw abortError();
+    const appConfig = this.appConfig(webllm);
+    const modelList = appConfig.model_list ?? [];
+    const selectedRecord = modelList.find((record) => record.model_id === modelId);
+    if (!selectedRecord) {
+      this.loadingModelId = null;
+      throw new Error(`Модель ${modelId} отсутствует во встроенном каталоге WebLLM ${WEBLLM_URL.split('@').at(-1)}.`);
+    }
 
+    const profile = localModelProfile(modelId);
     let cachedBeforeLoad = null;
     if (typeof webllm.hasModelInCache === 'function') {
       try {
@@ -239,22 +266,31 @@ export class BrowserLocalAi {
         cachedBeforeLoad = null;
       }
     }
+    if (epoch !== this.loadEpoch || this.loadingModelId !== modelId) throw abortError();
 
     const worker = this.workerFactory();
+    this.worker = worker;
     const startedAt = monotonicNow();
     try {
       const engine = await webllm.CreateWebWorkerMLCEngine(
         worker,
         modelId,
         {
-          initProgressCallback: (progress) => onProgress?.(progress),
+          initProgressCallback: (progress) => {
+            if (epoch === this.loadEpoch) onProgress?.(progress);
+          },
           appConfig,
         },
         profile?.contextWindow ? { context_window_size: profile.contextWindow } : undefined,
       );
-      this.worker = worker;
+      if (epoch !== this.loadEpoch || this.worker !== worker) {
+        await engine?.unload?.();
+        worker.terminate?.();
+        throw abortError();
+      }
       this.engine = engine;
       this.modelId = modelId;
+      this.loadingModelId = null;
       return {
         modelId,
         profile,
@@ -265,7 +301,10 @@ export class BrowserLocalAi {
         cacheBackend: this.cacheBackend,
       };
     } catch (error) {
+      if (this.worker === worker) this.worker = null;
+      if (this.loadingModelId === modelId) this.loadingModelId = null;
       worker.terminate?.();
+      if (epoch !== this.loadEpoch && error?.name !== 'AbortError') throw abortError();
       throw error;
     }
   }
