@@ -1,3 +1,9 @@
+import {
+  transferAbortError,
+  transferMetadata,
+  transferTaskOrder,
+} from '../helpers/transfer-queue.js';
+
 export const TRANSFER_QUEUE_SETTING_KEY = 'transfers.queue.v1';
 export const TRANSFER_QUEUE_MAX_CONCURRENT = 4;
 export const TRANSFER_STATUS = Object.freeze({
@@ -24,14 +30,7 @@ const TERMINAL = new Set([
   TRANSFER_STATUS.FAILED,
   TRANSFER_STATUS.CANCELLED,
 ]);
-function abortError(message = 'Операция отменена.') {
-  const error = new Error(message);
-  error.name = 'AbortError';
-  return error;
-}
-function safeMetadata(value) {
-  return value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {};
-}
+
 function normalizedTask(input, now, idFactory) {
   if (!input?.kind || !input?.resourceId) {
     throw new TypeError('Transfer task requires kind and resourceId.');
@@ -54,13 +53,14 @@ function normalizedTask(input, now, idFactory) {
     total: null,
     message: 'В очереди',
     error: null,
-    metadata: safeMetadata(input.metadata),
+    metadata: transferMetadata(input.metadata),
   };
 }
+
 function restoredTask(input, now) {
   const task = {
     ...input,
-    metadata: safeMetadata(input?.metadata),
+    metadata: transferMetadata(input?.metadata),
     progress: Number.isFinite(input?.progress) ? Number(input.progress) : 0,
     priority: Number.isFinite(input?.priority) ? Number(input.priority) : TRANSFER_PRIORITY.DEFAULT,
   };
@@ -75,11 +75,6 @@ function restoredTask(input, now) {
     task.updatedAt = now();
   }
   return task;
-}
-function taskOrder(left, right) {
-  return right.priority - left.priority
-    || left.createdAt.localeCompare(right.createdAt)
-    || left.id.localeCompare(right.id);
 }
 
 export function createTransferQueue({
@@ -100,9 +95,13 @@ export function createTransferQueue({
   const subscribers = new Set();
   let initialized = false;
   let persistChain = Promise.resolve();
+  let pumpTimer = null;
 
   function snapshot() {
-    return [...tasks.values()].sort(taskOrder).map((task) => Object.freeze({ ...task, metadata: { ...task.metadata } }));
+    return [...tasks.values()].sort(transferTaskOrder).map((task) => Object.freeze({
+      ...task,
+      metadata: { ...task.metadata },
+    }));
   }
 
   function emit() {
@@ -151,7 +150,7 @@ export function createTransferQueue({
   function nextRunnable() {
     return [...tasks.values()]
       .filter((task) => RUNNABLE.has(task.status) && handlers.has(task.kind))
-      .sort(taskOrder)[0] ?? null;
+      .sort(transferTaskOrder)[0] ?? null;
   }
 
   function report(id, progress = {}) {
@@ -180,7 +179,7 @@ export function createTransferQueue({
         signal: controller.signal,
         report: (progress) => report(task.id, progress),
       });
-      if (controller.signal.aborted) throw abortError();
+      if (controller.signal.aborted) throw transferAbortError();
       const completed = update(task.id, {
         status: TRANSFER_STATUS.COMPLETED,
         progress: 1,
@@ -195,20 +194,27 @@ export function createTransferQueue({
         message: cancelled ? 'Отменено' : 'Ошибка',
         error: cancelled ? null : error instanceof Error ? error.message : String(error),
       });
-      settleWaiters(task.id, 'reject', cancelled ? abortError() : error ?? new Error(failed.error));
+      settleWaiters(
+        task.id,
+        'reject',
+        cancelled ? transferAbortError() : error ?? new Error(failed.error),
+      );
     } finally {
       controllers.delete(task.id);
-      queueMicrotask(pump);
+      pump();
     }
   }
 
   function pump() {
-    if (!initialized) return;
-    while (activeCount() < concurrency) {
-      const task = nextRunnable();
-      if (!task) break;
-      run(task);
-    }
+    if (!initialized || pumpTimer !== null) return;
+    pumpTimer = setTimeout(() => {
+      pumpTimer = null;
+      while (activeCount() < concurrency) {
+        const task = nextRunnable();
+        if (!task) break;
+        run(task);
+      }
+    }, 0);
   }
 
   async function init() {
@@ -254,7 +260,7 @@ export function createTransferQueue({
     controllers.get(id)?.abort();
     if (!controllers.has(id)) {
       update(id, { status: TRANSFER_STATUS.CANCELLED, message: 'Отменено', error: null });
-      settleWaiters(id, 'reject', abortError());
+      settleWaiters(id, 'reject', transferAbortError());
       pump();
     }
     return true;
