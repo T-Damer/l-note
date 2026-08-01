@@ -19,6 +19,7 @@ function numberedTail(source, count = 120) {
 
 const offlineModules = [
   'src/ai.js',
+  'src/speech.js',
   'src/router.js',
   'src/relations.js',
   'src/core/contracts.js',
@@ -29,11 +30,13 @@ const offlineModules = [
   'src/adapters/runtime-adapters.js',
   'src/domain-plugins/minimed.js',
   'src/integrations/minimed-adapter.js',
+  'src/helpers/document-assets.js',
   'src/helpers/entity-terms.js',
   'src/helpers/model-formatters.js',
   'src/helpers/pack-source-parser.js',
   'src/pages/ask-page-controller.js',
   'src/pages/concept-resource-view.js',
+  'src/pages/document-asset-view.js',
   'src/pages/document-resource-view.js',
   'src/pages/evidence-view.js',
   'src/pages/local-answer-view.js',
@@ -46,8 +49,10 @@ const offlineModules = [
   'src/pages/routed-resource-renderer.js',
   'src/pages/sidebar-controller.js',
   'src/pages/statement-resource-view.js',
+  'src/pages/voice-search-controller.js',
   'src/services/answer-modes.js',
   'src/services/ask-workflow.js',
+  'src/services/audio-recorder.js',
   'src/services/browser-pack-builder.js',
   'src/services/evidence-query.js',
   'src/services/local-model-loader.js',
@@ -58,6 +63,7 @@ const offlineModules = [
   'src/services/note-workflow.js',
   'src/services/storage-persistence.js',
   'src/services/welcome-note.js',
+  'src/workers/speech-worker.js',
   'src/workers/webllm-worker.js',
   'src/ui/dom.js',
   'src/ui/text.js',
@@ -74,6 +80,7 @@ test('static build contains the complete offline shell', async () => {
     'index.html',
     'styles.css',
     'service-worker.js',
+    'assets/lnote-source-demo.pdf',
     'vendor/minisearch.js',
     'vendor/phosphor/style.css',
     'vendor/phosphor/Phosphor.woff2',
@@ -95,6 +102,9 @@ test('static build contains the complete offline shell', async () => {
   assert.match(css, /\.model-active-panel/u);
   assert.match(css, /\.model-power\.is-cached/u);
   assert.match(css, /\.answer-mode-panel/u);
+  assert.match(css, /\.voice-search-panel/u);
+  assert.match(css, /\.voice-search-toggle\.is-recording/u);
+  assert.match(css, /\.document-asset-frame/u);
   assert.match(css, /\.knowledge-graph-node/u);
   assert.match(css, /\.ui-switch__track/u);
   assert.match(css, /\.sidebar\.is-collapsed/u);
@@ -119,6 +129,8 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /createModelLabView/u);
   assert.match(app, /createAskWorkflow/u);
   assert.match(app, /createAskPageController/u);
+  assert.match(app, /createBrowserSpeechRecognitionPort/u);
+  assert.match(app, /createVoiceSearchController/u);
   assert.match(app, /renderEvidenceView/u);
   assert.match(app, /renderGeneratedLocalAnswer/u);
   assert.match(app, /renderPackageBuilderResource/u);
@@ -136,6 +148,26 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /markLocalModelCached/u);
   assert.match(app, /createRoutedDialogController/u);
   assert.match(app, /ensureWelcomeNote/u);
+
+  const voice = await readFile(path.join(root, 'dist', 'src', 'speech.js'), 'utf8');
+  assert.match(voice, /Xenova\/whisper-tiny/u);
+  assert.match(voice, /Xenova\/whisper-base/u);
+  assert.match(voice, /BrowserSpeechRecognition/u);
+
+  const voiceController = await readFile(
+    path.join(root, 'dist', 'src', 'pages', 'voice-search-controller.js'),
+    'utf8',
+  );
+  assert.match(voiceController, /Голосовой поиск/u);
+  assert.match(voiceController, /VOICE_LANGUAGE_SETTING_KEY/u);
+  assert.match(voiceController, /MAX_VOICE_SEARCH_DURATION_MS/u);
+
+  const speechWorker = await readFile(
+    path.join(root, 'dist', 'src', 'workers', 'speech-worker.js'),
+    'utf8',
+  );
+  assert.match(speechWorker, /@huggingface\/transformers@4\.2\.0/u);
+  assert.match(speechWorker, /automatic-speech-recognition/u);
 
   const askController = await readFile(path.join(root, 'dist', 'src', 'pages', 'ask-page-controller.js'), 'utf8');
   assert.match(askController, /createAskPageController/u);
@@ -166,6 +198,7 @@ test('static build contains the complete offline shell', async () => {
 
   const documentView = await readFile(path.join(root, 'dist', 'src', 'pages', 'document-resource-view.js'), 'utf8');
   assert.match(documentView, /renderDocumentResource/u);
+  assert.match(documentView, /createDocumentAssetView/u);
   assert.match(documentView, /Открыть внешний первоисточник/u);
 
   const packageView = await readFile(path.join(root, 'dist', 'src', 'pages', 'package-resource-view.js'), 'utf8');
@@ -193,6 +226,11 @@ test('static build contains the complete offline shell', async () => {
   const modelElements = await readFile(path.join(root, 'dist', 'src', 'pages', 'model-lab-elements.js'), 'utf8');
   assert.match(modelElements, /Выгрузить из памяти/u);
   assert.match(modelElements, /createModelLabElements/u);
+
+  const serviceWorker = await readFile(path.join(root, 'dist', 'service-worker.js'), 'utf8');
+  assert.match(serviceWorker, /l-note-shell-v31/u);
+  assert.match(serviceWorker, /cdn\.jsdelivr\.net/u);
+  assert.match(serviceWorker, /assets\/lnote-source-demo\.pdf/u);
 
   const appSyntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
     cwd: root,
