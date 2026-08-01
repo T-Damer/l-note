@@ -4,7 +4,7 @@
 
 L-Note is a domain-neutral knowledge runtime. Medicine is the primary demonstration domain, not a hard-coded core assumption.
 
-MiniMed may consume generic contracts, pack composition, storage/search/model ports, graph projection, personal overlays, routing and grounded-evidence orchestration. Medical query analysis, clinical ranking, source policy, dose validation, abstention and medical benchmarks remain MiniMed-owned adapters.
+MiniMed may consume generic contracts, pack composition, storage/search/model/speech ports, graph projection, personal overlays, routing and grounded-evidence orchestration. Medical query analysis, clinical ranking, source policy, dose validation, abstention and medical benchmarks remain MiniMed-owned adapters.
 
 Use only the canonical development line while this feature is active:
 
@@ -31,12 +31,13 @@ adapters / domain plugins
 
 Directory responsibilities:
 
-- `src/core/` — serializable contracts, ports and pure domain-neutral runtime logic. No DOM, browser globals, network, IndexedDB or medical policy.
-- `src/adapters/` — implementations of core ports such as MiniSearch, IndexedDB, SQLite or WebLLM. No page rendering.
+- `src/core/` — serializable contracts, ports and pure domain-neutral runtime logic. No DOM, browser globals, network, IndexedDB, SQL or medical policy.
+- `src/adapters/` — implementations of core ports such as MiniSearch, IndexedDB, SQLite, WebLLM or speech recognition. No page rendering.
 - `src/services/` — use-case orchestration and I/O workflows. Services must not own page markup.
 - `src/pages/` — page composition and page-specific controllers. Pages consume services and reusable UI; they must not implement storage, search or model runtimes.
 - `src/ui/` — reusable presentation primitives. UI modules do not fetch data, inspect IndexedDB or contain domain-specific ranking rules.
 - `src/helpers/` — small stateless formatting, normalization and mapping functions. Helpers must be deterministic and side-effect free.
+- `src/workers/` — isolated SQLite/search/model/speech runtimes. Worker modules may depend on adapters/helpers but never page rendering.
 - `src/domain-plugins/` — optional domain query planning or presentation metadata. Medical rules stay here or in MiniMed, never in generic core.
 - `src/integrations/` — compatibility boundaries for external products such as MiniMed.
 - `src/app-parts/` — temporary composition/wiring only. Do not add new business logic here.
@@ -79,7 +80,7 @@ Prefer explicit names such as `model-lifecycle.js`, `pack-installer.js` and `rou
 - Keep side effects at the edge: adapters, services and page controllers.
 - A function should either calculate a value, mutate one owned state object, or perform one I/O workflow—not all three.
 - Pass dependencies explicitly; do not hide new mutable singletons in module scope.
-- Do not duplicate derived state. Route state owns opened resources; storage owns persisted records; the active model port owns its engine.
+- Do not duplicate derived state. Route state owns opened resources; storage owns persisted records; the active model/search port owns its runtime.
 - Use early returns for invalid states and keep the successful path visually clear.
 - Do not swallow errors silently. Convert low-level errors into a useful boundary error or surface them to the caller.
 - Public contracts remain serializable, versioned and covered by compatibility tests.
@@ -137,18 +138,31 @@ Application navigation is hash-based so the same route contract works on static 
 - A dialog has exactly one vertical scroll container; the page body does not scroll behind it.
 - Resource-specific renderers provide content only; the shared routed-dialog layer owns lifecycle, navigation and layout.
 
-## Search, evidence and models
+## Search and persistent database rules
 
 - Search remains useful without a model.
-- Search adapters implement a common contract; MiniSearch is the current small-corpus adapter and SQLite/FTS5 is the expected large-corpus adapter.
+- Search adapters implement a common contract: MiniSearch for small corpora, SQLite/FTS5 for large corpora and IndexedDB postings as fallback.
 - Domain query planners are optional plugins and do not leak into generic pack/search contracts.
 - Add a regression test for every reported ranking failure.
 - Displayed relevance is an integer from 0 to 100 and is never diagnostic probability.
+- Do not keep a large flattened corpus in page state after a disk adapter has built its index.
+- SQL schema and VFS details belong in adapters/workers, never `src/core/` or pages.
+- A Service Worker is an offline/cache delivery layer only. Never keep a SQLite connection, mutable search index or transaction queue in a Service Worker.
+- Persistent SQLite runs in a Dedicated Worker. Commands sharing one async SQLite connection must be serialized; do not use `Promise.all` for SQL calls on that connection.
+- Await database/Worker close before opening a replacement backend or moving to a fallback.
+- A corpus fingerprint must decide whether an existing disk index can be reused.
+- SQLite failure must degrade to the next declared adapter rather than disable text search.
+- Changes to SQLite schema, VFS, locking, transactions or lifecycle require the real Chromium smoke test in addition to unit tests.
+
+## Evidence and model rules
+
 - A generated answer receives only retrieved evidence.
 - Source identifiers and exact evidence links are deterministic.
+- Citation-ID existence is necessary but not sufficient: the evidence verifier must report unsupported statements, numbers and negation mismatches.
 - Model output may propose structure or links but never silently replace source text.
-- Only one inference model may be active. Model weights remain in persistent browser storage; changing models must explicitly unload the previous engine.
-- The local-model port must remain replaceable so MiniMed or a native shell can provide a different runtime.
+- Only one language-model inference runtime may be active. Model weights remain in persistent browser storage; changing models must explicitly unload the previous engine.
+- Speech recognition uses its own replaceable port and Worker; its transcript enters the normal search path.
+- The local-model and speech ports must remain replaceable so MiniMed or a native shell can provide different runtimes.
 
 ## Knowledge and personal notes
 
@@ -158,6 +172,14 @@ Application navigation is hash-based so the same route contract works on static 
 - `supersedes` changes local ranking and never deletes a reference statement.
 - Every statement and relation remains traceable to a source, note or review decision.
 
+## Transfers
+
+- Long downloads and preparation tasks use the shared transfer-queue contract rather than page-local ad hoc state.
+- At most four files may transfer concurrently, but only one inference model may be loaded.
+- Task state, progress and interruption policy must be serializable through `StoragePort`.
+- Cancellation uses `AbortSignal` or explicit Worker termination and must not delete already completed cached artifacts.
+- A failed or cancelled task must be retryable without creating duplicate active resource tasks.
+
 ## Tests and validation
 
 Behavior changes require tests at the narrowest useful layer:
@@ -165,7 +187,8 @@ Behavior changes require tests at the narrowest useful layer:
 - pure helper/state transition — unit test;
 - port or integration boundary — contract test;
 - route, modal or user workflow — browser E2E;
-- pack/search regression — deterministic fixture test.
+- pack/search regression — deterministic fixture test;
+- SQLite/VFS/lifecycle change — real headless-browser smoke test.
 
 Before considering a slice complete:
 
