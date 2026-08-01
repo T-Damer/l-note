@@ -29,11 +29,9 @@ function abortError(message = 'Операция отменена.') {
   error.name = 'AbortError';
   return error;
 }
-
 function safeMetadata(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {};
 }
-
 function normalizedTask(input, now, idFactory) {
   if (!input?.kind || !input?.resourceId) {
     throw new TypeError('Transfer task requires kind and resourceId.');
@@ -59,7 +57,6 @@ function normalizedTask(input, now, idFactory) {
     metadata: safeMetadata(input.metadata),
   };
 }
-
 function restoredTask(input, now) {
   const task = {
     ...input,
@@ -79,7 +76,6 @@ function restoredTask(input, now) {
   }
   return task;
 }
-
 function taskOrder(left, right) {
   return right.priority - left.priority
     || left.createdAt.localeCompare(right.createdAt)
