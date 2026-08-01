@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v34';
-const RUNTIME_CACHE = 'l-note-runtime-v34';
+const SHELL_CACHE = 'l-note-shell-v35';
+const RUNTIME_CACHE = 'l-note-runtime-v35';
 const SHELL = [
   './',
   './index.html',
@@ -24,6 +24,7 @@ const SHELL = [
   './src/core/runtime.js',
   './src/core/application-adapter.js',
   './src/core/knowledge-graph.js',
+  './src/adapters/adaptive-search.js',
   './src/adapters/indexeddb-search.js',
   './src/adapters/runtime-adapters.js',
   './src/domain-plugins/minimed.js',
