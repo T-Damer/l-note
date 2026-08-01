@@ -42,6 +42,20 @@ async function waitFor(check, message, timeoutMs = 90_000) {
   throw new Error(`${message}${lastError ? `: ${lastError.message}` : ''}`);
 }
 
+async function withTimeout(promise, message, timeoutMs = 90_000) {
+  let timeoutId;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 async function waitForProcessExit(child, timeoutMs = 2_000) {
   if (child.exitCode !== null || child.signalCode !== null) return;
   await Promise.race([
@@ -192,7 +206,7 @@ try {
   client = await CdpClient.connect(target.webSocketDebuggerUrl);
   await client.send('Runtime.enable');
 
-  const result = await client.evaluate(`(async () => {
+  const result = await withTimeout(client.evaluate(`(async () => {
     const { createSqliteFtsSearchPort } = await import('./src/adapters/sqlite-fts-search.js');
     const records = [{
       id: 'section:smoke:bronchiolitis',
@@ -235,7 +249,7 @@ try {
       await firstPort?.close?.();
       await reopenedPort?.close?.();
     }
-  })()`);
+  })()`), 'SQLite browser smoke timed out.');
 
   assert.equal(result.firstBuild.backend, 'sqlite-fts5-idb-v1');
   assert.equal(result.firstBuild.storage, 'indexeddb-vfs');
