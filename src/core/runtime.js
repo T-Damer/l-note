@@ -19,11 +19,12 @@ export function composeKnowledgeRuntime({
     .filter((record) => record?.enabled !== false && record?.pack)
     .map((record) => record.pack);
   const knowledge = buildKnowledgeState(enabledPacks, notes);
-  const records = flattenKnowledge(enabledPacks, notes);
+  const flattenedRecords = flattenKnowledge(enabledPacks, notes);
   const queryExpanders = activeDomainQueryExpanders(domainQueryPlanners, enabledPacks);
   const search = defineSearchPort(
-    searchFactory(records, [...knowledge.entities.values()], { queryExpanders }),
+    searchFactory(flattenedRecords, [...knowledge.entities.values()], { queryExpanders }),
   );
+  const records = search.retainsRecords === false ? [] : flattenedRecords;
 
   return {
     enabledPacks,
@@ -32,6 +33,8 @@ export function composeKnowledgeRuntime({
     search,
     capabilities: Object.freeze({
       search: true,
+      asynchronousSearch: Boolean(search.async),
+      diskBackedSearch: search.retainsRecords === false,
       fuzzySearch: true,
       personalOverlay: true,
       domainQueryPlannerIds: Object.freeze(
