@@ -1,5 +1,6 @@
 const REQUIRED_METHODS = Object.freeze({
   search: Object.freeze(['search', 'suggest']),
+  asyncSearch: Object.freeze(['build', 'search', 'suggest', 'clear', 'stats']),
   storage: Object.freeze(['getAll', 'getOne', 'putOne', 'deleteOne', 'clearStore', 'getSetting', 'setSetting', 'mode']),
   domainQueryPlanner: Object.freeze(['appliesToPack', 'expandQuery']),
   localModel: Object.freeze(['load', 'answer', 'unload']),
@@ -21,6 +22,10 @@ function assertPort(kind, candidate) {
 
 export function defineSearchPort(candidate) {
   return assertPort('search', candidate);
+}
+
+export function defineAsyncSearchPort(candidate) {
+  return assertPort('asyncSearch', candidate);
 }
 
 export function defineStoragePort(candidate) {
