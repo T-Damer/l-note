@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v35';
-const RUNTIME_CACHE = 'l-note-runtime-v35';
+const SHELL_CACHE = 'l-note-shell-v36';
+const RUNTIME_CACHE = 'l-note-runtime-v36';
 const SHELL = [
   './',
   './index.html',
@@ -25,11 +25,13 @@ const SHELL = [
   './src/core/application-adapter.js',
   './src/core/knowledge-graph.js',
   './src/adapters/adaptive-search.js',
+  './src/adapters/sqlite-fts-search.js',
   './src/adapters/indexeddb-search.js',
   './src/adapters/runtime-adapters.js',
   './src/domain-plugins/minimed.js',
   './src/integrations/minimed-adapter.js',
   './src/helpers/disk-search.js',
+  './src/helpers/sqlite-fts.js',
   './src/helpers/document-assets.js',
   './src/helpers/entity-terms.js',
   './src/helpers/model-formatters.js',
@@ -66,6 +68,8 @@ const SHELL = [
   './src/services/storage-persistence.js',
   './src/services/welcome-note.js',
   './src/workers/search-worker.js',
+  './src/workers/sqlite-fts-runtime.js',
+  './src/workers/sqlite-search-worker.js',
   './src/workers/speech-worker.js',
   './src/workers/webllm-worker.js',
   './src/ui/dom.js',
