@@ -50,6 +50,17 @@ async function waitForProcessExit(child, timeoutMs = 2_000) {
   ]);
 }
 
+async function closeServer(server) {
+  await Promise.race([
+    new Promise((resolvePromise) => {
+      server.close(resolvePromise);
+      server.closeIdleConnections?.();
+      server.closeAllConnections?.();
+    }),
+    new Promise((resolvePromise) => setTimeout(resolvePromise, 2_000)),
+  ]);
+}
+
 function createStaticServer() {
   const types = new Map([
     ['.css', 'text/css; charset=utf-8'],
@@ -57,6 +68,7 @@ function createStaticServer() {
     ['.js', 'text/javascript; charset=utf-8'],
     ['.json', 'application/json; charset=utf-8'],
     ['.svg', 'image/svg+xml'],
+    ['.wasm', 'application/wasm'],
     ['.woff2', 'font/woff2'],
     ['.webmanifest', 'application/manifest+json; charset=utf-8'],
   ]);
@@ -182,7 +194,6 @@ try {
 
   const result = await client.evaluate(`(async () => {
     const { createSqliteFtsSearchPort } = await import('./src/adapters/sqlite-fts-search.js');
-    const port = createSqliteFtsSearchPort();
     const records = [{
       id: 'section:smoke:bronchiolitis',
       kind: 'section',
@@ -198,32 +209,43 @@ try {
       tags: 'педиатрия дыхательная система',
       authority: 'reference',
     }];
+    let firstPort;
+    let reopenedPort;
     try {
-      const firstBuild = await port.build(records, { fingerprint: 'browser-sqlite-smoke-v1' });
-      const exact = await port.search('бронхиолит', { limit: 5 });
-      const fuzzy = await port.search('бронхиалит', { limit: 5 });
-      const suggestions = await port.suggest('бронхи', 5);
-      const secondBuild = await port.build(records, { fingerprint: 'browser-sqlite-smoke-v1' });
+      firstPort = createSqliteFtsSearchPort();
+      const firstBuild = await firstPort.build(records, { fingerprint: 'browser-sqlite-smoke-v1' });
+      const exact = await firstPort.search('бронхиолит', { limit: 5 });
+      const fuzzy = await firstPort.search('бронхиалит', { limit: 5 });
+      const suggestions = await firstPort.suggest('бронхи', 5);
+      await firstPort.close();
+      firstPort = null;
+
+      reopenedPort = createSqliteFtsSearchPort();
+      const reopenedBuild = await reopenedPort.build(records, { fingerprint: 'browser-sqlite-smoke-v1' });
+      const reopenedExact = await reopenedPort.search('бронхиолит', { limit: 5 });
       return {
         firstBuild,
-        secondBuild,
+        reopenedBuild,
         exactId: exact[0]?.id ?? null,
         fuzzyId: fuzzy[0]?.id ?? null,
+        reopenedExactId: reopenedExact[0]?.id ?? null,
         suggestions,
       };
     } finally {
-      port.close();
+      await firstPort?.close?.();
+      await reopenedPort?.close?.();
     }
   })()`);
 
   assert.equal(result.firstBuild.backend, 'sqlite-fts5-idb-v1');
   assert.equal(result.firstBuild.storage, 'indexeddb-vfs');
   assert.equal(result.firstBuild.recordCount, 1);
-  assert.equal(result.secondBuild.reused, true);
+  assert.equal(result.reopenedBuild.reused, true);
   assert.equal(result.exactId, 'section:smoke:bronchiolitis');
   assert.equal(result.fuzzyId, 'section:smoke:bronchiolitis');
+  assert.equal(result.reopenedExactId, 'section:smoke:bronchiolitis');
   assert.ok(result.suggestions.includes('бронхиолит'));
-  console.log(`SQLite browser smoke passed: SQLite ${result.firstBuild.sqliteVersion}, FTS5, IndexedDB VFS and fuzzy fallback.`);
+  console.log(`SQLite browser smoke passed: SQLite ${result.firstBuild.sqliteVersion}, persisted FTS5 index reopened from IndexedDB.`);
 } finally {
   client?.close();
   browser.kill('SIGTERM');
@@ -232,6 +254,6 @@ try {
     browser.kill('SIGKILL');
     await waitForProcessExit(browser, 1_000);
   }
-  await new Promise((resolvePromise) => server.close(resolvePromise));
+  await closeServer(server);
   await rm(profileDir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
 }
