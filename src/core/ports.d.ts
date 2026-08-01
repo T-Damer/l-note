@@ -88,6 +88,42 @@ export interface LocalModelPort {
   ): Promise<LocalModelAnswer>;
 }
 
+export interface SpeechModelInspection {
+  modelId: string;
+  available: boolean;
+  cached: boolean | null;
+  [metadata: string]: unknown;
+}
+
+export interface SpeechLoadResult {
+  modelId: string;
+  loadMs: number;
+  reused: boolean;
+  cachedBeforeLoad?: boolean | null;
+  runtime?: string;
+}
+
+export interface SpeechTranscript {
+  text: string;
+  modelId: string;
+  language: string;
+  durationMs: number;
+}
+
+export interface SpeechRecognitionPort {
+  readonly available: boolean;
+  readonly modelId?: string | null;
+  inspectModels?(options?: { includeCache?: boolean }): Promise<SpeechModelInspection[]>;
+  isModelCached?(modelId: string): Promise<boolean | null>;
+  load(options?: { modelId?: string; onProgress?: (progress: unknown) => void }): Promise<SpeechLoadResult>;
+  transcribe(
+    audio: Float32Array,
+    options?: { language?: 'auto' | 'ru' | 'en' },
+  ): Promise<SpeechTranscript>;
+  cancel(): Promise<{ cancelled: boolean }>;
+  unload(): Promise<{ modelId: string | null; unloaded: boolean }>;
+}
+
 export interface EvidenceVerificationResult {
   accepted: boolean;
   supported: boolean;
@@ -114,6 +150,7 @@ export function defineSearchPort<T extends SearchPort>(candidate: T): T;
 export function defineStoragePort<T extends StoragePort>(candidate: T): T;
 export function defineDomainQueryPlannerPort<T extends DomainQueryPlannerPort>(candidate: T): T;
 export function defineLocalModelPort<T extends LocalModelPort>(candidate: T): T;
+export function defineSpeechRecognitionPort<T extends SpeechRecognitionPort>(candidate: T): T;
 export function defineEvidenceVerifierPort<T extends EvidenceVerifierPort>(candidate: T): T;
 export function activeDomainQueryExpanders(
   planners: DomainQueryPlannerPort[],
