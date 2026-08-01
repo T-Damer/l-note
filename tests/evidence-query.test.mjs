@@ -8,7 +8,7 @@ import {
 
 const mode = { id: 'compact', sourceLimit: 4 };
 
-test('collects bounded evidence through the SearchPort and collector boundary', () => {
+test('collects bounded evidence through the SearchPort and collector boundary', async () => {
   const calls = [];
   const searchPort = {
     search(query, options) {
@@ -16,7 +16,7 @@ test('collects bounded evidence through the SearchPort and collector boundary', 
       return [{ id: 'result-1' }];
     },
   };
-  const result = collectQuestionEvidence({
+  const result = await collectQuestionEvidence({
     query: '  бронхиолит  ',
     mode,
     searchPort,
@@ -36,15 +36,31 @@ test('collects bounded evidence through the SearchPort and collector boundary', 
   assert.equal(result.modeId, 'compact');
 });
 
+test('awaits an asynchronous disk-backed SearchPort', async () => {
+  const result = await collectQuestionEvidence({
+    query: 'fuzzy serch',
+    mode,
+    searchPort: {
+      async search() {
+        return [{ id: 'disk-result' }];
+      },
+    },
+    knowledgeState: {},
+    collectEvidence: (query, results) => ({ query, sources: results }),
+  });
+  assert.equal(result.results[0].id, 'disk-result');
+  assert.equal(result.evidence.sources[0].id, 'disk-result');
+});
+
 test('matches evidence only for the same normalized question and mode', () => {
   const evidence = { query: 'бронхиолит' };
-  assert.equal(evidenceMatchesRequest(evidence, ' бронхиолит ', 'compact', 'compact'), true);
+  assert.equal(evidenceMatchesRequest(evidence, ' БРОНХИОЛИТ ', 'compact', 'compact'), true);
   assert.equal(evidenceMatchesRequest(evidence, 'пневмония', 'compact', 'compact'), false);
   assert.equal(evidenceMatchesRequest(evidence, 'бронхиолит', 'compact', 'detailed'), false);
 });
 
-test('rejects incomplete orchestration dependencies', () => {
-  assert.throws(() => collectQuestionEvidence({ query: '', mode }), /non-empty query/u);
-  assert.throws(() => collectQuestionEvidence({ query: 'test', mode: {} }), /answer-mode/u);
-  assert.throws(() => collectQuestionEvidence({ query: 'test', mode, searchPort: {} }), /SearchPort/u);
+test('rejects incomplete orchestration dependencies', async () => {
+  await assert.rejects(collectQuestionEvidence({ query: '', mode }), /non-empty query/u);
+  await assert.rejects(collectQuestionEvidence({ query: 'test', mode: {} }), /answer-mode/u);
+  await assert.rejects(collectQuestionEvidence({ query: 'test', mode, searchPort: {} }), /SearchPort/u);
 });
