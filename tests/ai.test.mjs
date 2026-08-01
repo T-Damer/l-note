@@ -9,6 +9,16 @@ import {
   validateGroundedAnswer,
 } from '../src/ai.js';
 
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
 test('defines three device-oriented browser-local model profiles', () => {
   assert.equal(LOCAL_MODEL_PROFILES.length, 3);
   assert.deepEqual(
@@ -76,9 +86,37 @@ test('explicit unload releases the worker but keeps cache management separate', 
   assert.equal(adapter.modelId, null);
 });
 
+test('cancelLoad terminates the loading worker and rejects a late engine result', async () => {
+  const engineDeferred = deferred();
+  const worker = { terminated: false, terminate() { this.terminated = true; } };
+  const engine = { unloaded: false, async unload() { this.unloaded = true; } };
+  const module = {
+    prebuiltAppConfig: { model_list: [{ model_id: DEFAULT_LOCAL_MODEL_ID }] },
+    hasModelInCache: async () => false,
+    CreateWebWorkerMLCEngine: async () => engineDeferred.promise,
+  };
+  const adapter = new BrowserLocalAi({
+    moduleLoader: async () => module,
+    workerFactory: () => worker,
+  });
+  Object.defineProperty(adapter, 'available', { value: true });
+
+  const loading = adapter.load({ modelId: DEFAULT_LOCAL_MODEL_ID });
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const cancelled = await adapter.cancelLoad();
+  engineDeferred.resolve(engine);
+
+  assert.deepEqual(cancelled, { modelId: DEFAULT_LOCAL_MODEL_ID, cancelled: true });
+  await assert.rejects(loading, (error) => error.name === 'AbortError');
+  assert.equal(worker.terminated, true);
+  assert.equal(engine.unloaded, true);
+  assert.equal(adapter.loading, false);
+});
+
 test('browser adapter exposes explicit unload and requires WebGPU plus Worker', () => {
   const adapter = new BrowserLocalAi();
   assert.equal(typeof adapter.unload, 'function');
+  assert.equal(typeof adapter.cancelLoad, 'function');
   assert.equal(adapter.available, false);
 });
 
