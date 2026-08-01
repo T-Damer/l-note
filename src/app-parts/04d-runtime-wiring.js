@@ -12,12 +12,16 @@ import { minimedDomainQueryPlanner } from './domain-plugins/minimed.js';
 const storagePort = createIndexedDbStoragePort();
 const domainQueryPlanners = [minimedDomainQueryPlanner];
 const localModelPort = createWebLlmPort();
+const speechRecognitionPort = createBrowserSpeechRecognitionPort();
+const evidenceVerifierPort = createLexicalEvidenceVerifier();
 const applicationAdapter = defineKnowledgeApplicationAdapter({
   id: 'lnote.web',
   storagePort,
   searchFactory: createMiniSearchPort,
   domainQueryPlanners,
   localModelPort,
+  speechRecognitionPort,
+  evidenceVerifierPort,
   metadata: {
     platform: 'web',
     domainNeutralCore: true,
@@ -28,6 +32,8 @@ const applicationAdapter = defineKnowledgeApplicationAdapter({
 state.storage = applicationAdapter.storagePort;
 state.search = createMiniSearchPort([], []);
 state.localAi = applicationAdapter.localModelPort;
+state.speechRecognition = applicationAdapter.speechRecognitionPort;
+state.evidenceVerifier = applicationAdapter.evidenceVerifierPort;
 state.applicationAdapter = applicationAdapter;
 
 renderSidebarStatus = function renderSidebarStatusThroughStoragePort() {
