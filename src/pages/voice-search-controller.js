@@ -1,6 +1,5 @@
 import {
   DEFAULT_SPEECH_MODEL_ID,
-  LOCAL_SPEECH_MODEL_PROFILES,
   speechModelProfile,
 } from '../speech.js';
 import {
@@ -8,9 +7,13 @@ import {
   createBrowserAudioRecorder,
 } from '../services/audio-recorder.js';
 import { requestPersistentStorage } from '../services/storage-persistence.js';
-import { Button, Field } from '../ui/components.js';
-import { element } from '../ui/dom.js';
-import { Text } from '../ui/text.js';
+import {
+  createVoiceSearchElements,
+  normalizeSpeechLanguage,
+  renderVoiceSearchElements,
+  voiceProgressLabel,
+  voiceProgressPercent,
+} from './voice-search-elements.js';
 
 export const VOICE_MODEL_SETTING_KEY = 'voice.model';
 export const VOICE_LANGUAGE_SETTING_KEY = 'voice.language';
@@ -18,45 +21,6 @@ export const VOICE_LANGUAGE_SETTING_KEY = 'voice.language';
 function requireElement(value, name) {
   if (!(value instanceof HTMLElement)) throw new TypeError(`${name} must be an HTML element.`);
   return value;
-}
-
-function formatMegabytes(value) {
-  return Number.isFinite(value) ? `${Math.round(value)} МБ` : '—';
-}
-
-function progressPercent(progress) {
-  const explicit = Number(progress?.progress);
-  if (Number.isFinite(explicit)) return Math.max(0, Math.min(100, explicit));
-  const loaded = Number(progress?.loaded);
-  const total = Number(progress?.total);
-  if (Number.isFinite(loaded) && Number.isFinite(total) && total > 0) {
-    return Math.max(0, Math.min(100, loaded / total * 100));
-  }
-  return 0;
-}
-
-function progressLabel(progress, percent) {
-  const file = progress?.file ? ` · ${progress.file}` : '';
-  if (progress?.status === 'ready') return 'Модель распознавания готова.';
-  return `Загрузка модели ${Math.round(percent)}%${file}`;
-}
-
-function selectedLanguage(value) {
-  return ['ru', 'en'].includes(value) ? value : 'auto';
-}
-
-function createModelSelect() {
-  return element('select', {}, LOCAL_SPEECH_MODEL_PROFILES.map((profile) => (
-    element('option', { value: profile.modelId, text: `${profile.label} · ${profile.parameters}` })
-  )));
-}
-
-function createLanguageSelect() {
-  return element('select', {}, [
-    element('option', { value: 'auto', text: 'Авто: русский / English' }),
-    element('option', { value: 'ru', text: 'Русский' }),
-    element('option', { value: 'en', text: 'English' }),
-  ]);
 }
 
 export function createVoiceSearchController({
@@ -69,51 +33,15 @@ export function createVoiceSearchController({
   onTranscript,
   onError = () => {},
 } = {}) {
-  const elements = {
+  const elements = createVoiceSearchElements({
     trigger: requireElement(trigger, 'trigger'),
     slot: requireElement(slot, 'slot'),
     input: requireElement(input, 'input'),
-    model: createModelSelect(),
-    language: createLanguageSelect(),
-    status: Text({ variant: 'muted', text: 'Проверка локального кэша…' }),
-    summary: Text({ variant: 'caption', text: '' }),
-    progress: element('progress', { max: 100, value: 0, hidden: true }),
-    load: Button({ variant: 'primary', icon: 'download', text: 'Загрузить модель' }),
-    record: Button({ variant: 'primary', icon: 'microphone', text: 'Начать запись' }),
-    cancel: Button({ variant: 'secondary', icon: 'close', text: 'Отмена', hidden: true }),
-    unload: Button({ variant: 'ghost', icon: 'unload', text: 'Выгрузить из памяти', hidden: true }),
-  };
+  });
   const cacheState = new Map();
   let operation = 'idle';
   let autoStopTimer = null;
   let panelOpen = false;
-
-  const panel = element('section', { className: 'voice-search-panel', hidden: true }, [
-    element('header', { className: 'voice-search-heading' }, [
-      element('div', {}, [
-        Text({ variant: 'eyebrow', text: 'Локально на устройстве' }),
-        Text({ variant: 'heading', as: 'h2', text: 'Голосовой поиск' }),
-      ]),
-      elements.unload,
-    ]),
-    Text({
-      variant: 'muted',
-      text: 'Первая загрузка требует сети. После этого русские и английские запросы распознаются офлайн в отдельном Web Worker.',
-    }),
-    element('div', { className: 'voice-search-settings' }, [
-      Field({ label: 'Модель', control: elements.model }),
-      Field({ label: 'Язык', control: elements.language }),
-    ]),
-    elements.summary,
-    elements.progress,
-    elements.status,
-    element('div', { className: 'voice-search-actions' }, [
-      elements.load,
-      elements.record,
-      elements.cancel,
-    ]),
-  ]);
-  elements.slot.replaceChildren(panel);
 
   function currentProfile() {
     return speechModelProfile(elements.model.value)
@@ -124,13 +52,6 @@ export function createVoiceSearchController({
     return speechPort.modelId === currentProfile()?.modelId;
   }
 
-  function cachedLabel(profile) {
-    const cached = cacheState.get(profile.modelId);
-    if (cached === true) return 'веса на диске';
-    if (cached === false) return 'ещё не загружена';
-    return 'состояние кэша неизвестно';
-  }
-
   function setStatus(message, type = 'info') {
     elements.status.textContent = message;
     elements.status.classList.toggle('is-error', type === 'error');
@@ -139,43 +60,19 @@ export function createVoiceSearchController({
 
   function render() {
     const profile = currentProfile();
-    const loaded = isLoaded();
-    const busy = ['loading', 'transcribing'].includes(operation);
-    const recording = operation === 'recording';
-    elements.summary.textContent = [
-      profile.label,
-      profile.parameters,
-      `около ${formatMegabytes(profile.downloadSizeMB)} на диске`,
-      cachedLabel(profile),
-      loaded ? 'включена' : 'выключена',
-    ].join(' · ');
-    elements.model.disabled = busy || recording;
-    elements.language.disabled = busy || recording;
-    elements.load.hidden = loaded || recording;
-    elements.load.disabled = busy;
-    elements.load.querySelector('.text')?.replaceChildren(
-      document.createTextNode(cacheState.get(profile.modelId) ? 'Включить модель' : 'Загрузить модель'),
-    );
-    elements.record.hidden = !loaded;
-    elements.record.disabled = busy || !audioRecorder.available;
-    elements.record.querySelector('.text')?.replaceChildren(
-      document.createTextNode(recording ? 'Остановить и распознать' : 'Начать запись'),
-    );
-    elements.cancel.hidden = !busy && !recording;
-    elements.unload.hidden = !loaded || busy || recording;
-    elements.progress.hidden = operation !== 'loading';
-    elements.trigger.classList.toggle('is-recording', recording);
-    elements.trigger.setAttribute('aria-pressed', String(recording));
-    elements.trigger.setAttribute('aria-expanded', String(panelOpen));
-    elements.trigger.setAttribute(
-      'aria-label',
-      recording ? 'Остановить голосовой поиск' : 'Открыть голосовой поиск',
-    );
+    renderVoiceSearchElements({
+      elements,
+      profile,
+      cached: cacheState.get(profile.modelId),
+      loaded: isLoaded(),
+      operation,
+      recorderAvailable: audioRecorder.available,
+      panelOpen,
+    });
   }
 
   function setPanelOpen(open) {
     panelOpen = Boolean(open);
-    panel.hidden = !panelOpen;
     render();
   }
 
@@ -202,23 +99,25 @@ export function createVoiceSearchController({
       await speechPort.load({
         modelId: profile.modelId,
         onProgress(progress) {
-          const percent = progressPercent(progress);
+          const percent = voiceProgressPercent(progress);
           elements.progress.value = percent;
-          setStatus(progressLabel(progress, percent));
+          setStatus(voiceProgressLabel(progress, percent));
         },
       });
       cacheState.set(profile.modelId, true);
       setStatus('Модель включена. Можно начать запись.', 'success');
     } catch (error) {
-      if (error?.name !== 'AbortError') {
-        const message = error instanceof Error ? error.message : String(error);
-        setStatus(message, 'error');
-        onError(message);
-      }
+      if (error?.name !== 'AbortError') reportError(error);
     } finally {
       operation = 'idle';
       render();
     }
+  }
+
+  function reportError(error) {
+    const message = error instanceof Error ? error.message : String(error);
+    setStatus(message, 'error');
+    onError(message);
   }
 
   function clearAutoStop() {
@@ -235,18 +134,14 @@ export function createVoiceSearchController({
     try {
       const audio = await audioRecorder.stop();
       const result = await speechPort.transcribe(audio, {
-        language: selectedLanguage(elements.language.value),
+        language: normalizeSpeechLanguage(elements.language.value),
       });
       if (!result.text) throw new Error('Речь не распознана. Попробуйте говорить ближе к микрофону.');
       elements.input.value = result.text;
       setStatus(`Распознано локально за ${(result.durationMs / 1000).toFixed(1)} с.`, 'success');
       onTranscript?.(result.text);
     } catch (error) {
-      if (error?.name !== 'AbortError') {
-        const message = error instanceof Error ? error.message : String(error);
-        setStatus(message, 'error');
-        onError(message);
-      }
+      if (error?.name !== 'AbortError') reportError(error);
     } finally {
       operation = 'idle';
       render();
@@ -262,9 +157,7 @@ export function createVoiceSearchController({
       autoStopTimer = setTimeout(finishRecording, MAX_VOICE_SEARCH_DURATION_MS);
       render();
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      setStatus(message, 'error');
-      onError(message);
+      reportError(error);
     }
   }
 
@@ -309,7 +202,7 @@ export function createVoiceSearchController({
       DEFAULT_SPEECH_MODEL_ID,
     );
     if (!speechModelProfile(elements.model.value)) elements.model.value = DEFAULT_SPEECH_MODEL_ID;
-    elements.language.value = selectedLanguage(await storagePort.getSetting(
+    elements.language.value = normalizeSpeechLanguage(await storagePort.getSetting(
       VOICE_LANGUAGE_SETTING_KEY,
       'auto',
     ));
