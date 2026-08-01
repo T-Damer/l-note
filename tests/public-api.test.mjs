@@ -10,6 +10,7 @@ import {
   createBrowserSpeechRecognitionPort,
   createIndexedDbSearchPort,
   createMiniSearchPort,
+  createSqliteFtsSearchPort,
 } from 'l-note/adapters/browser';
 import {
   MINIMED_ADAPTER_CONTRACT_VERSION,
@@ -22,6 +23,7 @@ test('package entrypoints expose the stable core, browser adapters and MiniMed b
   assert.equal(MINIMED_ADAPTER_CONTRACT_VERSION, '0.1.0');
   assert.equal(typeof defineKnowledgeApplicationAdapter, 'function');
   assert.equal(typeof createMiniSearchPort, 'function');
+  assert.equal(typeof createSqliteFtsSearchPort, 'function');
   assert.equal(typeof createIndexedDbSearchPort, 'function');
   assert.equal(typeof createBrowserSpeechRecognitionPort, 'function');
   assert.equal(typeof defineMiniMedAdapter, 'function');
