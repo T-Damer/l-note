@@ -24,7 +24,6 @@ const TERMINAL = new Set([
   TRANSFER_STATUS.FAILED,
   TRANSFER_STATUS.CANCELLED,
 ]);
-
 function abortError(message = 'Операция отменена.') {
   const error = new Error(message);
   error.name = 'AbortError';
