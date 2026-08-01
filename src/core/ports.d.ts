@@ -30,6 +30,8 @@ export interface AsyncSearchStats {
   storage: string;
   backend: string;
   error?: string;
+  reused?: boolean;
+  [metadata: string]: unknown;
 }
 
 export interface AsyncSearchPort {
@@ -38,11 +40,14 @@ export interface AsyncSearchPort {
   readonly available?: boolean;
   build(
     records: SearchRecord[],
-    options?: { onProgress?: (progress: unknown) => void },
+    options?: {
+      fingerprint?: string;
+      onProgress?: (progress: unknown) => void;
+    },
   ): Promise<AsyncSearchStats>;
   search(query: string, options?: SearchOptions): Promise<SearchResult[]>;
   suggest(query: string, limit?: number): Promise<string[]>;
-  clear(): Promise<void>;
+  clear(): Promise<unknown>;
   stats(): Promise<AsyncSearchStats>;
   close?(): void;
 }
@@ -172,7 +177,10 @@ export interface EvidenceVerifierPort {
 export type SearchPortFactory = (
   records: SearchRecord[],
   concepts: KnowledgeConcept[],
-  options?: { queryExpanders?: Array<(query: string) => string[]> },
+  options?: {
+    queryExpanders?: Array<(query: string) => string[]>;
+    corpusFingerprint?: string;
+  },
 ) => SearchPort;
 
 export function defineSearchPort<T extends SearchPort>(candidate: T): T;
@@ -188,6 +196,5 @@ export function activeDomainQueryExpanders(
 ): Array<(query: string) => string[]>;
 
 export const portMethods: Readonly<Record<string, readonly string[]>>;
-
 export type RuntimePackRecords = InstalledPackRecord[];
 export type RuntimeNotes = PersonalNote[];
