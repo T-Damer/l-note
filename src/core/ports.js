@@ -3,6 +3,7 @@ const REQUIRED_METHODS = Object.freeze({
   storage: Object.freeze(['getAll', 'getOne', 'putOne', 'deleteOne', 'clearStore', 'getSetting', 'setSetting', 'mode']),
   domainQueryPlanner: Object.freeze(['appliesToPack', 'expandQuery']),
   localModel: Object.freeze(['load', 'answer', 'unload']),
+  speechRecognition: Object.freeze(['load', 'transcribe', 'cancel', 'unload']),
   evidenceVerifier: Object.freeze(['verify']),
 });
 
@@ -35,6 +36,10 @@ export function defineDomainQueryPlannerPort(candidate) {
 
 export function defineLocalModelPort(candidate) {
   return assertPort('localModel', candidate);
+}
+
+export function defineSpeechRecognitionPort(candidate) {
+  return assertPort('speechRecognition', candidate);
 }
 
 export function defineEvidenceVerifierPort(candidate) {
