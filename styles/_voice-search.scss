@@ -1,0 +1,141 @@
+.search-input-row:has(.voice-search-toggle) {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.voice-search-toggle {
+  width: 3.15rem;
+  min-width: 3.15rem;
+  min-height: 3.15rem;
+  border: 1px solid var(--line);
+  border-radius: .72rem;
+  background: var(--paper);
+}
+
+.voice-search-toggle:hover,
+.voice-search-toggle:focus-visible,
+.voice-search-toggle[aria-expanded='true'] {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.voice-search-toggle.is-recording {
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 12%, var(--paper));
+  color: var(--red);
+  animation: voice-recording-pulse 1.25s ease-in-out infinite;
+}
+
+.voice-search-slot {
+  margin-top: .75rem;
+}
+
+.voice-search-slot:empty {
+  display: none;
+}
+
+.voice-search-panel {
+  display: grid;
+  gap: .8rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: .9rem;
+  background: color-mix(in srgb, var(--paper) 84%, var(--accent-soft));
+}
+
+.voice-search-panel[hidden] {
+  display: none;
+}
+
+.voice-search-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.voice-search-heading h2,
+.voice-search-heading p {
+  margin: 0;
+}
+
+.voice-search-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, .72fr);
+  gap: .75rem;
+}
+
+.voice-search-settings select {
+  min-height: 2.75rem;
+  padding: .65rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: .72rem;
+  background: var(--paper);
+}
+
+.voice-search-panel progress {
+  width: 100%;
+  height: .72rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  accent-color: var(--accent);
+}
+
+.voice-search-panel progress[hidden],
+.voice-search-actions > [hidden],
+.voice-search-heading > [hidden] {
+  display: none;
+}
+
+.voice-search-panel .is-error {
+  color: var(--red);
+}
+
+.voice-search-panel .is-success {
+  color: var(--accent);
+}
+
+.voice-search-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+}
+
+.voice-search-actions > * {
+  min-height: 2.75rem;
+}
+
+@keyframes voice-recording-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--red) 26%, transparent); }
+  50% { box-shadow: 0 0 0 .42rem transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-search-toggle.is-recording {
+    animation: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .search-input-row:has(.voice-search-toggle) {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .search-input-row:has(.voice-search-toggle) > input {
+    grid-column: 1 / -1;
+  }
+
+  .search-input-row:has(.voice-search-toggle) > [type='submit'] {
+    grid-column: 2;
+  }
+
+  .voice-search-settings {
+    grid-template-columns: 1fr;
+  }
+
+  .voice-search-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
