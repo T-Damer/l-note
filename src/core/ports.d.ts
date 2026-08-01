@@ -21,7 +21,7 @@ export interface SearchPort {
   readonly ready?: Promise<unknown>;
   search(query: string, options?: SearchOptions): SearchResult[] | Promise<SearchResult[]>;
   suggest(query: string, limit?: number): string[] | Promise<string[]>;
-  close?(): void;
+  close?(): void | Promise<void>;
 }
 
 export interface AsyncSearchStats {
@@ -49,7 +49,7 @@ export interface AsyncSearchPort {
   suggest(query: string, limit?: number): Promise<string[]>;
   clear(): Promise<unknown>;
   stats(): Promise<AsyncSearchStats>;
-  close?(): void;
+  close?(): void | Promise<void>;
 }
 
 export type StorageStoreName = 'packs' | 'notes' | 'settings';
