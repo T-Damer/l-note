@@ -1,5 +1,6 @@
 import {
   SQLITE_FTS_BACKEND_ID,
+  SQLITE_FTS_RUNTIME_VERSION,
   SQLITE_FTS_STORAGE_ID,
   rankSqliteFtsRows,
   selectSqliteFuzzyTerms,
@@ -14,7 +15,6 @@ const SQLITE_WASM_MODULE = `https://esm.run/@subframe7536/sqlite-wasm@${SQLITE_W
 const SQLITE_WASM_IDB_MODULE = `${SQLITE_WASM_MODULE}/idb`;
 const SQLITE_WASM_URL = `https://cdn.jsdelivr.net/npm/@subframe7536/sqlite-wasm@${SQLITE_WASM_VERSION}/dist/wa-sqlite-async.wasm`;
 const DATABASE_NAME = 'l-note-search.sqlite';
-const SQLITE_ROW = 100;
 const INSERT_SQL = `
   INSERT INTO records_fts(
     id, payload, title, document_title, body, aliases, entity_names, tags
@@ -53,8 +53,15 @@ const SCHEMA_SQL = `
   );
 `;
 
-function asObject(row, columns) {
-  return Object.fromEntries(columns.map((column, index) => [column, row[index]]));
+function errorAt(stage, error) {
+  const message = error instanceof Error ? error.message : String(error);
+  const wrapped = new Error(`SQLite ${stage}: ${message}`);
+  wrapped.cause = error;
+  return wrapped;
+}
+
+function compileOption(row) {
+  return String(row?.compile_options ?? Object.values(row ?? {})[0] ?? '');
 }
 
 export class SqliteFtsRuntime {
@@ -66,15 +73,12 @@ export class SqliteFtsRuntime {
     this.moduleUrl = moduleUrl;
     this.idbModuleUrl = idbModuleUrl;
     this.wasmUrl = wasmUrl;
-    this.sqlite3 = null;
-    this.database = null;
     this.connection = null;
-    this.vfs = null;
     this.initializing = null;
   }
 
   async init() {
-    if (this.database) return this;
+    if (this.connection) return this;
     if (this.initializing) return this.initializing;
     this.initializing = this.initialize().catch((error) => {
       this.initializing = null;
@@ -84,32 +88,42 @@ export class SqliteFtsRuntime {
   }
 
   async initialize() {
-    const [sqliteModule, idbModule] = await Promise.all([
-      import(this.moduleUrl),
-      import(this.idbModuleUrl),
-    ]);
-    this.connection = await sqliteModule.initSQLite(
-      idbModule.useIdbStorage(DATABASE_NAME, { url: this.wasmUrl }),
-    );
-    this.sqlite3 = this.connection.sqlite;
-    this.database = this.connection.db ?? this.connection.pointer;
-    this.vfs = this.connection.vfs;
-    await this.sqlite3.exec(this.database, SCHEMA_SQL);
+    let sqliteModule;
+    let idbModule;
+    try {
+      [sqliteModule, idbModule] = await Promise.all([
+        import(this.moduleUrl),
+        import(this.idbModuleUrl),
+      ]);
+    } catch (error) {
+      throw errorAt('module load failed', error);
+    }
+
+    try {
+      this.connection = await sqliteModule.initSQLite(
+        idbModule.useIdbStorage(DATABASE_NAME, { url: this.wasmUrl }),
+      );
+    } catch (error) {
+      throw errorAt('database open failed', error);
+    }
+
+    try {
+      const options = await this.connection.run('PRAGMA compile_options;');
+      if (!options.some((row) => compileOption(row) === 'ENABLE_FTS5')) {
+        throw new Error('loaded WASM does not include ENABLE_FTS5');
+      }
+      await this.connection.run(SCHEMA_SQL);
+    } catch (error) {
+      await this.connection.close().catch(() => {});
+      this.connection = null;
+      throw errorAt('FTS5 schema initialization failed', error);
+    }
     return this;
   }
 
   async rows(sql, bindings = []) {
     await this.init();
-    const output = [];
-    for await (const statement of this.sqlite3.statements(this.database, sql)) {
-      this.sqlite3.bind_collection(statement, bindings);
-      let columns = null;
-      while (await this.sqlite3.step(statement) === SQLITE_ROW) {
-        columns ??= this.sqlite3.column_names(statement);
-        output.push(asObject(this.sqlite3.row(statement), columns));
-      }
-    }
-    return output;
+    return this.connection.run(sql, bindings);
   }
 
   async meta(key) {
@@ -118,15 +132,11 @@ export class SqliteFtsRuntime {
   }
 
   async writeMeta(values) {
-    for await (const statement of this.sqlite3.statements(
-      'INSERT OR REPLACE INTO search_meta(key, value) VALUES (?, ?)',
-    )) {
-      for (const [key, value] of Object.entries(values)) {
-        this.sqlite3.bind_collection(statement, [key, String(value)]);
-        await this.sqlite3.step(statement);
-        await this.sqlite3.reset(statement);
-        this.sqlite3.clear_bindings(statement);
-      }
+    for (const [key, value] of Object.entries(values)) {
+      await this.connection.run(
+        'INSERT OR REPLACE INTO search_meta(key, value) VALUES (?, ?)',
+        [key, String(value)],
+      );
     }
   }
 
@@ -139,17 +149,13 @@ export class SqliteFtsRuntime {
     }
 
     onProgress({ stage: 'schema', completed: 0, total: records.length });
-    await this.sqlite3.exec(this.database, 'BEGIN IMMEDIATE; DELETE FROM records_fts; DELETE FROM search_meta;');
+    await this.connection.run('BEGIN IMMEDIATE;');
     try {
-      for await (const statement of this.sqlite3.statements(this.database, INSERT_SQL)) {
-        for (let index = 0; index < records.length; index += 1) {
-          this.sqlite3.bind_collection(statement, sqliteFtsRecordValues(records[index]));
-          await this.sqlite3.step(statement);
-          await this.sqlite3.reset(statement);
-          this.sqlite3.clear_bindings(statement);
-          if (index % 200 === 0 || index === records.length - 1) {
-            onProgress({ stage: 'records', completed: index + 1, total: records.length });
-          }
+      await this.connection.run('DELETE FROM records_fts; DELETE FROM search_meta;');
+      for (let index = 0; index < records.length; index += 1) {
+        await this.connection.run(INSERT_SQL, sqliteFtsRecordValues(records[index]));
+        if (index % 200 === 0 || index === records.length - 1) {
+          onProgress({ stage: 'records', completed: index + 1, total: records.length });
         }
       }
       await this.writeMeta({
@@ -157,12 +163,12 @@ export class SqliteFtsRuntime {
         recordCount: records.length,
         builtAt: new Date().toISOString(),
       });
-      await this.sqlite3.exec(this.database, 'COMMIT;');
+      await this.connection.run('COMMIT;');
     } catch (error) {
-      await this.sqlite3.exec(this.database, 'ROLLBACK;').catch(() => {});
-      throw error;
+      await this.connection.run('ROLLBACK;').catch(() => {});
+      throw errorAt('index build failed', error);
     }
-    await this.sqlite3.exec(this.database, "INSERT INTO records_fts(records_fts) VALUES('optimize');");
+    await this.connection.run("INSERT INTO records_fts(records_fts) VALUES('optimize');");
     onProgress({ stage: 'ready', completed: records.length, total: records.length });
     return { ...(await this.stats()), reused: false };
   }
@@ -232,7 +238,7 @@ export class SqliteFtsRuntime {
       tokenCount: Number(tokenCount ?? 0),
       storage: SQLITE_FTS_STORAGE_ID,
       backend: SQLITE_FTS_BACKEND_ID,
-      runtime: `@subframe7536/sqlite-wasm@${SQLITE_WASM_VERSION}`,
+      runtime: SQLITE_FTS_RUNTIME_VERSION,
       sqliteVersion,
       builtAt,
       fingerprint,
@@ -241,17 +247,14 @@ export class SqliteFtsRuntime {
 
   async clear() {
     await this.init();
-    await this.sqlite3.exec(this.database, 'BEGIN; DELETE FROM records_fts; DELETE FROM search_meta; COMMIT;');
+    await this.connection.run('BEGIN; DELETE FROM records_fts; DELETE FROM search_meta; COMMIT;');
     return this.stats();
   }
 
   async close() {
     const connection = this.connection;
-    this.database = null;
     this.connection = null;
     this.initializing = null;
-    this.sqlite3 = null;
-    this.vfs = null;
     await connection?.close?.();
   }
 }
