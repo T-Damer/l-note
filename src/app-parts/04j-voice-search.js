@@ -1,4 +1,4 @@
-const voiceSearchPort = createBrowserSpeechRecognitionPort();
+const voiceSearchPort = applicationAdapter.speechRecognitionPort;
 const voiceSearchRow = dom.searchForm.querySelector('.search-input-row');
 const voiceSearchTrigger = Button({
   variant: 'icon',
