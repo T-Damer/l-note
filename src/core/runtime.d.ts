@@ -37,8 +37,14 @@ export interface KnowledgeRuntime {
   knowledge: KnowledgeState;
   records: SearchRecord[];
   search: SearchPort;
+  corpusFingerprint: string;
   capabilities: KnowledgeRuntimeCapabilities;
 }
+
+export function knowledgeCorpusFingerprint(
+  packs?: KnowledgePack[],
+  notes?: PersonalNote[],
+): string;
 
 export function composeKnowledgeRuntime(input: {
   packRecords?: InstalledPackRecord[];
