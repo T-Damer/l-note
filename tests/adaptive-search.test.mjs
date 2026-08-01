@@ -39,7 +39,8 @@ function fakeSearchFactory(log, { id = 'test', fail = false } = {}) {
     async stats() {
       return { recordCount: 1, tokenCount: 8, storage: id, backend: id };
     },
-    close() {
+    async close() {
+      await Promise.resolve();
       log.push(['close', id]);
     },
   });
@@ -84,11 +85,11 @@ test('prefers SQLite FTS5 and preserves query expansion plus corpus fingerprint'
   assert.deepEqual(results[0].queryTerms, ['имп']);
   assert.deepEqual(await port.suggest('инф', 3), ['инфекция']);
   assert.deepEqual(log[0], ['build', 'sqlite', 1, 'pack@1']);
-  port.close();
+  await port.close();
   assert.deepEqual(log.at(-1), ['close', 'sqlite']);
 });
 
-test('falls back from SQLite to IndexedDB postings without rebuilding MiniSearch', async () => {
+test('falls back only after the failed SQLite worker has closed', async () => {
   const log = [];
   const port = createAdaptiveSearchPort([record], [], {
     forceDisk: true,
@@ -104,4 +105,5 @@ test('falls back from SQLite to IndexedDB postings without rebuilding MiniSearch
     ['close', 'sqlite'],
     ['build', 'postings', 1, ''],
   ]);
+  await port.close();
 });
