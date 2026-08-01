@@ -7,7 +7,7 @@ import {
 
 export const SQLITE_FTS_BACKEND_ID = 'sqlite-fts5-idb-v1';
 export const SQLITE_FTS_STORAGE_ID = 'indexeddb-vfs';
-export const SQLITE_FTS_RUNTIME_VERSION = 'wa-sqlite@1.0.0';
+export const SQLITE_FTS_RUNTIME_VERSION = '@subframe7536/sqlite-wasm@1.3.1';
 
 function quoteFtsToken(token) {
   return `"${String(token).replaceAll('"', '""')}"*`;
