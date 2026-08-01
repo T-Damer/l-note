@@ -2,11 +2,12 @@ import {
   defineDomainQueryPlannerPort,
   defineEvidenceVerifierPort,
   defineLocalModelPort,
+  defineSpeechRecognitionPort,
   defineStoragePort,
 } from './ports.js';
 import { composeKnowledgeRuntime } from './runtime.js';
 
-export const KNOWLEDGE_APPLICATION_ADAPTER_VERSION = '0.2.0';
+export const KNOWLEDGE_APPLICATION_ADAPTER_VERSION = '0.3.0';
 
 function nonEmptyString(value, name) {
   if (typeof value !== 'string' || value.trim().length === 0) {
@@ -30,6 +31,9 @@ export function defineKnowledgeApplicationAdapter(input) {
   const localModelPort = input.localModelPort
     ? defineLocalModelPort(input.localModelPort)
     : null;
+  const speechRecognitionPort = input.speechRecognitionPort
+    ? defineSpeechRecognitionPort(input.speechRecognitionPort)
+    : null;
   const evidenceVerifierPort = input.evidenceVerifierPort
     ? defineEvidenceVerifierPort(input.evidenceVerifierPort)
     : null;
@@ -41,6 +45,7 @@ export function defineKnowledgeApplicationAdapter(input) {
     searchFactory: input.searchFactory,
     domainQueryPlanners,
     localModelPort,
+    speechRecognitionPort,
     evidenceVerifierPort,
     metadata: Object.freeze({ ...(input.metadata ?? {}) }),
   });
@@ -61,6 +66,7 @@ export function composeKnowledgeApplicationRuntime({ adapter, packRecords = [], 
     capabilities: Object.freeze({
       ...runtime.capabilities,
       localModel: Boolean(defined.localModelPort),
+      speechRecognition: Boolean(defined.speechRecognitionPort),
       evidenceVerification: Boolean(defined.evidenceVerifierPort),
     }),
   };
