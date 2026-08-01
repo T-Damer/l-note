@@ -25,6 +25,8 @@ export interface KnowledgeState {
 
 export interface KnowledgeRuntimeCapabilities {
   search: true;
+  asynchronousSearch: boolean;
+  diskBackedSearch: boolean;
   fuzzySearch: true;
   personalOverlay: true;
   domainQueryPlannerIds: readonly string[];
