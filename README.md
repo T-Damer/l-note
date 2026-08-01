@@ -1,6 +1,6 @@
 # L-Note
 
-L-Note is an offline-first knowledge workspace built around independently installable knowledge packs. Users download only the domains they need, search them locally, follow linked concepts and sources, keep a separate personal-note layer, create their own packs, and optionally run a local model over retrieved evidence.
+L-Note is an offline-first knowledge workspace built around independently installable knowledge packs. Users download only the domains they need, search them locally, follow linked concepts and sources, keep personal notes as a separate overlay, create their own packs, use local voice search and optionally run a local model over retrieved evidence.
 
 The runtime and pack format are domain-neutral. MiniMed-derived packs are the main demonstration corpus, while clinical query parsing, ranking, dose validation, abstention and medical benchmarks remain owned by MiniMed. The active L-Note core is not connected to the MiniMed application in this PR.
 
@@ -12,21 +12,64 @@ https://t-damer.github.io/l-note/
 
 ## Current capabilities
 
-- checksummed JSON packs installed independently into IndexedDB;
-- exact, prefix, alias and fuzzy retrieval through MiniSearch with a deterministic fallback;
+- checksummed knowledge packs installed independently into IndexedDB;
+- adaptive local retrieval: MiniSearch for small corpora, SQLite/FTS5 for large corpora and IndexedDB postings as a disk fallback;
+- exact, prefix, alias and bounded fuzzy matching for Russian and English queries;
 - hash-routed packages, documents, concepts, statements, notes and package creation;
-- linked statements, relations, backlinks and personal overrides;
-- list and graph views of installed/available knowledge;
+- linked statements, relations, backlinks and explicit personal overrides;
+- list and graph views of installed and available knowledge;
+- internal PDF viewing with document/section page anchors;
 - browser-local creation of installable packs from Markdown, TXT, JSON or pasted text;
-- deterministic evidence collection before generation;
-- browser-local WebLLM in a dedicated Web Worker;
-- one active inference model at a time;
-- explicit states `not downloaded`, `on disk`, and `loaded in memory`;
+- local RU/EN voice search through a dedicated speech-recognition Worker;
+- deterministic evidence collection and statement-to-source support verification;
+- browser-local WebLLM in a dedicated Worker with one active inference model;
+- explicit model states `not downloaded`, `on disk` and `loaded in memory`;
 - manual model unload without deleting cached weights;
-- persistent model/answer-mode selection;
 - two evidence modes: `Экономный` and `Расширенный`;
 - CLI preparation from reviewed JSON or Markdown/TXT/JSON;
 - optional local OpenAI-compatible or Replicate enrichment with exact-quote validation.
+
+## Search architecture
+
+The application chooses a search implementation without changing the UI or knowledge contracts:
+
+```text
+small corpus
+  → MiniSearch in JavaScript memory
+
+large corpus
+  → SQLite 3.53.x + FTS5
+  → Dedicated Web Worker
+  → IndexedDB virtual filesystem
+
+SQLite unavailable
+  → custom IndexedDB postings Worker
+
+all disk adapters unavailable
+  → deterministic in-memory fallback
+```
+
+The current automatic large-corpus threshold is either:
+
+```text
+5,000 search records
+or
+approximately 8 MiB of indexable text
+```
+
+These thresholds are initial defaults and still need measurement on representative Snapdragon 7-class devices. They can be overridden in adapter tests and future device profiles.
+
+SQLite stores the FTS table, vocabulary and corpus fingerprint outside the page heap. After the first build, an unchanged corpus reopens the existing index. Only query candidates and top results are returned to the application. The FTS path retains:
+
+- Unicode and `ё/е` normalization;
+- aliases and optional domain query expansion;
+- weighted BM25 fields;
+- FTS prefix indexes;
+- vocabulary-based typo candidates;
+- Damerau-Levenshtein fuzzy correction;
+- the common `SearchResult` and `0–100%` relevance contract.
+
+The SQLite connection is owned by one Dedicated Worker and commands are serialized. The Service Worker remains responsible only for the offline shell and runtime-asset caching; it does not own the database connection.
 
 ## Run locally
 
@@ -40,6 +83,8 @@ npm run serve
 
 Open `http://127.0.0.1:4173/`, then install or create the required packs on the **Пакеты** page.
 
+`npm run check` includes a real headless-Chromium SQLite/FTS5 smoke test. It builds an index, performs exact and fuzzy Russian searches, closes the Worker, opens a second Worker and verifies that the persisted index is reused.
+
 ## Create a pack in the browser
 
 Open **Пакеты → Создать свой пакет**. The creator opens as the routed card `#/package/new`, so reload, browser Back and full modal Close behave like other package/document cards.
@@ -50,13 +95,19 @@ The browser creator can:
 - include Markdown text pasted directly into the form;
 - preserve document titles, headings and source text;
 - split oversized sections;
-- discover common definitions such as `Полное название (СОКР)`;
+- discover definitions such as `Полное название (СОКР)`;
 - preview package documents, sections, entities and size;
 - download the resulting JSON or install it immediately.
 
-The lightweight creator is deterministic and does not require a local model. Source files stay in the browser. Current limits are 32 MiB per file and 64 MiB total. PDF/DOCX, OCR, database exports and reviewed LLM-assisted enrichment remain part of the heavier preparation roadmap.
+The lightweight creator is deterministic and does not require a local model. Source files stay in the browser. Current limits are 32 MiB per file and 64 MiB total.
 
-## Browser-local models
+## Local voice search
+
+The search page can download a lightweight multilingual Whisper profile, record a short query and transcribe it locally. Russian, English and automatic RU/EN selection are available. Audio is decoded, mixed to mono, resampled to 16 kHz and processed in a dedicated Worker. The transcript is sent through the same text-search pipeline.
+
+The first model download requires a network connection. Model artifacts remain in browser storage, and the user may unload the active speech model without deleting downloaded weights.
+
+## Browser-local language models
 
 All current profiles are built into the pinned WebLLM catalog and use `q4f16_1` artifacts. Qwen3 1.7B remains the default because the target class includes mid-range devices with 8 GB of shared memory and no strong discrete GPU.
 
@@ -68,43 +119,34 @@ All current profiles are built into the pinned WebLLM catalog and use `q4f16_1` 
 
 These values are estimates, not hard guarantees. Integrated GPUs and mobile SoCs use shared system memory, and the browser still needs memory for WASM, tokenizers, staging buffers, the search working set and the interface.
 
-### Model lifecycle
-
 ```text
 first use
   → request persistent origin storage when supported
   → download weights into the WebLLM Cache API
-  → load the selected model into one dedicated Web Worker
-  → reveal the question workspace
+  → load one selected model in a Dedicated Worker
   → retrieve bounded local evidence
-  → generate and validate source IDs
+  → generate with source IDs
+  → verify citation IDs, terms, numbers and negation support
 ```
 
-Only one model may be active. Selecting another model unloads the current engine and terminates its worker. The user can also press **Выгрузить из памяти**. There is no inactivity timer. Cached weights remain on disk and are detected through WebLLM's cache API after reload.
+Only one language model may be active. Selecting another model unloads the current engine and terminates its Worker. The user can also press **Выгрузить из памяти**. There is no inactivity timer. Cached weights remain on disk.
 
-The selected model and answer mode are stored locally. When a user follows the recommended mode for one model, switching models also switches to the new model's recommended mode; a manually chosen mode is preserved.
-
-The built-in `Qwen3-4B-q4f16_1-MLC` is used instead of a custom Qwen3-4B-Instruct-2507 conversion. A 2507 profile can be considered later after a reproducible conversion, integrity pinning and the same retrieval/citation benchmarks.
-
-### Answer modes
-
-`Экономный` uses fewer sources, a smaller character budget and a shorter output. It is the default for Qwen3 1.7B and constrained devices.
-
-`Расширенный` includes more evidence and permits a longer answer. It is intended for Qwen3 4B or Phi-4 Mini on devices with more headroom.
-
-The preparer does not tokenize every candidate section. It applies deterministic source and character limits, while WebLLM enforces final context and generation limits.
+`Экономный` uses fewer sources, a smaller character budget and a shorter output. `Расширенный` includes more evidence and permits a longer answer. The preparer does not tokenize every candidate section; deterministic source and character limits bound the prompt, while WebLLM applies final context and output limits.
 
 ## Storage policy
 
 ```text
-application shell          Service Worker cache
-model artifacts            WebLLM Cache API
-installed packs and notes  IndexedDB
-active search index        JavaScript memory (current MiniSearch adapter)
-active model               WebGPU/shared device memory
+application shell and local assets  Service Worker caches
+model artifacts                     WebLLM / Transformers.js browser caches
+installed packs and notes           IndexedDB
+small search index                  JavaScript memory
+large FTS database and index         SQLite over IndexedDB VFS
+large-search fallback                IndexedDB postings
+active results and evidence          bounded JavaScript working set
+active models                        WebGPU/WASM/shared device memory
 ```
 
-The planned SQLite/FTS5 adapter will keep large corpora and indexes on disk and materialize only the active result/evidence working set. A future MiniMed connection may use the same ports only after separate approval and MiniMed-owned retrieval, dose and safety gates.
+The official SQLite OPFS path requires response headers that GitHub Pages does not provide. The hosted prototype therefore uses an IndexedDB VFS. An OPFS adapter remains appropriate for controlled hosting or a future native/Capacitor shell with the required isolation headers.
 
 ## Build a custom pack on a stronger device
 
@@ -149,7 +191,7 @@ REPLICATE_API_TOKEN=... node tools/build-pack.mjs ./my-knowledge \
   --ai-model owner/model
 ```
 
-Preparation may run on a stronger desktop/server. The resulting pack remains usable on a weaker offline client. Model output may propose concepts, aliases, statements and relations, but a proposed statement is accepted only when its evidence quote is an exact source substring.
+Preparation may run on a stronger desktop or server. The resulting pack remains usable on a weaker offline client. Model output may propose concepts, aliases, statements and relations, but a proposed statement is accepted only when its evidence quote is an exact source substring.
 
 See `docs/PACK_FORMAT.md` for the portable format and `docs/ARCHITECTURE.md` for the runtime boundary.
 
@@ -159,7 +201,7 @@ See `docs/PACK_FORMAT.md` for the portable format and `docs/ARCHITECTURE.md` for
 L-Note Core
   contracts + stable IDs
   pack preparation/installation/composition
-  storage/search/model ports
+  storage/search/model/speech ports
   graph, notes, evidence and routing
 
 MiniMed
@@ -171,10 +213,12 @@ MiniMed
 
 Any future MiniMed migration requires separate approval and must pass MiniMed's existing retrieval, dose and safety suites through the adapter.
 
-## Validation
+## Remaining work
 
-The routed package creator, browser parser/builder, static offline shell and existing Chromium routing/modal/graph scenarios are included in `npm run check`.
-
-## Limitations
-
-The hosted prototype does not yet provide PDF/DOCX parsing, OCR, SQLite/FTS5, signed publisher catalogs, delta updates, encrypted notes or cross-device sync. Native Android/iOS packaging is deferred until the web core and storage adapters are stable.
+- reviewed LLM-assisted enrichment in the browser pack creator;
+- PDF/DOCX extraction, OCR and database exporters on a stronger device;
+- optional prebuilt SQLite artifacts inside distributable large packs;
+- mobile benchmarks and threshold tuning;
+- optional OPFS and vector-search adapters;
+- signed publisher catalogs, delta updates, encrypted notes and cross-device sync;
+- native Android/iOS packaging after the web core and storage adapters stabilize.
