@@ -62,6 +62,7 @@ test('limits active transfers to four and starts higher priority tasks first', a
 
   for (const name of [...started]) gates.get(name).resolve(name);
   await nextTurn();
+  await nextTurn();
   for (const gate of gates.values()) gate.resolve('done');
   await Promise.all(tasks.map(({ completion }) => completion));
   assert.equal(queue.activeCount(), 0);
