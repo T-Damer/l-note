@@ -18,8 +18,26 @@ function requireFunction(value, label) {
   return value;
 }
 
+function mergeUnique(left = [], right = []) {
+  return [...new Set([...left, ...right])];
+}
+
+async function verifyGeneratedAnswer(answer, evidence, verifier) {
+  if (!verifier) return answer;
+  const verification = await verifier.verify(answer, evidence);
+  return Object.freeze({
+    ...answer,
+    grounded: answer.grounded !== false && Boolean(verification.supported),
+    validCitations: [...new Set(answer.validCitations ?? [])],
+    invalidCitations: mergeUnique(answer.invalidCitations, verification.invalidCitations),
+    unsupportedStatements: [...(verification.unsupportedStatements ?? [])],
+    supportVerification: verification,
+  });
+}
+
 export function createAskWorkflow({
   modelPort,
+  evidenceVerifier = null,
   getSearchPort,
   getKnowledgeState,
   getSelectedProfile,
@@ -31,6 +49,9 @@ export function createAskWorkflow({
   requestPersistence,
 } = {}) {
   if (!modelPort?.answer || !modelPort?.load) throw new TypeError('modelPort is incomplete.');
+  if (evidenceVerifier && typeof evidenceVerifier.verify !== 'function') {
+    throw new TypeError('evidenceVerifier must expose verify().');
+  }
   requireFunction(getSearchPort, 'getSearchPort');
   requireFunction(getKnowledgeState, 'getKnowledgeState');
   requireFunction(getSelectedProfile, 'getSelectedProfile');
@@ -108,10 +129,15 @@ export function createAskWorkflow({
     }
     const snapshot = getEvidenceSnapshot();
     if (!snapshot.evidence) throw new Error('Evidence is required before local generation.');
-    const answer = await modelPort.answer(
+    const generated = await modelPort.answer(
       snapshot.evidence.query,
       snapshot.evidence,
       { modeId: prepared.mode.id },
+    );
+    const answer = await verifyGeneratedAnswer(
+      generated,
+      snapshot.evidence,
+      evidenceVerifier,
     );
     return Object.freeze({
       kind: ASK_WORKFLOW_RESULT.ANSWERED,
