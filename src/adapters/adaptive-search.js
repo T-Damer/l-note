@@ -87,7 +87,7 @@ function createPersistentSearchFacade(records, entities, options) {
         sourceRecords = null;
         return stats;
       } catch (error) {
-        port.close?.();
+        await port.close?.();
         backendErrors.push({
           backend: candidate.id,
           error: error instanceof Error ? error.message : String(error),
@@ -130,8 +130,8 @@ function createPersistentSearchFacade(records, entities, options) {
       await ready;
       return fallback?.stats ?? activePort.stats();
     },
-    close() {
-      activePort?.close?.();
+    async close() {
+      await activePort?.close?.();
     },
     get backendErrors() {
       return [...backendErrors];
