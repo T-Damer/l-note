@@ -37,18 +37,25 @@ export function createAskPageController({
     return input.value.trim();
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
     const query = question();
     if (!query) {
       toast('Сформулируйте вопрос.', 'error');
       return null;
     }
-    const collected = workflow.collect(query);
-    renderEvidence(collected.evidence);
-    const prepared = workflow.plan(query);
-    status.textContent = `${prepared.profile.label} · режим «${prepared.mode.label}»: источники собраны. Можно запустить локальный ответ.`;
-    return collected;
+    status.textContent = 'Поиск и сбор локальных источников…';
+    try {
+      const collected = await workflow.collect(query);
+      renderEvidence(collected.evidence);
+      const prepared = workflow.plan(query);
+      status.textContent = `${prepared.profile.label} · режим «${prepared.mode.label}»: источники собраны. Можно запустить локальный ответ.`;
+      return collected;
+    } catch (error) {
+      toast(errorMessage(error), 'error');
+      status.textContent = 'Не удалось собрать источники.';
+      return null;
+    }
   }
 
   async function handleRun(button) {
