@@ -1,5 +1,6 @@
 const askWorkflow = createAskWorkflow({
   modelPort: state.localAi,
+  evidenceVerifier: state.evidenceVerifier,
   getSearchPort: () => state.search,
   getKnowledgeState: () => state.knowledge,
   getSelectedProfile: selectedLocalModelProfile,
