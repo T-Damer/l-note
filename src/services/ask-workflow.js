@@ -62,11 +62,11 @@ export function createAskWorkflow({
   requireFunction(collectEvidence, 'collectEvidence');
   requireFunction(requestPersistence, 'requestPersistence');
 
-  function collect(query) {
+  async function collect(query) {
     const normalized = queryText(query);
     if (!normalized) throw new TypeError('Question is required.');
     const mode = getSelectedMode();
-    const collected = collectQuestionEvidence({
+    const collected = await collectQuestionEvidence({
       query: normalized,
       mode,
       searchPort: getSearchPort(),
@@ -124,7 +124,7 @@ export function createAskWorkflow({
 
     let collected = null;
     if (prepared.action === LOCAL_MODEL_ACTION.COLLECT_AND_ANSWER) {
-      collected = collect(prepared.query);
+      collected = await collect(prepared.query);
       if (typeof onEvidence === 'function') onEvidence(collected.evidence);
     }
     const snapshot = getEvidenceSnapshot();
