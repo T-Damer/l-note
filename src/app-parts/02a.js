@@ -27,73 +27,30 @@ async function runSearch(query) {
     return [];
   }
 
-  let results;
   try {
-    results = await Promise.resolve(state.search.search(clean, {
+    const results = await Promise.resolve(state.search.search(clean, {
       limit: 45,
       personalPriority: dom.personalPriority.checked,
     }));
+    if (requestId !== state.searchRequestId || clean !== state.currentQuery) return [];
+    state.currentResults = results;
+    renderSearchResults({
+      results,
+      resultsContainer: dom.searchResults,
+      emptyContainer: dom.searchEmpty,
+      relationLabel,
+      navigate: navigateResource,
+    });
+    await renderSuggestions();
+    return results;
   } catch (error) {
     if (requestId !== state.searchRequestId) return [];
-    dom.searchResults.removeAttribute('aria-busy');
     dom.searchEmpty.replaceChildren(
       Text({ variant: 'title', text: 'Поиск временно недоступен' }),
       Text({ variant: 'muted', text: error instanceof Error ? error.message : String(error) }),
     );
     return [];
+  } finally {
+    if (requestId === state.searchRequestId) dom.searchResults.removeAttribute('aria-busy');
   }
-  if (requestId !== state.searchRequestId || clean !== state.currentQuery) return [];
-  dom.searchResults.removeAttribute('aria-busy');
-  state.currentResults = results;
-  dom.searchEmpty.replaceChildren();
-  if (!state.currentResults.length) {
-    dom.searchEmpty.append(
-      Text({ variant: 'title', text: 'Ничего не найдено' }),
-      Text({ variant: 'muted', text: 'Попробуйте сократить запрос, использовать сокращение или установить дополнительный пакет знаний.' }),
-    );
-    return [];
-  }
-
-  for (const result of state.currentResults) {
-    const open = () => {
-      if (result.kind === 'note') navigateResource('note', result.noteId);
-      else navigateResource('document', result.documentId, { sectionId: result.sectionId });
-    };
-    const card = Card({
-      kind: 'result',
-      className: `result-card${result.kind === 'note' ? ' personal' : ''}`,
-      interactive: true,
-      ariaLabel: `Открыть ${result.title}`,
-      onActivate: open,
-    });
-    const header = create('header');
-    const titleGroup = create('div', {}, [
-      Text({ variant: 'title', as: 'h2', text: result.title }),
-      create('div', { className: 'document-name', text: result.documentTitle || result.packTitle }),
-    ]);
-    const typeLabel = result.kind === 'note' ? relationLabel(result.relation) : result.packTitle;
-    const typePill = create(
-      'span',
-      { className: `pill result-type-pill ${result.kind === 'note' ? 'accent' : 'blue'}` },
-      [
-        Icon({ name: iconNameForSearchResult(result), className: 'result-type-icon' }),
-        document.createTextNode(typeLabel),
-      ],
-    );
-    header.append(titleGroup, typePill);
-    const snippet = create('p');
-    appendHighlighted(snippet, result.snippet ?? result.body, result.queryTerms ?? []);
-    const footer = create('footer');
-    footer.append(
-      create('span', { className: 'pill muted', text: result.kind === 'note' ? 'Личная запись' : 'Справочный источник' }),
-      create('span', {
-        title: 'Относительная релевантность внутри текущей поисковой выдачи, а не вероятность диагноза.',
-        text: `релевантность ${result.relevance ?? 0}%`,
-      }),
-    );
-    card.append(header, snippet, footer);
-    dom.searchResults.append(card);
-  }
-  await renderSuggestions();
-  return state.currentResults;
 }
