@@ -1,3 +1,4 @@
+import { createAdaptiveSearchPort } from './adapters/adaptive-search.js';
 import {
   createIndexedDbStoragePort,
   createMiniSearchPort,
@@ -17,7 +18,7 @@ const evidenceVerifierPort = createLexicalEvidenceVerifier();
 const applicationAdapter = defineKnowledgeApplicationAdapter({
   id: 'lnote.web',
   storagePort,
-  searchFactory: createMiniSearchPort,
+  searchFactory: createAdaptiveSearchPort,
   domainQueryPlanners,
   localModelPort,
   speechRecognitionPort,
@@ -63,25 +64,43 @@ installPack = async function installPackThroughStoragePort(pack, source = {}) {
   await refreshState();
 };
 
+function updateSearchBackendStatus(search) {
+  if (!search.async) {
+    dom.searchEngineStatus.textContent = `${search.kind}: ${search.count} записей`;
+    return;
+  }
+  dom.searchEngineStatus.textContent = `Дисковый индекс: подготовка ${search.count} записей…`;
+  search.ready.then((stats) => {
+    if (state.search !== search) return;
+    const fallback = stats.storage === 'memory-fallback' ? ' · fallback в памяти' : '';
+    dom.searchEngineStatus.textContent = `${search.kind}: ${stats.recordCount} записей${fallback}`;
+  }).catch((error) => {
+    if (state.search !== search) return;
+    dom.searchEngineStatus.textContent = `Ошибка дискового индекса: ${error.message}`;
+  });
+}
+
 refreshState = async function refreshStateThroughApplicationAdapter() {
   state.packRecords = await applicationAdapter.storagePort.getAll('packs');
   state.notes = (await applicationAdapter.storagePort.getAll('notes')).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 
+  const previousSearch = state.search;
   const runtime = composeKnowledgeApplicationRuntime({
     adapter: applicationAdapter,
     packRecords: state.packRecords,
     notes: state.notes,
   });
   Object.assign(state, runtime);
+  if (previousSearch !== state.search) previousSearch?.close?.();
 
-  dom.searchEngineStatus.textContent = `${state.search.kind}: ${state.search.count} записей`;
+  updateSearchBackendStatus(state.search);
   dom.notesCount.textContent = state.notes.length ? String(state.notes.length) : '';
   renderSidebarStatus();
   await Promise.all([renderCatalog(), renderNotes(), renderStorageSummary()]);
   renderLibraryGraph();
   renderSearchEmpty();
-  renderSuggestions();
-  if (state.currentQuery) runSearch(state.currentQuery);
+  await renderSuggestions();
+  if (state.currentQuery) await runSearch(state.currentQuery);
   state.ready = true;
   applyRouteFromLocation();
 };
