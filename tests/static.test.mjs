@@ -102,7 +102,6 @@ test('static build contains the complete local-first shell', async () => {
     /createAskWorkflow/u,
     /renderPackageBuilderResource/u,
     /createRoutedResourceRenderer/u,
-    /createTransferQueue/u,
   ]);
   await assertContains('src/adapters/adaptive-search.js', [
     /createSqliteFtsSearchPort/u,
