@@ -30,8 +30,9 @@
     "validate": "node tools/validate-packs.mjs",
     "check:structure": "node tools/check-code-structure.mjs",
     "test": "node --test",
+    "test:sqlite-e2e": "node tools/sqlite-browser-smoke.mjs",
     "test:e2e": "node tools/browser-e2e.mjs",
-    "check": "npm run validate && npm run check:structure && npm test && npm run build:static && npm run test:e2e",
+    "check": "npm run validate && npm run check:structure && npm test && npm run build:static && npm run test:sqlite-e2e && npm run test:e2e",
     "build:example": "node tools/build-pack.mjs --input examples/custom-pack --output dist/example.pack.json"
   },
   "engines": {
