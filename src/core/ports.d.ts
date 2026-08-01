@@ -20,6 +20,28 @@ export interface SearchPort {
   suggest(query: string, limit?: number): string[];
 }
 
+export interface AsyncSearchStats {
+  recordCount: number;
+  tokenCount: number;
+  storage: string;
+  backend: string;
+}
+
+export interface AsyncSearchPort {
+  readonly kind: string;
+  readonly count: number;
+  readonly available?: boolean;
+  build(
+    records: SearchRecord[],
+    options?: { onProgress?: (progress: unknown) => void },
+  ): Promise<AsyncSearchStats>;
+  search(query: string, options?: SearchOptions): Promise<SearchResult[]>;
+  suggest(query: string, limit?: number): Promise<string[]>;
+  clear(): Promise<void>;
+  stats(): Promise<AsyncSearchStats>;
+  close?(): void;
+}
+
 export type StorageStoreName = 'packs' | 'notes' | 'settings';
 
 export interface StoragePort {
@@ -147,6 +169,7 @@ export type SearchPortFactory = (
 ) => SearchPort;
 
 export function defineSearchPort<T extends SearchPort>(candidate: T): T;
+export function defineAsyncSearchPort<T extends AsyncSearchPort>(candidate: T): T;
 export function defineStoragePort<T extends StoragePort>(candidate: T): T;
 export function defineDomainQueryPlannerPort<T extends DomainQueryPlannerPort>(candidate: T): T;
 export function defineLocalModelPort<T extends LocalModelPort>(candidate: T): T;
