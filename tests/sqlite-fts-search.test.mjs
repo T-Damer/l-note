@@ -128,6 +128,7 @@ test('SQLite adapter sends fingerprinted build and search commands to one worker
   assert.equal((await port.search('бронхиолит'))[0].id, record.id);
   assert.deepEqual(await port.suggest('брон', 3), ['бронхиолит']);
   assert.equal((await port.stats()).recordCount, 1);
-  port.close();
+  await port.close();
+  assert.equal(log.at(-1).command, 'close');
   assert.equal(worker.terminated, true);
 });
