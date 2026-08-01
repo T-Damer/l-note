@@ -30,6 +30,10 @@ function deferred() {
   return { promise, resolve, reject };
 }
 
+function nextTurn() {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 test('limits active transfers to four and starts higher priority tasks first', async () => {
   const storage = storageWith();
   const gates = new Map();
@@ -52,13 +56,16 @@ test('limits active transfers to four and starts higher priority tasks first', a
       priority: index === 5 ? TRANSFER_PRIORITY.CURRENT_MODEL : TRANSFER_PRIORITY.DEFAULT,
     }));
   }
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await nextTurn();
   assert.equal(queue.activeCount(), 4);
   assert.ok(started.includes('resource-5'));
 
   for (const name of [...started]) gates.get(name).resolve(name);
-  await Promise.all(tasks.slice(0, 4).map(({ completion }) => completion.catch(() => null)));
+  await nextTurn();
   for (const gate of gates.values()) gate.resolve('done');
+  await Promise.all(tasks.map(({ completion }) => completion));
+  assert.equal(queue.activeCount(), 0);
+  assert.equal(queue.list().every((task) => task.status === TRANSFER_STATUS.COMPLETED), true);
 });
 
 test('persists progress and restores interrupted work according to resume policy', async () => {
@@ -134,7 +141,7 @@ test('cancels active tasks through AbortSignal and allows retry after failure', 
     }, { once: true });
   }));
   const task = await queue.enqueue({ id: 'model-1', kind: 'model', resourceId: 'model-1' });
-  await new Promise((resolve) => setTimeout(resolve, 0));
+  await nextTurn();
   await queue.cancel('model-1');
   await assert.rejects(task.completion, (error) => error.name === 'AbortError');
   assert.equal(queue.list()[0].status, TRANSFER_STATUS.CANCELLED);
