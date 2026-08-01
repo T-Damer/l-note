@@ -55,6 +55,30 @@ function asObject(row, columns) {
   return Object.fromEntries(columns.map((column, index) => [column, row[index]]));
 }
 
+function wrappedExport(namespace, name) {
+  const named = namespace?.[name];
+  return [
+    named,
+    named?.default,
+    namespace?.default?.[name],
+    namespace?.default,
+  ].find((candidate) => typeof candidate === 'function') ?? null;
+}
+
+async function createPersistentVfs(vfsModule, module) {
+  const Constructor = wrappedExport(vfsModule, 'IDBBatchAtomicVFS');
+  if (!Constructor) {
+    throw new Error(`IDBBatchAtomicVFS export is unavailable: ${Object.keys(vfsModule ?? {}).join(', ')}`);
+  }
+  const options = { idbName: VFS_NAME };
+  if (typeof Constructor.create === 'function') {
+    return Constructor.create(VFS_NAME, module, options);
+  }
+  const vfs = new Constructor(VFS_NAME, module, options);
+  await vfs.isReady?.();
+  return vfs;
+}
+
 export class SqliteFtsRuntime {
   constructor({ moduleBase = WA_SQLITE_BASE } = {}) {
     this.moduleBase = moduleBase;
@@ -86,9 +110,7 @@ export class SqliteFtsRuntime {
     });
     this.sqlite3 = sqliteModule.Factory(module);
     this.sqliteConstants = sqliteModule;
-    this.vfs = await vfsModule.IDBBatchAtomicVFS.create(VFS_NAME, module, {
-      idbName: VFS_NAME,
-    });
+    this.vfs = await createPersistentVfs(vfsModule, module);
     this.sqlite3.vfs_register(this.vfs, true);
     this.database = await this.sqlite3.open_v2(DATABASE_NAME);
     await this.sqlite3.exec(this.database, SCHEMA_SQL);
