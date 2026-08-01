@@ -101,11 +101,7 @@ export class SqliteFtsRuntime {
 
     try {
       this.connection = await sqliteModule.initSQLite(
-        idbModule.useIdbStorage(DATABASE_NAME, {
-          url: this.wasmUrl,
-          lockPolicy: 'exclusive',
-          lockTimeout: 30_000,
-        }),
+        idbModule.useIdbStorage(DATABASE_NAME, { url: this.wasmUrl }),
       );
     } catch (error) {
       throw errorAt('database open failed', error);
@@ -252,8 +248,8 @@ export class SqliteFtsRuntime {
 
   async clear() {
     await this.init();
-    await this.connection.run('BEGIN;');
     try {
+      await this.connection.run('BEGIN;');
       await this.connection.run('DELETE FROM records_fts;');
       await this.connection.run('DELETE FROM search_meta;');
       await this.connection.run('COMMIT;');
