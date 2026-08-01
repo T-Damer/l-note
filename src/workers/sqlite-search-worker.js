@@ -1,6 +1,7 @@
 import { SqliteFtsRuntime } from './sqlite-fts-runtime.js';
 
 const runtime = new SqliteFtsRuntime();
+let commandQueue = Promise.resolve();
 
 function postProgress(requestId, progress) {
   self.postMessage({ requestId, type: 'progress', progress });
@@ -25,8 +26,7 @@ async function handle(message) {
   throw new Error(`Unknown SQLite-search command: ${message.command}`);
 }
 
-self.addEventListener('message', async (event) => {
-  const message = event.data ?? {};
+async function dispatch(message) {
   try {
     const result = await handle(message);
     self.postMessage({ requestId: message.requestId, type: 'result', result });
@@ -37,4 +37,9 @@ self.addEventListener('message', async (event) => {
       error: error instanceof Error ? error.message : String(error),
     });
   }
+}
+
+self.addEventListener('message', (event) => {
+  const message = event.data ?? {};
+  commandQueue = commandQueue.then(() => dispatch(message));
 });
