@@ -227,20 +227,18 @@ export class SqliteFtsRuntime {
 
   async stats() {
     await this.init();
-    const [recordCount, tokenCount, builtAt, fingerprint, sqliteVersion] = await Promise.all([
-      this.meta('recordCount'),
-      this.rows('SELECT count(*) AS value FROM records_vocab').then((rows) => rows[0]?.value ?? 0),
-      this.meta('builtAt'),
-      this.meta('fingerprint'),
-      this.rows('SELECT sqlite_version() AS value').then((rows) => rows[0]?.value ?? 'unknown'),
-    ]);
+    const recordCount = await this.meta('recordCount');
+    const tokenRows = await this.rows('SELECT count(*) AS value FROM records_vocab');
+    const builtAt = await this.meta('builtAt');
+    const fingerprint = await this.meta('fingerprint');
+    const versionRows = await this.rows('SELECT sqlite_version() AS value');
     return {
       recordCount: Number(recordCount ?? 0),
-      tokenCount: Number(tokenCount ?? 0),
+      tokenCount: Number(tokenRows[0]?.value ?? 0),
       storage: SQLITE_FTS_STORAGE_ID,
       backend: SQLITE_FTS_BACKEND_ID,
       runtime: SQLITE_FTS_RUNTIME_VERSION,
-      sqliteVersion,
+      sqliteVersion: versionRows[0]?.value ?? 'unknown',
       builtAt,
       fingerprint,
     };
