@@ -1,5 +1,10 @@
 import type { KnowledgeConcept, SearchRecord } from '../core/contracts.js';
-import type { LocalModelPort, SearchPort, StoragePort } from '../core/ports.js';
+import type {
+  LocalModelPort,
+  SearchPort,
+  SpeechRecognitionPort,
+  StoragePort,
+} from '../core/ports.js';
 
 export function createMiniSearchPort(
   records: SearchRecord[],
@@ -9,3 +14,4 @@ export function createMiniSearchPort(
 
 export function createIndexedDbStoragePort(): StoragePort;
 export function createWebLlmPort(): LocalModelPort;
+export function createBrowserSpeechRecognitionPort(options?: Record<string, unknown>): SpeechRecognitionPort;
