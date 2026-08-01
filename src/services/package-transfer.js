@@ -3,13 +3,18 @@ function numericHeader(response, name) {
   return Number.isFinite(value) && value > 0 ? value : null;
 }
 
+function positiveNumber(value) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) && numeric > 0 ? numeric : null;
+}
+
 export async function readResponseBuffer(response, {
   signal,
   expectedBytes = null,
   onProgress = () => {},
 } = {}) {
   if (!response?.ok) throw new Error(`Ошибка загрузки: HTTP ${response?.status ?? 'unknown'}`);
-  const total = numericHeader(response, 'content-length') ?? Number(expectedBytes) || null;
+  const total = numericHeader(response, 'content-length') ?? positiveNumber(expectedBytes);
   if (!response.body?.getReader) {
     const buffer = await response.arrayBuffer();
     onProgress({ progress: 1, loaded: buffer.byteLength, total: total ?? buffer.byteLength, message: 'Скачано' });
