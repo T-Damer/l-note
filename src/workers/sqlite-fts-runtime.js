@@ -14,7 +14,7 @@ const SQLITE_WASM_VERSION = '1.3.1';
 const SQLITE_WASM_MODULE = `https://esm.run/@subframe7536/sqlite-wasm@${SQLITE_WASM_VERSION}`;
 const SQLITE_WASM_IDB_MODULE = `${SQLITE_WASM_MODULE}/idb`;
 const SQLITE_WASM_URL = `https://cdn.jsdelivr.net/npm/@subframe7536/sqlite-wasm@${SQLITE_WASM_VERSION}/dist/wa-sqlite-async.wasm`;
-const DATABASE_NAME = 'l-note-search.sqlite';
+const DATABASE_NAME = 'l-note-search.db';
 const INSERT_SQL = `
   INSERT INTO records_fts(
     id, payload, title, document_title, body, aliases, entity_names, tags
@@ -101,7 +101,11 @@ export class SqliteFtsRuntime {
 
     try {
       this.connection = await sqliteModule.initSQLite(
-        idbModule.useIdbStorage(DATABASE_NAME, { url: this.wasmUrl }),
+        idbModule.useIdbStorage(DATABASE_NAME, {
+          url: this.wasmUrl,
+          lockPolicy: 'exclusive',
+          lockTimeout: 30_000,
+        }),
       );
     } catch (error) {
       throw errorAt('database open failed', error);
@@ -149,9 +153,10 @@ export class SqliteFtsRuntime {
     }
 
     onProgress({ stage: 'schema', completed: 0, total: records.length });
-    await this.connection.run('BEGIN IMMEDIATE;');
     try {
-      await this.connection.run('DELETE FROM records_fts; DELETE FROM search_meta;');
+      await this.connection.run('BEGIN;');
+      await this.connection.run('DELETE FROM records_fts;');
+      await this.connection.run('DELETE FROM search_meta;');
       for (let index = 0; index < records.length; index += 1) {
         await this.connection.run(INSERT_SQL, sqliteFtsRecordValues(records[index]));
         if (index % 200 === 0 || index === records.length - 1) {
@@ -247,7 +252,15 @@ export class SqliteFtsRuntime {
 
   async clear() {
     await this.init();
-    await this.connection.run('BEGIN; DELETE FROM records_fts; DELETE FROM search_meta; COMMIT;');
+    await this.connection.run('BEGIN;');
+    try {
+      await this.connection.run('DELETE FROM records_fts;');
+      await this.connection.run('DELETE FROM search_meta;');
+      await this.connection.run('COMMIT;');
+    } catch (error) {
+      await this.connection.run('ROLLBACK;').catch(() => {});
+      throw errorAt('index clear failed', error);
+    }
     return this.stats();
   }
 
