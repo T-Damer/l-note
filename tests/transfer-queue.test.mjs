@@ -20,30 +20,23 @@ function storageWith(initial = []) {
   };
 }
 
-function deferred() {
-  let resolve;
-  let reject;
-  const promise = new Promise((resolvePromise, rejectPromise) => {
-    resolve = resolvePromise;
-    reject = rejectPromise;
-  });
-  return { promise, resolve, reject };
-}
-
-function nextTurn() {
-  return new Promise((resolve) => setTimeout(resolve, 0));
+function delay(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 test('limits active transfers to four and starts higher priority tasks first', async () => {
   const storage = storageWith();
-  const gates = new Map();
   const started = [];
+  let running = 0;
+  let maximumRunning = 0;
   const queue = createTransferQueue({ storagePort: storage, maxConcurrent: 4 });
   queue.register('test', async (task) => {
     started.push(task.resourceId);
-    const gate = deferred();
-    gates.set(task.resourceId, gate);
-    return gate.promise;
+    running += 1;
+    maximumRunning = Math.max(maximumRunning, running);
+    await delay(12);
+    running -= 1;
+    return task.resourceId;
   });
   await queue.init();
 
@@ -56,15 +49,9 @@ test('limits active transfers to four and starts higher priority tasks first', a
       priority: index === 5 ? TRANSFER_PRIORITY.CURRENT_MODEL : TRANSFER_PRIORITY.DEFAULT,
     }));
   }
-  await nextTurn();
-  assert.equal(queue.activeCount(), 4);
-  assert.ok(started.includes('resource-5'));
-
-  for (const name of [...started]) gates.get(name).resolve(name);
-  await nextTurn();
-  await nextTurn();
-  for (const gate of gates.values()) gate.resolve('done');
   await Promise.all(tasks.map(({ completion }) => completion));
+  assert.equal(maximumRunning, 4);
+  assert.ok(started.slice(0, 4).includes('resource-5'));
   assert.equal(queue.activeCount(), 0);
   assert.equal(queue.list().every((task) => task.status === TRANSFER_STATUS.COMPLETED), true);
 });
@@ -142,7 +129,7 @@ test('cancels active tasks through AbortSignal and allows retry after failure', 
     }, { once: true });
   }));
   const task = await queue.enqueue({ id: 'model-1', kind: 'model', resourceId: 'model-1' });
-  await nextTurn();
+  await delay(0);
   await queue.cancel('model-1');
   await assert.rejects(task.completion, (error) => error.name === 'AbortError');
   assert.equal(queue.list()[0].status, TRANSFER_STATUS.CANCELLED);
