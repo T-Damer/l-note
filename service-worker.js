@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v33';
-const RUNTIME_CACHE = 'l-note-runtime-v33';
+const SHELL_CACHE = 'l-note-shell-v34';
+const RUNTIME_CACHE = 'l-note-runtime-v34';
 const SHELL = [
   './',
   './index.html',
@@ -55,6 +55,7 @@ const SHELL = [
   './src/services/audio-recorder.js',
   './src/services/browser-pack-builder.js',
   './src/services/evidence-query.js',
+  './src/services/evidence-support-verifier.js',
   './src/services/local-model-loader.js',
   './src/services/model-action.js',
   './src/services/model-lifecycle.js',
