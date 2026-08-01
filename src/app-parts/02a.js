@@ -12,20 +12,39 @@
   container.append(document.createTextNode(text.slice(cursor)));
 }
 
-function runSearch(query) {
+async function runSearch(query) {
   const clean = String(query ?? '').trim();
+  const requestId = Number(state.searchRequestId ?? 0) + 1;
+  state.searchRequestId = requestId;
   state.currentQuery = clean;
   dom.searchInput.value = clean;
   dom.searchResults.replaceChildren();
+  dom.searchResults.setAttribute('aria-busy', String(Boolean(clean)));
   if (!clean) {
     state.currentResults = [];
+    dom.searchResults.removeAttribute('aria-busy');
     renderSearchEmpty();
     return [];
   }
-  state.currentResults = state.search.search(clean, {
-    limit: 45,
-    personalPriority: dom.personalPriority.checked,
-  });
+
+  let results;
+  try {
+    results = await Promise.resolve(state.search.search(clean, {
+      limit: 45,
+      personalPriority: dom.personalPriority.checked,
+    }));
+  } catch (error) {
+    if (requestId !== state.searchRequestId) return [];
+    dom.searchResults.removeAttribute('aria-busy');
+    dom.searchEmpty.replaceChildren(
+      Text({ variant: 'title', text: 'Поиск временно недоступен' }),
+      Text({ variant: 'muted', text: error instanceof Error ? error.message : String(error) }),
+    );
+    return [];
+  }
+  if (requestId !== state.searchRequestId || clean !== state.currentQuery) return [];
+  dom.searchResults.removeAttribute('aria-busy');
+  state.currentResults = results;
   dom.searchEmpty.replaceChildren();
   if (!state.currentResults.length) {
     dom.searchEmpty.append(
@@ -75,6 +94,6 @@ function runSearch(query) {
     card.append(header, snippet, footer);
     dom.searchResults.append(card);
   }
-  renderSuggestions();
+  await renderSuggestions();
   return state.currentResults;
 }
