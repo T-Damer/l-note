@@ -1,6 +1,5 @@
 export const TRANSFER_QUEUE_SETTING_KEY = 'transfers.queue.v1';
 export const TRANSFER_QUEUE_MAX_CONCURRENT = 4;
-
 export const TRANSFER_STATUS = Object.freeze({
   QUEUED: 'queued',
   ACTIVE: 'active',
@@ -9,13 +8,11 @@ export const TRANSFER_STATUS = Object.freeze({
   FAILED: 'failed',
   CANCELLED: 'cancelled',
 });
-
 export const TRANSFER_PRIORITY = Object.freeze({
   CURRENT_MODEL: 300,
   CURRENT_DOCUMENT: 200,
   DEFAULT: 100,
 });
-
 const RUNNABLE = new Set([TRANSFER_STATUS.QUEUED]);
 const RETRYABLE = new Set([
   TRANSFER_STATUS.INTERRUPTED,
