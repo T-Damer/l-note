@@ -32,6 +32,7 @@ const offlineModules = [
   'src/helpers/sqlite-fts.js',
   'src/helpers/disk-search.js',
   'src/helpers/document-assets.js',
+  'src/helpers/transfer-queue.js',
   'src/pages/ask-page-controller.js',
   'src/pages/document-asset-view.js',
   'src/pages/document-resource-view.js',
@@ -107,11 +108,13 @@ test('static build contains the complete local-first shell', async () => {
     /createSqliteFtsSearchPort/u,
     /createIndexedDbSearchPort/u,
     /memoryFallback/u,
+    /await port\.close/u,
   ]);
   await assertContains('src/adapters/sqlite-fts-search.js', [
     /SqliteFtsSearchPort/u,
     /sqlite-search-worker\.js/u,
     /defineAsyncSearchPort/u,
+    /await this\.request\('close'\)/u,
   ]);
   await assertContains('src/workers/sqlite-fts-runtime.js', [
     /@subframe7536\/sqlite-wasm/u,
@@ -122,6 +125,7 @@ test('static build contains the complete local-first shell', async () => {
   ]);
   await assertContains('src/workers/sqlite-search-worker.js', [
     /SqliteFtsRuntime/u,
+    /commandQueue/u,
     /command === 'search'/u,
     /command === 'suggest'/u,
   ]);
@@ -141,10 +145,11 @@ test('static build contains the complete local-first shell', async () => {
     /hasModelInCache/u,
   ]);
   await assertContains('service-worker.js', [
-    /l-note-shell-v36/u,
+    /l-note-shell-v37/u,
     /cdn\.jsdelivr\.net/u,
     /sqlite-fts-search\.js/u,
     /sqlite-search-worker\.js/u,
+    /transfer-queue\.js/u,
     /assets\/lnote-source-demo\.pdf/u,
   ]);
 
