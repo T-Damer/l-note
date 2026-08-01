@@ -2,6 +2,7 @@ import { defineSearchPort } from '../core/ports.js';
 import { expandSearchQuery, tokenize } from '../search.js';
 import { createIndexedDbSearchPort } from './indexeddb-search.js';
 import { createMiniSearchPort } from './runtime-adapters.js';
+import { createSqliteFtsSearchPort } from './sqlite-fts-search.js';
 
 export const DISK_SEARCH_RECORD_THRESHOLD = 5_000;
 export const DISK_SEARCH_BYTE_THRESHOLD = 8 * 1024 * 1024;
@@ -37,36 +38,73 @@ function commonResultMetadata(results, query, expanded) {
   }));
 }
 
-function createDiskSearchFacade(records, entities, options) {
+function backendCandidates(options) {
+  return [
+    {
+      id: 'sqlite-fts5',
+      factory: options.sqliteFactory ?? createSqliteFtsSearchPort,
+      options: options.sqliteOptions,
+    },
+    {
+      id: 'indexeddb-postings',
+      factory: options.diskFactory ?? createIndexedDbSearchPort,
+      options: options.diskOptions,
+    },
+  ];
+}
+
+function memoryFallback(records, entities, queryExpanders, errors) {
+  const search = createMiniSearchPort(records, entities, { queryExpanders });
+  return {
+    search,
+    stats: {
+      recordCount: search.count,
+      tokenCount: 0,
+      storage: 'memory-fallback',
+      backend: search.kind,
+      errors,
+    },
+  };
+}
+
+function createPersistentSearchFacade(records, entities, options) {
   const queryExpanders = Array.isArray(options.queryExpanders) ? options.queryExpanders : [];
-  const diskPort = (options.diskFactory ?? createIndexedDbSearchPort)(options.diskOptions);
+  const backendErrors = [];
   let sourceRecords = records;
+  let activePort = null;
   let fallback = null;
-  let backendError = null;
-  const ready = diskPort.build(records, { onProgress: options.onProgress })
-    .then((stats) => {
-      sourceRecords = null;
-      return stats;
-    })
-    .catch((error) => {
-      backendError = error;
-      fallback = createMiniSearchPort(sourceRecords ?? [], entities, { queryExpanders });
-      sourceRecords = null;
-      return {
-        recordCount: fallback.count,
-        tokenCount: 0,
-        storage: 'memory-fallback',
-        backend: fallback.kind,
-        error: error instanceof Error ? error.message : String(error),
-      };
-    });
+
+  const ready = (async () => {
+    for (const candidate of backendCandidates(options)) {
+      const port = candidate.factory(candidate.options);
+      try {
+        if (port.available === false) throw new Error(`${port.kind ?? candidate.id} недоступен.`);
+        const stats = await port.build(sourceRecords, {
+          fingerprint: options.corpusFingerprint ?? '',
+          onProgress: options.onProgress,
+        });
+        activePort = port;
+        sourceRecords = null;
+        return stats;
+      } catch (error) {
+        port.close?.();
+        backendErrors.push({
+          backend: candidate.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    fallback = memoryFallback(sourceRecords ?? [], entities, queryExpanders, backendErrors);
+    sourceRecords = null;
+    return fallback.stats;
+  })();
 
   async function search(query, searchOptions = {}) {
     await ready;
-    if (fallback) return fallback.search(query, searchOptions);
+    if (fallback) return fallback.search.search(query, searchOptions);
     const expanded = expandSearchQuery(query, entities, queryExpanders);
     return commonResultMetadata(
-      await diskPort.search(expanded, searchOptions),
+      await activePort.search(expanded, searchOptions),
       query,
       expanded,
     );
@@ -74,24 +112,29 @@ function createDiskSearchFacade(records, entities, options) {
 
   async function suggest(query, limit = 5) {
     await ready;
-    if (fallback) return fallback.suggest(query, limit);
-    return diskPort.suggest(query, limit);
+    if (fallback) return fallback.search.suggest(query, limit);
+    return activePort.suggest(query, limit);
   }
 
   return defineSearchPort({
-    kind: 'IndexedDB disk search',
+    get kind() {
+      return fallback?.search.kind ?? activePort?.kind ?? 'SQLite/FTS5';
+    },
     count: records.length,
     async: true,
     retainsRecords: false,
     ready,
     search,
     suggest,
-    stats: () => diskPort.stats(),
-    close() {
-      diskPort.close?.();
+    async stats() {
+      await ready;
+      return fallback?.stats ?? activePort.stats();
     },
-    get backendError() {
-      return backendError;
+    close() {
+      activePort?.close?.();
+    },
+    get backendErrors() {
+      return [...backendErrors];
     },
   });
 }
@@ -110,5 +153,5 @@ export function createAdaptiveSearchPort(records, entities = [], options = {}) {
       }),
     });
   }
-  return createDiskSearchFacade(records, entities, options);
+  return createPersistentSearchFacade(records, entities, options);
 }
