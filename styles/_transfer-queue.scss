@@ -1,0 +1,116 @@
+.transfer-queue-panel {
+  display: grid;
+  gap: .9rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper-strong);
+}
+
+.transfer-queue-panel[hidden] {
+  display: none;
+}
+
+.transfer-queue-heading,
+.transfer-item > header,
+.transfer-item > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+
+.transfer-queue-heading h2,
+.transfer-queue-heading p {
+  margin: 0;
+}
+
+.transfer-list {
+  display: grid;
+  gap: .65rem;
+}
+
+.transfer-item {
+  display: grid;
+  gap: .6rem;
+  padding: .8rem;
+  border: 1px solid var(--line);
+  border-radius: .85rem;
+  background: var(--paper);
+}
+
+.transfer-item.is-failed,
+.transfer-item.is-interrupted {
+  border-color: color-mix(in srgb, var(--red) 42%, var(--line));
+}
+
+.transfer-item__icon {
+  display: grid;
+  width: 2.35rem;
+  height: 2.35rem;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: .7rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.transfer-item__copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: .15rem;
+}
+
+.transfer-item__copy > * {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transfer-progress {
+  height: .55rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.transfer-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width .16s ease;
+}
+
+.transfer-item.is-failed .transfer-progress > span,
+.transfer-item.is-interrupted .transfer-progress > span {
+  background: var(--red);
+}
+
+.transfer-item__error {
+  color: var(--red);
+}
+
+.transfer-item > footer {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 620px) {
+  .transfer-item > header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .transfer-item > header > .pill {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .transfer-item > footer {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
