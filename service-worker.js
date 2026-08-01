@@ -1,11 +1,12 @@
-const SHELL_CACHE = 'l-note-shell-v30';
-const RUNTIME_CACHE = 'l-note-runtime-v30';
+const SHELL_CACHE = 'l-note-shell-v31';
+const RUNTIME_CACHE = 'l-note-runtime-v31';
 const SHELL = [
   './',
   './index.html',
   './styles.css',
   './manifest.webmanifest',
   './assets/icon.svg',
+  './assets/lnote-source-demo.pdf',
   './vendor/minisearch.js',
   './vendor/minisearch.LICENSE.txt',
   './vendor/phosphor/style.css',
@@ -15,6 +16,7 @@ const SHELL = [
   './src/search.js',
   './src/packs.js',
   './src/ai.js',
+  './src/speech.js',
   './src/router.js',
   './src/relations.js',
   './src/core/contracts.js',
@@ -25,11 +27,13 @@ const SHELL = [
   './src/adapters/runtime-adapters.js',
   './src/domain-plugins/minimed.js',
   './src/integrations/minimed-adapter.js',
+  './src/helpers/document-assets.js',
   './src/helpers/entity-terms.js',
   './src/helpers/model-formatters.js',
   './src/helpers/pack-source-parser.js',
   './src/pages/ask-page-controller.js',
   './src/pages/concept-resource-view.js',
+  './src/pages/document-asset-view.js',
   './src/pages/document-resource-view.js',
   './src/pages/evidence-view.js',
   './src/pages/local-answer-view.js',
@@ -42,8 +46,10 @@ const SHELL = [
   './src/pages/routed-resource-renderer.js',
   './src/pages/sidebar-controller.js',
   './src/pages/statement-resource-view.js',
+  './src/pages/voice-search-controller.js',
   './src/services/answer-modes.js',
   './src/services/ask-workflow.js',
+  './src/services/audio-recorder.js',
   './src/services/browser-pack-builder.js',
   './src/services/evidence-query.js',
   './src/services/local-model-loader.js',
@@ -54,6 +60,7 @@ const SHELL = [
   './src/services/note-workflow.js',
   './src/services/storage-persistence.js',
   './src/services/welcome-note.js',
+  './src/workers/speech-worker.js',
   './src/workers/webllm-worker.js',
   './src/ui/dom.js',
   './src/ui/text.js',
@@ -83,8 +90,9 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   const isNavigation = request.mode === 'navigate';
-  const cacheableExternal = url.hostname === 'esm.run';
-  const modelAsset = url.hostname.includes('huggingface.co') || url.pathname.includes('/resolve/');
+  const cacheableExternal = ['esm.run', 'cdn.jsdelivr.net'].includes(url.hostname);
+  const modelAsset = /(?:huggingface\.co|hf\.co|cdn-lfs|xethub)/iu.test(url.hostname)
+    || url.pathname.includes('/resolve/');
   if (modelAsset) return;
 
   if (isNavigation) {
