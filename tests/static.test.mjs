@@ -27,9 +27,11 @@ const offlineModules = [
   'src/core/runtime.js',
   'src/core/application-adapter.js',
   'src/core/knowledge-graph.js',
+  'src/adapters/indexeddb-search.js',
   'src/adapters/runtime-adapters.js',
   'src/domain-plugins/minimed.js',
   'src/integrations/minimed-adapter.js',
+  'src/helpers/disk-search.js',
   'src/helpers/document-assets.js',
   'src/helpers/entity-terms.js',
   'src/helpers/model-formatters.js',
@@ -50,6 +52,7 @@ const offlineModules = [
   'src/pages/sidebar-controller.js',
   'src/pages/statement-resource-view.js',
   'src/pages/voice-search-controller.js',
+  'src/pages/voice-search-elements.js',
   'src/services/answer-modes.js',
   'src/services/ask-workflow.js',
   'src/services/audio-recorder.js',
@@ -63,6 +66,7 @@ const offlineModules = [
   'src/services/note-workflow.js',
   'src/services/storage-persistence.js',
   'src/services/welcome-note.js',
+  'src/workers/search-worker.js',
   'src/workers/speech-worker.js',
   'src/workers/webllm-worker.js',
   'src/ui/dom.js',
@@ -158,9 +162,15 @@ test('static build contains the complete offline shell', async () => {
     path.join(root, 'dist', 'src', 'pages', 'voice-search-controller.js'),
     'utf8',
   );
-  assert.match(voiceController, /Голосовой поиск/u);
   assert.match(voiceController, /VOICE_LANGUAGE_SETTING_KEY/u);
   assert.match(voiceController, /MAX_VOICE_SEARCH_DURATION_MS/u);
+
+  const voiceElements = await readFile(
+    path.join(root, 'dist', 'src', 'pages', 'voice-search-elements.js'),
+    'utf8',
+  );
+  assert.match(voiceElements, /Голосовой поиск/u);
+  assert.match(voiceElements, /renderVoiceSearchElements/u);
 
   const speechWorker = await readFile(
     path.join(root, 'dist', 'src', 'workers', 'speech-worker.js'),
@@ -168,6 +178,20 @@ test('static build contains the complete offline shell', async () => {
   );
   assert.match(speechWorker, /@huggingface\/transformers@4\.2\.0/u);
   assert.match(speechWorker, /automatic-speech-recognition/u);
+
+  const diskAdapter = await readFile(
+    path.join(root, 'dist', 'src', 'adapters', 'indexeddb-search.js'),
+    'utf8',
+  );
+  assert.match(diskAdapter, /IndexedDbSearchPort/u);
+  assert.match(diskAdapter, /defineAsyncSearchPort/u);
+
+  const diskWorker = await readFile(
+    path.join(root, 'dist', 'src', 'workers', 'search-worker.js'),
+    'utf8',
+  );
+  assert.match(diskWorker, /l-note-search/u);
+  assert.match(diskWorker, /disk-postings-v1/u);
 
   const askController = await readFile(path.join(root, 'dist', 'src', 'pages', 'ask-page-controller.js'), 'utf8');
   assert.match(askController, /createAskPageController/u);
@@ -228,9 +252,11 @@ test('static build contains the complete offline shell', async () => {
   assert.match(modelElements, /createModelLabElements/u);
 
   const serviceWorker = await readFile(path.join(root, 'dist', 'service-worker.js'), 'utf8');
-  assert.match(serviceWorker, /l-note-shell-v31/u);
+  assert.match(serviceWorker, /l-note-shell-v33/u);
   assert.match(serviceWorker, /cdn\.jsdelivr\.net/u);
   assert.match(serviceWorker, /assets\/lnote-source-demo\.pdf/u);
+  assert.match(serviceWorker, /workers\/search-worker\.js/u);
+  assert.match(serviceWorker, /workers\/speech-worker\.js/u);
 
   const appSyntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
     cwd: root,
