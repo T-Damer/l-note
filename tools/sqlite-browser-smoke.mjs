@@ -207,7 +207,32 @@ try {
   await client.send('Runtime.enable');
 
   const result = await withTimeout(client.evaluate(`(async () => {
-    const { createSqliteFtsSearchPort } = await import('./src/adapters/sqlite-fts-search.js');
+    const bounded = async (label, promise, timeoutMs = 25_000) => {
+      let timeoutId;
+      globalThis.__sqliteSmokeStage = label;
+      try {
+        return await Promise.race([
+          promise,
+          new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('SQLite stage timed out: ' + label)), timeoutMs);
+          }),
+        ]);
+      } finally {
+        clearTimeout(timeoutId);
+      }
+    };
+    const safeClose = async (port, label) => {
+      if (!port) return;
+      try {
+        await bounded(label, port.close(), 5_000);
+      } catch {
+        // The outer browser process is terminated after this evaluation.
+      }
+    };
+    const { createSqliteFtsSearchPort } = await bounded(
+      'module-import',
+      import('./src/adapters/sqlite-fts-search.js'),
+    );
     const records = [{
       id: 'section:smoke:bronchiolitis',
       kind: 'section',
@@ -227,16 +252,25 @@ try {
     let reopenedPort;
     try {
       firstPort = createSqliteFtsSearchPort();
-      const firstBuild = await firstPort.build(records, { fingerprint: 'browser-sqlite-smoke-v1' });
-      const exact = await firstPort.search('бронхиолит', { limit: 5 });
-      const fuzzy = await firstPort.search('бронхиалит', { limit: 5 });
-      const suggestions = await firstPort.suggest('бронхи', 5);
-      await firstPort.close();
+      const firstBuild = await bounded(
+        'first-build',
+        firstPort.build(records, { fingerprint: 'browser-sqlite-smoke-v1' }),
+      );
+      const exact = await bounded('exact-search', firstPort.search('бронхиолит', { limit: 5 }));
+      const fuzzy = await bounded('fuzzy-search', firstPort.search('бронхиалит', { limit: 5 }));
+      const suggestions = await bounded('suggestions', firstPort.suggest('бронхи', 5));
+      await bounded('first-close', firstPort.close(), 10_000);
       firstPort = null;
 
       reopenedPort = createSqliteFtsSearchPort();
-      const reopenedBuild = await reopenedPort.build(records, { fingerprint: 'browser-sqlite-smoke-v1' });
-      const reopenedExact = await reopenedPort.search('бронхиолит', { limit: 5 });
+      const reopenedBuild = await bounded(
+        'reopened-build',
+        reopenedPort.build(records, { fingerprint: 'browser-sqlite-smoke-v1' }),
+      );
+      const reopenedExact = await bounded(
+        'reopened-search',
+        reopenedPort.search('бронхиолит', { limit: 5 }),
+      );
       return {
         firstBuild,
         reopenedBuild,
@@ -246,8 +280,8 @@ try {
         suggestions,
       };
     } finally {
-      await firstPort?.close?.();
-      await reopenedPort?.close?.();
+      await safeClose(firstPort, 'first-cleanup');
+      await safeClose(reopenedPort, 'reopened-cleanup');
     }
   })()`), 'SQLite browser smoke timed out.');
 
@@ -260,6 +294,14 @@ try {
   assert.equal(result.reopenedExactId, 'section:smoke:bronchiolitis');
   assert.ok(result.suggestions.includes('бронхиолит'));
   console.log(`SQLite browser smoke passed: SQLite ${result.firstBuild.sqliteVersion}, persisted FTS5 index reopened from IndexedDB.`);
+} catch (error) {
+  let stage = 'unknown';
+  try {
+    stage = await client?.evaluate('globalThis.__sqliteSmokeStage ?? "unknown"') ?? 'unknown';
+  } catch {
+    // Browser diagnostics are best effort.
+  }
+  throw new Error(`${error.message} Last stage: ${stage}`);
 } finally {
   client?.close();
   browser.kill('SIGTERM');
