@@ -1,6 +1,7 @@
 import {
+  normalizeTransferTask,
+  restoreTransferTask,
   transferAbortError,
-  transferMetadata,
   transferTaskOrder,
 } from '../helpers/transfer-queue.js';
 
@@ -31,50 +32,15 @@ const TERMINAL = new Set([
   TRANSFER_STATUS.CANCELLED,
 ]);
 
-function normalizedTask(input, now, idFactory) {
-  if (!input?.kind || !input?.resourceId) {
-    throw new TypeError('Transfer task requires kind and resourceId.');
-  }
-  const timestamp = now();
+function taskNormalizationOptions(now, idFactory) {
   return {
-    id: String(input.id ?? idFactory()),
-    kind: String(input.kind),
-    resourceId: String(input.resourceId),
-    dedupeKey: String(input.dedupeKey ?? `${input.kind}:${input.resourceId}`),
-    label: String(input.label ?? input.resourceId),
-    priority: Number.isFinite(input.priority) ? Number(input.priority) : TRANSFER_PRIORITY.DEFAULT,
-    status: TRANSFER_STATUS.QUEUED,
-    resumeOnRestore: input.resumeOnRestore !== false,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    attempts: 0,
-    progress: 0,
-    loaded: null,
-    total: null,
-    message: 'В очереди',
-    error: null,
-    metadata: transferMetadata(input.metadata),
+    now,
+    idFactory,
+    activeStatus: TRANSFER_STATUS.ACTIVE,
+    queuedStatus: TRANSFER_STATUS.QUEUED,
+    interruptedStatus: TRANSFER_STATUS.INTERRUPTED,
+    defaultPriority: TRANSFER_PRIORITY.DEFAULT,
   };
-}
-
-function restoredTask(input, now) {
-  const task = {
-    ...input,
-    metadata: transferMetadata(input?.metadata),
-    progress: Number.isFinite(input?.progress) ? Number(input.progress) : 0,
-    priority: Number.isFinite(input?.priority) ? Number(input.priority) : TRANSFER_PRIORITY.DEFAULT,
-  };
-  if (task.status === TRANSFER_STATUS.ACTIVE) {
-    task.status = task.resumeOnRestore === false
-      ? TRANSFER_STATUS.INTERRUPTED
-      : TRANSFER_STATUS.QUEUED;
-    task.message = task.resumeOnRestore === false
-      ? 'Прервано перезапуском; можно продолжить вручную'
-      : 'Восстановлено после перезапуска';
-    task.error = null;
-    task.updatedAt = now();
-  }
-  return task;
 }
 
 export function createTransferQueue({
@@ -93,6 +59,7 @@ export function createTransferQueue({
   const controllers = new Map();
   const waiters = new Map();
   const subscribers = new Set();
+  const normalizationOptions = taskNormalizationOptions(now, idFactory);
   let initialized = false;
   let persistChain = Promise.resolve();
   let pumpTimer = null;
@@ -222,7 +189,7 @@ export function createTransferQueue({
     const stored = await storagePort.getSetting(settingKey, []);
     for (const input of Array.isArray(stored) ? stored : []) {
       if (!input?.id || !input?.kind || !input?.resourceId) continue;
-      tasks.set(input.id, restoredTask(input, now));
+      tasks.set(input.id, restoreTransferTask(input, normalizationOptions));
     }
     initialized = true;
     await persist();
@@ -240,13 +207,16 @@ export function createTransferQueue({
 
   async function enqueue(input) {
     await init();
-    const candidate = normalizedTask(input, now, idFactory);
+    const candidate = normalizeTransferTask(input, normalizationOptions);
     const existing = [...tasks.values()].find((task) => (
       task.dedupeKey === candidate.dedupeKey && !TERMINAL.has(task.status)
     ));
     const task = existing ?? candidate;
     if (!existing) tasks.set(task.id, task);
-    else if (RETRYABLE.has(existing.status)) update(existing.id, { status: TRANSFER_STATUS.QUEUED, error: null });
+    else if (RETRYABLE.has(existing.status)) update(existing.id, {
+      status: TRANSFER_STATUS.QUEUED,
+      error: null,
+    });
     await persist();
     emit();
     pump();
