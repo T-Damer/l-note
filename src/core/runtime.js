@@ -1,6 +1,29 @@
 import { buildKnowledgeState, flattenKnowledge } from '../packs.js';
 import { activeDomainQueryExpanders, defineSearchPort } from './ports.js';
 
+function orderedFingerprintParts(values) {
+  return values.filter(Boolean).sort().join('|');
+}
+
+export function knowledgeCorpusFingerprint(packs = [], notes = []) {
+  const packParts = packs.map((pack) => [
+    pack.id,
+    pack.version,
+    pack.documents?.length ?? 0,
+    pack.entities?.length ?? 0,
+    pack.claims?.length ?? 0,
+    pack.relations?.length ?? 0,
+  ].join(':'));
+  const noteParts = notes.map((note) => [
+    note.id,
+    note.updatedAt ?? note.createdAt ?? '',
+    String(note.title ?? '').length,
+    String(note.body ?? '').length,
+    note.relation ?? 'observation',
+  ].join(':'));
+  return `lnote-corpus-v1:${orderedFingerprintParts(packParts)}::${orderedFingerprintParts(noteParts)}`;
+}
+
 /**
  * Compose the headless state consumed by the web shell. The function contains
  * no DOM, medical terminology, IndexedDB or WebLLM assumptions.
@@ -21,8 +44,12 @@ export function composeKnowledgeRuntime({
   const knowledge = buildKnowledgeState(enabledPacks, notes);
   const flattenedRecords = flattenKnowledge(enabledPacks, notes);
   const queryExpanders = activeDomainQueryExpanders(domainQueryPlanners, enabledPacks);
+  const corpusFingerprint = knowledgeCorpusFingerprint(enabledPacks, notes);
   const search = defineSearchPort(
-    searchFactory(flattenedRecords, [...knowledge.entities.values()], { queryExpanders }),
+    searchFactory(flattenedRecords, [...knowledge.entities.values()], {
+      queryExpanders,
+      corpusFingerprint,
+    }),
   );
   const records = search.retainsRecords === false ? [] : flattenedRecords;
 
@@ -31,6 +58,7 @@ export function composeKnowledgeRuntime({
     knowledge,
     records,
     search,
+    corpusFingerprint,
     capabilities: Object.freeze({
       search: true,
       asynchronousSearch: Boolean(search.async),
