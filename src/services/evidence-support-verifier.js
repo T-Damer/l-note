@@ -9,15 +9,15 @@ const STOP_WORDS = new Set([
 ]);
 
 const NEGATION_PATTERNS = Object.freeze([
-  /\bне\b/iu,
-  /\bнет\b/iu,
-  /\bбез\b/iu,
+  /(?:^|[^\p{L}\p{N}])не(?:$|[^\p{L}\p{N}])/iu,
+  /(?:^|[^\p{L}\p{N}])нет(?:$|[^\p{L}\p{N}])/iu,
+  /(?:^|[^\p{L}\p{N}])без(?:$|[^\p{L}\p{N}])/iu,
   /отсутств/iu,
-  /не выяв/iu,
-  /не обнаруж/iu,
-  /\bnot\b/iu,
-  /\bno\b/iu,
-  /\bwithout\b/iu,
+  /не\s+выяв/iu,
+  /не\s+обнаруж/iu,
+  /(?:^|[^\p{L}\p{N}])not(?:$|[^\p{L}\p{N}])/iu,
+  /(?:^|[^\p{L}\p{N}])no(?:$|[^\p{L}\p{N}])/iu,
+  /(?:^|[^\p{L}\p{N}])without(?:$|[^\p{L}\p{N}])/iu,
   /absent/iu,
 ]);
 
