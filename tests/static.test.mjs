@@ -114,8 +114,9 @@ test('static build contains the complete local-first shell', async () => {
     /defineAsyncSearchPort/u,
   ]);
   await assertContains('src/workers/sqlite-fts-runtime.js', [
-    /wa-sqlite@1\.0\.0/u,
-    /IDBBatchAtomicVFS/u,
+    /@subframe7536\/sqlite-wasm/u,
+    /useIdbStorage/u,
+    /wa-sqlite-async\.wasm/u,
     /CREATE VIRTUAL TABLE IF NOT EXISTS records_fts USING fts5/u,
     /bm25\(records_fts/u,
   ]);
