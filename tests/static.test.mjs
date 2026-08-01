@@ -58,6 +58,7 @@ const offlineModules = [
   'src/services/audio-recorder.js',
   'src/services/browser-pack-builder.js',
   'src/services/evidence-query.js',
+  'src/services/evidence-support-verifier.js',
   'src/services/local-model-loader.js',
   'src/services/model-action.js',
   'src/services/model-lifecycle.js',
@@ -135,6 +136,7 @@ test('static build contains the complete offline shell', async () => {
   assert.match(app, /createAskPageController/u);
   assert.match(app, /createBrowserSpeechRecognitionPort/u);
   assert.match(app, /createVoiceSearchController/u);
+  assert.match(app, /createLexicalEvidenceVerifier/u);
   assert.match(app, /renderEvidenceView/u);
   assert.match(app, /renderGeneratedLocalAnswer/u);
   assert.match(app, /renderPackageBuilderResource/u);
@@ -193,6 +195,14 @@ test('static build contains the complete offline shell', async () => {
   assert.match(diskWorker, /l-note-search/u);
   assert.match(diskWorker, /disk-postings-v1/u);
 
+  const verifier = await readFile(
+    path.join(root, 'dist', 'src', 'services', 'evidence-support-verifier.js'),
+    'utf8',
+  );
+  assert.match(verifier, /verifyStatementSupport/u);
+  assert.match(verifier, /unsupportedStatements/u);
+  assert.match(verifier, /negationMismatch/u);
+
   const askController = await readFile(path.join(root, 'dist', 'src', 'pages', 'ask-page-controller.js'), 'utf8');
   assert.match(askController, /createAskPageController/u);
   assert.match(askController, /Генерация и проверка ссылок/u);
@@ -201,6 +211,7 @@ test('static build contains the complete offline shell', async () => {
   assert.match(askWorkflow, /createAskWorkflow/u);
   assert.match(askWorkflow, /loadSelectedLocalModel/u);
   assert.match(askWorkflow, /collectQuestionEvidence/u);
+  assert.match(askWorkflow, /verifyGeneratedAnswer/u);
 
   const packageBuilder = await readFile(path.join(root, 'dist', 'src', 'pages', 'package-builder-view.js'), 'utf8');
   assert.match(packageBuilder, /renderPackageBuilderResource/u);
@@ -252,11 +263,12 @@ test('static build contains the complete offline shell', async () => {
   assert.match(modelElements, /createModelLabElements/u);
 
   const serviceWorker = await readFile(path.join(root, 'dist', 'service-worker.js'), 'utf8');
-  assert.match(serviceWorker, /l-note-shell-v33/u);
+  assert.match(serviceWorker, /l-note-shell-v34/u);
   assert.match(serviceWorker, /cdn\.jsdelivr\.net/u);
   assert.match(serviceWorker, /assets\/lnote-source-demo\.pdf/u);
   assert.match(serviceWorker, /workers\/search-worker\.js/u);
   assert.match(serviceWorker, /workers\/speech-worker\.js/u);
+  assert.match(serviceWorker, /evidence-support-verifier\.js/u);
 
   const appSyntax = spawnSync(process.execPath, ['--check', path.join(root, 'dist', 'src', 'app.js')], {
     cwd: root,
