@@ -28,8 +28,7 @@ export class SqliteFtsSearchPort {
     const worker = this.workerFactory();
     worker.addEventListener('message', (event) => this.handleMessage(event.data));
     worker.addEventListener('error', (event) => {
-      this.rejectPending(new Error(event.message || 'SQLite FTS worker failed.'));
-      this.close();
+      this.terminate(new Error(event.message || 'SQLite FTS worker failed.'));
     });
     this.worker = worker;
     return worker;
@@ -50,6 +49,13 @@ export class SqliteFtsSearchPort {
   rejectPending(error) {
     for (const pending of this.pending.values()) pending.reject(error);
     this.pending.clear();
+  }
+
+  terminate(error = new Error('SQLite FTS worker was closed.')) {
+    const worker = this.worker;
+    this.worker = null;
+    this.rejectPending(error);
+    worker?.terminate?.();
   }
 
   request(command, payload = {}, { onProgress } = {}) {
@@ -88,10 +94,15 @@ export class SqliteFtsSearchPort {
     return result;
   }
 
-  close() {
-    this.rejectPending(new Error('SQLite FTS worker was closed.'));
-    this.worker?.terminate?.();
-    this.worker = null;
+  async close() {
+    if (!this.worker) return;
+    try {
+      await this.request('close');
+    } catch {
+      // Termination below is the final cleanup path even after a failed close RPC.
+    } finally {
+      this.terminate();
+    }
   }
 }
 
