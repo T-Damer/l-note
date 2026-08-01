@@ -34,6 +34,8 @@ const ICONS = Object.freeze({
   placeholder: 'placeholder',
 });
 
+const ICON_VALUES = new Set(Object.values(ICONS));
+
 const LEGACY_ICON_ALIASES = Object.freeze({
   'download-simple': 'download',
   'arrow-clockwise': 'retry',
@@ -75,7 +77,7 @@ function normalizedCategory(value) {
 
 export function iconName(name) {
   const key = LEGACY_ICON_ALIASES[name] ?? name;
-  return ICONS[key] ?? ICONS.placeholder;
+  return ICONS[key] ?? (ICON_VALUES.has(key) ? key : ICONS.placeholder);
 }
 
 export function iconNameForCategory(category) {
