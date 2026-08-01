@@ -16,8 +16,12 @@ export interface SearchOptions {
 export interface SearchPort {
   readonly kind: string;
   readonly count: number;
-  search(query: string, options?: SearchOptions): SearchResult[];
-  suggest(query: string, limit?: number): string[];
+  readonly async?: boolean;
+  readonly retainsRecords?: boolean;
+  readonly ready?: Promise<unknown>;
+  search(query: string, options?: SearchOptions): SearchResult[] | Promise<SearchResult[]>;
+  suggest(query: string, limit?: number): string[] | Promise<string[]>;
+  close?(): void;
 }
 
 export interface AsyncSearchStats {
@@ -25,6 +29,7 @@ export interface AsyncSearchStats {
   tokenCount: number;
   storage: string;
   backend: string;
+  error?: string;
 }
 
 export interface AsyncSearchPort {
@@ -92,6 +97,8 @@ export interface LocalModelAnswer {
   grounded: boolean;
   validCitations: string[];
   invalidCitations: string[];
+  unsupportedStatements?: string[];
+  supportVerification?: EvidenceVerificationResult;
   usage?: unknown;
 }
 
