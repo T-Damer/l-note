@@ -95,7 +95,7 @@ function snippetAround(text, terms, length = 260) {
   return `${start > 0 ? '…' : ''}${source.slice(start, end).trim()}${end < source.length ? '…' : ''}`;
 }
 
-function expandQuery(query, entities, queryExpanders = []) {
+export function expandSearchQuery(query, entities, queryExpanders = []) {
   const normalized = normalizeText(query);
   const additions = new Set();
   for (const entity of entities ?? []) {
@@ -152,7 +152,7 @@ export function createSearchEngine(records, entities = [], options = {}) {
   function search(query, searchOptions = {}) {
     const cleanQuery = String(query ?? '').trim();
     if (!cleanQuery) return [];
-    const expanded = expandQuery(cleanQuery, entities, queryExpanders);
+    const expanded = expandSearchQuery(cleanQuery, entities, queryExpanders);
     const terms = tokenize(cleanQuery);
     let results;
 
