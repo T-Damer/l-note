@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import { ASK_WORKFLOW_RESULT, createAskWorkflow } from '../src/services/ask-workflow.js';
 
-function createHarness({ available = true } = {}) {
+function createHarness({ available = true, verificationResult = null } = {}) {
   let ready = false;
   let snapshot = { evidence: null, modeId: null };
   const calls = [];
@@ -19,11 +19,27 @@ function createHarness({ available = true } = {}) {
     },
     async answer(query, evidence, options) {
       calls.push(['answer', query, options.modeId]);
-      return { modelId: profile.modelId, modeId: options.modeId, text: evidence.sources[0].text };
+      return {
+        modelId: profile.modelId,
+        modeId: options.modeId,
+        text: `${evidence.sources[0].text} [S1]`,
+        grounded: true,
+        validCitations: ['S1'],
+        invalidCitations: [],
+      };
     },
   };
+  const evidenceVerifier = verificationResult
+    ? {
+      verify(answer, evidence) {
+        calls.push(['verify', answer.text, evidence.query]);
+        return verificationResult;
+      },
+    }
+    : null;
   const workflow = createAskWorkflow({
     modelPort,
+    evidenceVerifier,
     getSearchPort: () => ({
       search(query, options) {
         calls.push(['search', query, options.limit]);
@@ -81,6 +97,37 @@ test('collects matching evidence before the first answer and reuses it afterward
   assert.equal(second.collected, false);
   assert.equal(harness.calls.filter(([name]) => name === 'search').length, 1);
   assert.equal(harness.calls.filter(([name]) => name === 'answer').length, 2);
+});
+
+test('marks a cited answer ungrounded when statement support verification fails', async () => {
+  const verification = {
+    accepted: false,
+    supported: false,
+    invalidCitations: [],
+    unsupportedStatements: ['evidence [S1]'],
+    diagnostics: { verifier: 'test' },
+  };
+  const harness = createHarness({ verificationResult: verification });
+  await harness.workflow.execute(harness.workflow.plan(''));
+  const result = await harness.workflow.execute(harness.workflow.plan('вопрос'));
+  assert.equal(result.answer.grounded, false);
+  assert.deepEqual(result.answer.unsupportedStatements, ['evidence [S1]']);
+  assert.equal(result.answer.supportVerification, verification);
+  assert.equal(harness.calls.filter(([name]) => name === 'verify').length, 1);
+});
+
+test('keeps an answer grounded only when citation and support checks both pass', async () => {
+  const harness = createHarness({
+    verificationResult: {
+      accepted: true,
+      supported: true,
+      invalidCitations: [],
+      unsupportedStatements: [],
+    },
+  });
+  await harness.workflow.execute(harness.workflow.plan(''));
+  const result = await harness.workflow.execute(harness.workflow.plan('вопрос'));
+  assert.equal(result.answer.grounded, true);
 });
 
 test('reports unavailable runtimes without touching retrieval or inference', async () => {
