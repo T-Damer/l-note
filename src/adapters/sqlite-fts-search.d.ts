@@ -1,5 +1,5 @@
-import type { SearchRecord } from '../core/contracts.js';
-import type { AsyncSearchPort, AsyncSearchStats, SearchOptions, SearchResult } from '../core/ports.js';
+import type { SearchRecord, SearchResult } from '../core/contracts.js';
+import type { AsyncSearchPort, AsyncSearchStats, SearchOptions } from '../core/ports.js';
 
 export interface SqliteFtsSearchOptions {
   workerFactory?: () => Worker;
