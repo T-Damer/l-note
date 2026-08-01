@@ -1,6 +1,5 @@
 import {
   SQLITE_FTS_BACKEND_ID,
-  SQLITE_FTS_RUNTIME_VERSION,
   SQLITE_FTS_STORAGE_ID,
   rankSqliteFtsRows,
   selectSqliteFuzzyTerms,
@@ -10,9 +9,12 @@ import {
 } from '../helpers/sqlite-fts.js';
 import { tokenize } from '../search.js';
 
-const WA_SQLITE_BASE = 'https://cdn.jsdelivr.net/npm/wa-sqlite@1.0.0';
-const VFS_NAME = 'l-note-sqlite-fts-v1';
+const SQLITE_WASM_VERSION = '1.3.1';
+const SQLITE_WASM_MODULE = `https://esm.run/@subframe7536/sqlite-wasm@${SQLITE_WASM_VERSION}`;
+const SQLITE_WASM_IDB_MODULE = `${SQLITE_WASM_MODULE}/idb`;
+const SQLITE_WASM_URL = `https://cdn.jsdelivr.net/npm/@subframe7536/sqlite-wasm@${SQLITE_WASM_VERSION}/dist/wa-sqlite-async.wasm`;
 const DATABASE_NAME = 'l-note-search.sqlite';
+const SQLITE_ROW = 100;
 const INSERT_SQL = `
   INSERT INTO records_fts(
     id, payload, title, document_title, body, aliases, entity_names, tags
@@ -55,36 +57,18 @@ function asObject(row, columns) {
   return Object.fromEntries(columns.map((column, index) => [column, row[index]]));
 }
 
-function wrappedExport(namespace, name) {
-  const named = namespace?.[name];
-  return [
-    named,
-    named?.default,
-    namespace?.default?.[name],
-    namespace?.default,
-  ].find((candidate) => typeof candidate === 'function') ?? null;
-}
-
-async function createPersistentVfs(vfsModule, module) {
-  const Constructor = wrappedExport(vfsModule, 'IDBBatchAtomicVFS');
-  if (!Constructor) {
-    throw new Error(`IDBBatchAtomicVFS export is unavailable: ${Object.keys(vfsModule ?? {}).join(', ')}`);
-  }
-  const options = { idbName: VFS_NAME };
-  if (typeof Constructor.create === 'function') {
-    return Constructor.create(VFS_NAME, module, options);
-  }
-  const vfs = new Constructor(VFS_NAME, module, options);
-  await vfs.isReady?.();
-  return vfs;
-}
-
 export class SqliteFtsRuntime {
-  constructor({ moduleBase = WA_SQLITE_BASE } = {}) {
-    this.moduleBase = moduleBase;
+  constructor({
+    moduleUrl = SQLITE_WASM_MODULE,
+    idbModuleUrl = SQLITE_WASM_IDB_MODULE,
+    wasmUrl = SQLITE_WASM_URL,
+  } = {}) {
+    this.moduleUrl = moduleUrl;
+    this.idbModuleUrl = idbModuleUrl;
+    this.wasmUrl = wasmUrl;
     this.sqlite3 = null;
-    this.sqliteConstants = null;
     this.database = null;
+    this.connection = null;
     this.vfs = null;
     this.initializing = null;
   }
@@ -100,19 +84,16 @@ export class SqliteFtsRuntime {
   }
 
   async initialize() {
-    const [factoryModule, sqliteModule, vfsModule] = await Promise.all([
-      import(`${this.moduleBase}/dist/wa-sqlite-async.mjs`),
-      import(`${this.moduleBase}/src/sqlite-api.js`),
-      import(`${this.moduleBase}/src/examples/IDBBatchAtomicVFS.js`),
+    const [sqliteModule, idbModule] = await Promise.all([
+      import(this.moduleUrl),
+      import(this.idbModuleUrl),
     ]);
-    const module = await factoryModule.default({
-      locateFile: (path) => `${this.moduleBase}/dist/${path}`,
-    });
-    this.sqlite3 = sqliteModule.Factory(module);
-    this.sqliteConstants = sqliteModule;
-    this.vfs = await createPersistentVfs(vfsModule, module);
-    this.sqlite3.vfs_register(this.vfs, true);
-    this.database = await this.sqlite3.open_v2(DATABASE_NAME);
+    this.connection = await sqliteModule.initSQLite(
+      idbModule.useIdbStorage(DATABASE_NAME, { url: this.wasmUrl }),
+    );
+    this.sqlite3 = this.connection.sqlite;
+    this.database = this.connection.db ?? this.connection.pointer;
+    this.vfs = this.connection.vfs;
     await this.sqlite3.exec(this.database, SCHEMA_SQL);
     return this;
   }
@@ -123,7 +104,7 @@ export class SqliteFtsRuntime {
     for await (const statement of this.sqlite3.statements(this.database, sql)) {
       this.sqlite3.bind_collection(statement, bindings);
       let columns = null;
-      while (await this.sqlite3.step(statement) === this.sqliteConstants.SQLITE_ROW) {
+      while (await this.sqlite3.step(statement) === SQLITE_ROW) {
         columns ??= this.sqlite3.column_names(statement);
         output.push(asObject(this.sqlite3.row(statement), columns));
       }
@@ -251,7 +232,7 @@ export class SqliteFtsRuntime {
       tokenCount: Number(tokenCount ?? 0),
       storage: SQLITE_FTS_STORAGE_ID,
       backend: SQLITE_FTS_BACKEND_ID,
-      runtime: SQLITE_FTS_RUNTIME_VERSION,
+      runtime: `@subframe7536/sqlite-wasm@${SQLITE_WASM_VERSION}`,
       sqliteVersion,
       builtAt,
       fingerprint,
@@ -265,11 +246,12 @@ export class SqliteFtsRuntime {
   }
 
   async close() {
-    const database = this.database;
+    const connection = this.connection;
     this.database = null;
+    this.connection = null;
     this.initializing = null;
-    if (database) await this.sqlite3.close(database);
-    this.vfs?.close?.();
+    this.sqlite3 = null;
     this.vfs = null;
+    await connection?.close?.();
   }
 }
