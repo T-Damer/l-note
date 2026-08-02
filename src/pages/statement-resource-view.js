@@ -1,5 +1,6 @@
 import {
   buildStatementConflictIndex,
+  qualifyDocumentId,
   resolveStatement,
 } from '../helpers/statement-conflicts.js';
 import { Button } from '../ui/components.js';
@@ -55,9 +56,11 @@ function renderSource(claim, knowledge, navigate) {
           .join(' · '),
       }),
     ],
-    onClick: () => navigate('document', claim.source.documentId, {
-      sectionId: claim.source.sectionId,
-    }),
+    onClick: () => navigate(
+      'document',
+      qualifyDocumentId(claim.packId, claim.source.documentId),
+      { sectionId: claim.source.sectionId },
+    ),
   });
   return [Text({ variant: 'heading', as: 'h3', text: 'Источник' }), button];
 }
