@@ -1,3 +1,5 @@
+import { validateStatementRelations } from './helpers/statement-conflicts.js';
+
 const PACK_SCHEMA_VERSION = 1;
 
 function isObject(value) {
@@ -109,6 +111,7 @@ export function validatePack(pack) {
     if (relation?.targetId && !entityIds.has(relation.targetId)) errors.push(`relation references unknown target ${relation.targetId}`);
   }
 
+  errors.push(...validateStatementRelations(pack));
   return { valid: errors.length === 0, errors };
 }
 
