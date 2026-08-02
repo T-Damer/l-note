@@ -91,6 +91,7 @@ Use shared components for typography, icons, buttons, cards, fields, switches, s
 
 - Use `Text` variants instead of inventing page-local typography classes.
 - Use Phosphor as the only icon family.
+- Do not place emoji, Unicode pictograms or text glyphs in the UI as substitutes for icons. Warning and discrepancy markers also use the centralized Phosphor catalog.
 - Unknown categories use the centrally configured placeholder icon.
 - Never add raw user/source text through `innerHTML`; use `textContent`, text nodes or safe component children.
 - Interactive cards must support keyboard activation where a semantic button or link is not possible.
@@ -154,12 +155,18 @@ Application navigation is hash-based so the same route contract works on static 
 - SQLite failure must degrade to the next declared adapter rather than disable text search.
 - Changes to SQLite schema, VFS, locking, transactions or lifecycle require the real Chromium smoke test in addition to unit tests.
 
-## Evidence and model rules
+## Evidence, source discrepancies and model rules
 
 - A generated answer receives only retrieved evidence.
 - Source identifiers and exact evidence links are deterministic.
 - Citation-ID existence is necessary but not sufficient: the evidence verifier must report unsupported statements, numbers and negation mismatches.
 - Model output may propose structure or links but never silently replace source text.
+- The client must never automatically choose a winning source when installed documents disagree.
+- A reviewed source discrepancy keeps both statement references, exact quotes, document titles, dates, relation type, review status and provenance.
+- Cross-pack statement references use `pack-id::claim-id`; local claim IDs alone are insufficient outside their owning pack.
+- One disputed passage may have multiple relations. Group them under one inline Phosphor marker and show every comparison.
+- `different_scope` must remain distinct from `contradicts`; population, jurisdiction, date, formulation and other scope differences are not silently collapsed.
+- `supersedes` may be assigned only by an explicit preparation/review decision. The browser display does not infer obsolescence from date alone.
 - Only one language-model inference runtime may be active. Model weights remain in persistent browser storage; changing models must explicitly unload the previous engine.
 - Speech recognition uses its own replaceable port and Worker; its transcript enters the normal search path.
 - The local-model and speech ports must remain replaceable so MiniMed or a native shell can provide different runtimes.
@@ -169,8 +176,10 @@ Application navigation is hash-based so the same route contract works on static 
 - Reference packs are immutable installed inputs.
 - Personal notes remain physically and logically separate.
 - `supports`, `refines`, `contradicts` and `supersedes` are explicit links.
+- A personal-note relation is not promoted to a reference-level statement relation without preparation and review.
 - `supersedes` changes local ranking and never deletes a reference statement.
 - Every statement and relation remains traceable to a source, note or review decision.
+- Client rendering preserves every installed source version; source selection and conflict resolution belong to the strong-device preparation workflow.
 
 ## Transfers
 
@@ -188,7 +197,10 @@ Behavior changes require tests at the narrowest useful layer:
 - port or integration boundary — contract test;
 - route, modal or user workflow — browser E2E;
 - pack/search regression — deterministic fixture test;
+- source discrepancy — qualified-ID, multi-conflict grouping, exact quote-position and diff tests;
 - SQLite/VFS/lifecycle change — real headless-browser smoke test.
+
+Do not make asynchronous tests depend on a fixed number of event-loop turns. Wait for an observable state with a bounded timeout.
 
 Before considering a slice complete:
 
