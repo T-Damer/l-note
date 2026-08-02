@@ -98,3 +98,23 @@ test('graph layout preserves routed resource metadata', () => {
   assert.ok(layout.width > 0);
   assert.ok(layout.height > 0);
 });
+
+test('focused relation graph uses only current and related concept columns', () => {
+  const graph = {
+    nodes: [
+      { id: 'focus:a', type: 'focus', label: 'Текущее понятие' },
+      { id: 'concept:b', type: 'concept', label: 'Связанное понятие' },
+    ],
+    edges: [{ id: 'edge', from: 'focus:a', to: 'concept:b', type: 'relation' }],
+  };
+  const layout = layoutKnowledgeGraph(graph, {
+    typeOrder: ['focus', 'concept'],
+    typeLabels: { focus: 'Текущее понятие', concept: 'Связанные понятия' },
+  });
+
+  assert.deepEqual(layout.columns.map((column) => column.type), ['focus', 'concept']);
+  assert.deepEqual(layout.columns.map((column) => column.label), ['Текущее понятие', 'Связанные понятия']);
+  assert.equal(layout.nodes.length, 2);
+  assert.equal(layout.edges.length, 1);
+  assert.ok(layout.width < layoutKnowledgeGraph(graph).width);
+});
