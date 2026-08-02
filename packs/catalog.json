@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "catalogVersion": "2026-07-31.1",
-  "publishedAt": "2026-07-31T00:10:00+03:00",
+  "catalogVersion": "2026-08-02.1",
+  "publishedAt": "2026-08-02T15:30:00+03:00",
   "packs": [
     {
       "id": "lnote.guide",
-      "version": "1.0.1",
+      "version": "1.1.0",
       "title": "L-Note: как устроены пакеты знаний",
-      "description": "Небольшой немедицинский пакет, показывающий полнотекстовый и fuzzy-поиск, сущности, связи, утверждения и локальные поправки.",
+      "description": "Небольшой немедицинский пакет, показывающий полнотекстовый и fuzzy-поиск, сущности, связи, утверждения, локальные поправки и явные расхождения между источниками.",
       "language": "ru",
       "kind": "Справка",
       "categories": [
@@ -17,14 +17,15 @@
         }
       ],
       "url": "./packs/lnote-guide.pack.json",
-      "sha256": "0ce653bacf2242678289196aed82d7f29328fa0cdc62a02b38e8adfe3124051a",
-      "bytes": 9015,
+      "sha256": "412e80d912c0caf14a778811f0ede9f4b102fa8dc501eaee9135895e09b31813",
+      "bytes": 12322,
       "stats": {
-        "documents": 3,
-        "chunks": 6,
-        "entities": 8,
-        "claims": 4,
-        "relations": 5
+        "documents": 5,
+        "chunks": 8,
+        "entities": 9,
+        "claims": 6,
+        "relations": 5,
+        "statementRelations": 1
       }
     },
     {
