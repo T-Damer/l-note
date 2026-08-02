@@ -1,48 +1,81 @@
 import { entityTerms } from '../helpers/entity-terms.js';
+import {
+  buildStatementConflictIndex,
+  sectionConflictAnnotations,
+  statementsForSection,
+} from '../helpers/statement-conflicts.js';
 import { Button, Card } from '../ui/components.js';
 import { element } from '../ui/dom.js';
 import { Icon } from '../ui/icons.js';
 import { Text } from '../ui/text.js';
 import { createDocumentAssetView } from './document-asset-view.js';
+import { createStatementConflictDisclosure } from './statement-conflict-view.js';
 
-function appendLinkedText({ container, text, entityIds, knowledge, normalizeText, navigate }) {
+function entitySpans({ text, entityIds, knowledge, normalizeText }) {
   const entities = entityIds.map((id) => knowledge.entities.get(id)).filter(Boolean);
   const candidates = entities.flatMap((entity) => (
     entityTerms(entity).map((term) => ({ term, entity }))
   ));
   candidates.sort((left, right) => right.term.length - left.term.length);
-  if (!candidates.length) {
-    container.textContent = text;
-    return;
-  }
+  if (!candidates.length) return [];
 
   const escaped = candidates.map(({ term }) => term.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'));
   const pattern = new RegExp(`(${escaped.join('|')})`, 'giu');
-  let cursor = 0;
-  for (const match of text.matchAll(pattern)) {
-    const index = match.index ?? 0;
-    container.append(document.createTextNode(text.slice(cursor, index)));
+  return [...text.matchAll(pattern)].map((match) => {
     const matched = match[0];
     const candidate = candidates.find(({ term }) => normalizeText(term) === normalizeText(matched));
-    if (candidate) {
-      container.append(Button({
-        variant: 'ghost',
-        className: 'entity-link',
-        text: matched,
-        onClick: () => navigate('concept', candidate.entity.id),
-      }));
-    } else {
-      container.append(document.createTextNode(matched));
-    }
-    cursor = index + matched.length;
-  }
-  container.append(document.createTextNode(text.slice(cursor)));
+    return candidate ? {
+      start: match.index ?? 0,
+      end: (match.index ?? 0) + matched.length,
+      entity: candidate.entity,
+    } : null;
+  }).filter(Boolean);
 }
 
-function claimsForSection(knowledge, documentId, sectionId) {
-  return [...knowledge.claims.values()].filter((claim) => (
-    claim.source?.documentId === documentId && claim.source?.sectionId === sectionId
-  ));
+function conflictDisclosures({ section, claims, conflictIndex, navigate }) {
+  return sectionConflictAnnotations(section.text, claims, conflictIndex).map((annotation, index) => ({
+    ...annotation,
+    ...createStatementConflictDisclosure({
+      id: `statement-conflict-${section.id}-${index + 1}`,
+      conflicts: annotation.conflicts,
+      currentClaimRefs: annotation.claimRefs,
+      navigate,
+    }),
+  }));
+}
+
+function appendAnnotatedText({
+  container,
+  text,
+  entityIds,
+  knowledge,
+  normalizeText,
+  navigate,
+  disclosures,
+}) {
+  const spans = entitySpans({ text, entityIds, knowledge, normalizeText });
+  const boundaries = new Set([0, text.length]);
+  for (const span of spans) boundaries.add(span.start).add(span.end);
+  for (const disclosure of disclosures) boundaries.add(disclosure.position);
+  const ordered = [...boundaries].sort((left, right) => left - right);
+  const markersByPosition = new Map(disclosures.map((item) => [item.position, item.marker]));
+
+  if (markersByPosition.has(0)) container.append(markersByPosition.get(0));
+  for (let index = 0; index < ordered.length - 1; index += 1) {
+    const start = ordered[index];
+    const end = ordered[index + 1];
+    if (end > start) {
+      const span = spans.find((candidate) => candidate.start <= start && candidate.end >= end);
+      const segment = text.slice(start, end);
+      container.append(span ? Button({
+        variant: 'ghost',
+        className: 'entity-link',
+        text: segment,
+        onClick: () => navigate('concept', span.entity.id),
+      }) : document.createTextNode(segment));
+    }
+    if (markersByPosition.has(end)) container.append(markersByPosition.get(end));
+  }
 }
 
 function renderClaim({ claim, navigate }) {
@@ -51,12 +84,12 @@ function renderClaim({ claim, navigate }) {
     variant: 'ghost',
     className: 'claim-open-button',
     text: claim.text,
-    onClick: () => navigate('statement', claim.id),
+    onClick: () => navigate('statement', claim.runtimeId ?? claim.id),
   });
   const addNote = Button({
     variant: 'secondary',
     text: 'Добавить наблюдение',
-    onClick: () => navigate('note', 'new', { claimId: claim.id }),
+    onClick: () => navigate('note', 'new', { claimId: claim.runtimeId ?? claim.id }),
   });
   card.append(
     openClaim,
@@ -80,6 +113,7 @@ function renderSection({
   normalizeText,
   navigate,
   assetView,
+  conflictIndex,
 }) {
   const article = element('article', {
     className: 'document-section',
@@ -89,18 +123,29 @@ function renderSection({
     Text({ variant: 'heading', as: 'h3', text: section.title }),
     assetView?.sourceButton(section.id),
   ].filter(Boolean));
-  const paragraph = element('p');
-  appendLinkedText({
+  const claims = statementsForSection(
+    knowledge.packs,
+    documentRecord.packId,
+    documentRecord.id,
+    section.id,
+  );
+  const disclosures = conflictDisclosures({ section, claims, conflictIndex, navigate });
+  const paragraph = element('p', { className: 'document-section-text' });
+  appendAnnotatedText({
     container: paragraph,
     text: section.text,
     entityIds: section.entityIds ?? [],
     knowledge,
     normalizeText,
     navigate,
+    disclosures,
   });
   article.append(heading, paragraph);
-
-  const claims = claimsForSection(knowledge, documentRecord.id, section.id);
+  if (disclosures.length) {
+    article.append(element('div', { className: 'statement-conflict-panels' }, (
+      disclosures.map((item) => item.panel)
+    )));
+  }
   if (claims.length) {
     article.append(element('div', { className: 'claim-list' }, (
       claims.map((claim) => renderClaim({ claim, navigate }))
@@ -136,6 +181,7 @@ export function renderDocumentResource({
     documentRecord,
     sectionId: record.sectionId,
   });
+  const conflictIndex = buildStatementConflictIndex(knowledge.packs);
 
   dialogView.replaceHeading([
     Text({ variant: 'eyebrow', text: documentRecord.packTitle }),
@@ -155,6 +201,7 @@ export function renderDocumentResource({
       normalizeText,
       navigate,
       assetView,
+      conflictIndex,
     }));
   }
   body.push(renderExternalSource(documentRecord.source));
