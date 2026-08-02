@@ -1,0 +1,244 @@
+.model-control-panel {
+  display: grid;
+  gap: 1rem;
+}
+
+.model-compact-row {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: .65rem;
+  padding: .85rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper);
+}
+
+.model-picker {
+  display: grid;
+  min-width: min(18rem, 100%);
+  gap: .3rem;
+}
+
+.model-select,
+.answer-mode-select {
+  min-height: 2.55rem;
+  padding: .55rem 2.2rem .55rem .7rem;
+  border: 1px solid var(--line);
+  border-radius: .7rem;
+  background: var(--paper-strong);
+  font-weight: 720;
+}
+
+.model-compact-meta,
+.model-power {
+  display: inline-flex;
+  min-height: 2.55rem;
+  align-items: center;
+  padding: .55rem .72rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper-strong);
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 720;
+}
+
+.model-power {
+  gap: .42rem;
+}
+
+.model-power-dot {
+  width: .6rem;
+  height: .6rem;
+  border-radius: 50%;
+  background: var(--line-strong);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--line) 55%, transparent);
+}
+
+.model-power.is-on {
+  border-color: color-mix(in srgb, var(--success) 55%, var(--line));
+  color: var(--success);
+}
+
+.model-power.is-on .model-power-dot {
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 18%, transparent);
+}
+
+.model-power.is-cached {
+  border-color: color-mix(in srgb, var(--accent) 56%, var(--line));
+  color: var(--accent);
+}
+
+.model-power.is-cached .model-power-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+.model-power.is-checking .model-power-dot {
+  animation: model-pulse 1.2s ease-in-out infinite;
+}
+
+.model-profile-note,
+.answer-mode-hint,
+.model-active-panel > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.model-download-panel,
+.answer-mode-panel,
+.model-active-panel {
+  display: grid;
+  gap: .78rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--paper) 74%, var(--blue-soft));
+}
+
+.model-download-panel.is-cached {
+  border-color: color-mix(in srgb, var(--accent) 38%, var(--line));
+  background: color-mix(in srgb, var(--paper) 86%, var(--accent-soft));
+}
+
+.model-active-panel {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  background: color-mix(in srgb, var(--paper) 86%, var(--accent-soft));
+}
+
+.answer-mode-panel {
+  grid-template-columns: minmax(11rem, 16rem) minmax(0, 1fr);
+  align-items: end;
+  background: var(--paper);
+}
+
+.answer-mode-field {
+  min-width: 0;
+}
+
+.model-progress-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--ink);
+  font-size: .86rem;
+}
+
+.model-progress-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-progress-percent {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+}
+
+.model-progress-track {
+  position: relative;
+  height: .72rem;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--line-strong) 62%, transparent);
+  border-radius: 999px;
+  background: var(--paper-strong);
+}
+
+.model-progress-value {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 56%, var(--category-pediatrics)));
+  transition: width .18s ease-out;
+}
+
+.model-progress-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45rem .9rem;
+  color: var(--muted);
+  font-size: .74rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.model-load-error {
+  margin: 0;
+  padding: .72rem;
+  border-left: 4px solid var(--red);
+  border-radius: .45rem .75rem .75rem .45rem;
+  background: color-mix(in srgb, var(--red) 8%, transparent);
+  color: var(--red);
+  font-size: .78rem;
+  line-height: 1.5;
+}
+
+.model-load-button,
+.model-unload-button {
+  justify-self: start;
+}
+
+.model-workspace {
+  display: grid;
+  gap: .7rem;
+  margin-top: 1rem;
+}
+
+.model-spinner {
+  animation: model-spin .8s linear infinite;
+}
+
+@keyframes model-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes model-pulse {
+  50% {
+    opacity: .35;
+    transform: scale(.82);
+  }
+}
+
+@media (max-width: 680px) {
+  .model-compact-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .model-picker {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  .model-compact-meta,
+  .model-power {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .answer-mode-panel,
+  .model-active-panel {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .model-load-button,
+  .model-unload-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .model-progress-stats {
+    display: grid;
+    gap: .3rem;
+  }
+}

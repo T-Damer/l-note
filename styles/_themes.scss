@@ -1,0 +1,41 @@
+:root {
+  color-scheme: light dark;
+  --paper: var(--palette-light-paper);
+  --paper-strong: var(--palette-light-paper-strong);
+  --ink: var(--palette-light-ink);
+  --muted: var(--palette-light-muted);
+  --line: var(--palette-light-line);
+  --line-strong: var(--palette-light-line-strong);
+  --accent: var(--palette-light-accent);
+  --accent-soft: var(--palette-light-accent-soft);
+  --green-soft: var(--palette-light-green-soft);
+  --blue-soft: var(--palette-light-blue-soft);
+  --red: var(--palette-light-red);
+  --success: var(--palette-light-success);
+  --shadow: 0 20px 60px rgb(39 45 41 / 12%);
+  --radius: 18px;
+  --measure: 72rem;
+  --focus-ring: color-mix(in srgb, var(--accent) 42%, transparent);
+  --hover-surface: color-mix(in srgb, var(--line) 45%, transparent);
+  --backdrop: rgb(10 16 13 / 52%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: var(--palette-dark-paper);
+    --paper-strong: var(--palette-dark-paper-strong);
+    --ink: var(--palette-dark-ink);
+    --muted: var(--palette-dark-muted);
+    --line: var(--palette-dark-line);
+    --line-strong: var(--palette-dark-line-strong);
+    --accent: var(--palette-dark-accent);
+    --accent-soft: var(--palette-dark-accent-soft);
+    --green-soft: var(--palette-dark-green-soft);
+    --blue-soft: var(--palette-dark-blue-soft);
+    --red: var(--palette-dark-red);
+    --success: var(--palette-dark-success);
+    --shadow: 0 20px 60px rgb(0 0 0 / 34%);
+    --hover-surface: color-mix(in srgb, var(--line) 60%, transparent);
+    --backdrop: rgb(5 6 8 / 66%);
+  }
+}

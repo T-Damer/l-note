@@ -1,0 +1,200 @@
+import type {
+  EvidenceEnvelope,
+  InstalledPackRecord,
+  KnowledgeConcept,
+  KnowledgePack,
+  PersonalNote,
+  SearchRecord,
+  SearchResult,
+} from './contracts.js';
+
+export interface SearchOptions {
+  limit?: number;
+  personalPriority?: boolean;
+}
+
+export interface SearchPort {
+  readonly kind: string;
+  readonly count: number;
+  readonly async?: boolean;
+  readonly retainsRecords?: boolean;
+  readonly ready?: Promise<unknown>;
+  search(query: string, options?: SearchOptions): SearchResult[] | Promise<SearchResult[]>;
+  suggest(query: string, limit?: number): string[] | Promise<string[]>;
+  close?(): void | Promise<void>;
+}
+
+export interface AsyncSearchStats {
+  recordCount: number;
+  tokenCount: number;
+  storage: string;
+  backend: string;
+  error?: string;
+  reused?: boolean;
+  [metadata: string]: unknown;
+}
+
+export interface AsyncSearchPort {
+  readonly kind: string;
+  readonly count: number;
+  readonly available?: boolean;
+  build(
+    records: SearchRecord[],
+    options?: {
+      fingerprint?: string;
+      onProgress?: (progress: unknown) => void;
+    },
+  ): Promise<AsyncSearchStats>;
+  search(query: string, options?: SearchOptions): Promise<SearchResult[]>;
+  suggest(query: string, limit?: number): Promise<string[]>;
+  clear(): Promise<unknown>;
+  stats(): Promise<AsyncSearchStats>;
+  close?(): void | Promise<void>;
+}
+
+export type StorageStoreName = 'packs' | 'notes' | 'settings';
+
+export interface StoragePort {
+  getAll<T = unknown>(storeName: StorageStoreName): Promise<T[]>;
+  getOne<T = unknown>(storeName: StorageStoreName, key: string): Promise<T | undefined>;
+  putOne<T = unknown>(storeName: StorageStoreName, value: T): Promise<T>;
+  deleteOne(storeName: StorageStoreName, key: string): Promise<void>;
+  clearStore(storeName: StorageStoreName): Promise<void>;
+  getSetting<T = unknown>(key: string, fallback: T): Promise<T>;
+  setSetting<T = unknown>(key: string, value: T): Promise<unknown>;
+  mode(): 'persistent' | 'memory';
+}
+
+export interface DomainQueryPlannerPort {
+  readonly id: string;
+  appliesToPack(pack: KnowledgePack): boolean;
+  expandQuery(query: string): string[];
+}
+
+export interface LocalModelInspection {
+  modelId: string;
+  available: boolean;
+  cached: boolean | null;
+  [metadata: string]: unknown;
+}
+
+export interface LocalModelLoadResult {
+  modelId: string;
+  profile?: unknown;
+  loadMs: number;
+  reused: boolean;
+  cachedBeforeLoad?: boolean | null;
+  runtime?: string;
+  cacheBackend?: string;
+}
+
+export interface LocalModelUnloadResult {
+  modelId: string | null;
+  unloaded: boolean;
+}
+
+export interface LocalModelAnswer {
+  text: string;
+  modelId: string;
+  durationMs: number;
+  completionTokens: number | null;
+  tokensPerSecond: number | null;
+  grounded: boolean;
+  validCitations: string[];
+  invalidCitations: string[];
+  unsupportedStatements?: string[];
+  supportVerification?: EvidenceVerificationResult;
+  usage?: unknown;
+}
+
+export interface LocalModelPort {
+  readonly available: boolean;
+  readonly modelId?: string | null;
+  readonly engine?: unknown;
+  inspectModels?(options?: { includeCache?: boolean }): Promise<LocalModelInspection[]>;
+  isModelCached?(modelId: string): Promise<boolean | null>;
+  load(options?: { modelId?: string; onProgress?: (progress: unknown) => void }): Promise<LocalModelLoadResult>;
+  unload(): Promise<LocalModelUnloadResult>;
+  answer(
+    query: string,
+    evidence: EvidenceEnvelope,
+    options?: { modeId?: string },
+  ): Promise<LocalModelAnswer>;
+}
+
+export interface SpeechModelInspection {
+  modelId: string;
+  available: boolean;
+  cached: boolean | null;
+  [metadata: string]: unknown;
+}
+
+export interface SpeechLoadResult {
+  modelId: string;
+  loadMs: number;
+  reused: boolean;
+  cachedBeforeLoad?: boolean | null;
+  runtime?: string;
+}
+
+export interface SpeechTranscript {
+  text: string;
+  modelId: string;
+  language: string;
+  durationMs: number;
+}
+
+export interface SpeechRecognitionPort {
+  readonly available: boolean;
+  readonly modelId?: string | null;
+  inspectModels?(options?: { includeCache?: boolean }): Promise<SpeechModelInspection[]>;
+  isModelCached?(modelId: string): Promise<boolean | null>;
+  load(options?: { modelId?: string; onProgress?: (progress: unknown) => void }): Promise<SpeechLoadResult>;
+  transcribe(
+    audio: Float32Array,
+    options?: { language?: 'auto' | 'ru' | 'en' },
+  ): Promise<SpeechTranscript>;
+  cancel(): Promise<{ cancelled: boolean }>;
+  unload(): Promise<{ modelId: string | null; unloaded: boolean }>;
+}
+
+export interface EvidenceVerificationResult {
+  accepted: boolean;
+  supported: boolean;
+  invalidCitations?: string[];
+  unsupportedStatements?: string[];
+  diagnostics?: Record<string, unknown>;
+}
+
+export interface EvidenceVerifierPort {
+  readonly id?: string;
+  verify(
+    answer: LocalModelAnswer | string,
+    evidence: EvidenceEnvelope,
+  ): EvidenceVerificationResult | Promise<EvidenceVerificationResult>;
+}
+
+export type SearchPortFactory = (
+  records: SearchRecord[],
+  concepts: KnowledgeConcept[],
+  options?: {
+    queryExpanders?: Array<(query: string) => string[]>;
+    corpusFingerprint?: string;
+  },
+) => SearchPort;
+
+export function defineSearchPort<T extends SearchPort>(candidate: T): T;
+export function defineAsyncSearchPort<T extends AsyncSearchPort>(candidate: T): T;
+export function defineStoragePort<T extends StoragePort>(candidate: T): T;
+export function defineDomainQueryPlannerPort<T extends DomainQueryPlannerPort>(candidate: T): T;
+export function defineLocalModelPort<T extends LocalModelPort>(candidate: T): T;
+export function defineSpeechRecognitionPort<T extends SpeechRecognitionPort>(candidate: T): T;
+export function defineEvidenceVerifierPort<T extends EvidenceVerifierPort>(candidate: T): T;
+export function activeDomainQueryExpanders(
+  planners: DomainQueryPlannerPort[],
+  packs: KnowledgePack[],
+): Array<(query: string) => string[]>;
+
+export const portMethods: Readonly<Record<string, readonly string[]>>;
+export type RuntimePackRecords = InstalledPackRecord[];
+export type RuntimeNotes = PersonalNote[];

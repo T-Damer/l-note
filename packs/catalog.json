@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 1,
+  "catalogVersion": "2026-08-02.1",
+  "publishedAt": "2026-08-02T15:30:00+03:00",
+  "packs": [
+    {
+      "id": "lnote.guide",
+      "version": "1.1.0",
+      "title": "L-Note: как устроены пакеты знаний",
+      "description": "Небольшой немедицинский пакет, показывающий полнотекстовый и fuzzy-поиск, сущности, связи, утверждения, локальные поправки и явные расхождения между источниками.",
+      "language": "ru",
+      "kind": "Справка",
+      "categories": [
+        {
+          "id": "unknown",
+          "weight": 1
+        }
+      ],
+      "url": "./packs/lnote-guide.pack.json",
+      "sha256": "412e80d912c0caf14a778811f0ede9f4b102fa8dc501eaee9135895e09b31813",
+      "bytes": 12322,
+      "stats": {
+        "documents": 5,
+        "chunks": 8,
+        "entities": 9,
+        "claims": 6,
+        "relations": 5,
+        "statementRelations": 1
+      }
+    },
+    {
+      "id": "lnote.mixed-domains.demo",
+      "version": "1.0.0",
+      "title": "Демонстрация: педиатрия и стоматология",
+      "description": "Синтетический пакет для проверки смешанных категорий и градиентных узлов. Не содержит клинических возрастных норм.",
+      "language": "ru",
+      "kind": "Демонстрация графа",
+      "categories": [
+        {
+          "id": "pediatrics",
+          "weight": 0.5
+        },
+        {
+          "id": "dentistry",
+          "weight": 0.5
+        }
+      ],
+      "url": "./packs/lnote.mixed-domains.demo.json",
+      "sha256": "7e65577a8927d1ce09658527123532a87688bd4078dbefd4461eddf260484f8a",
+      "bytes": 6414,
+      "stats": {
+        "documents": 1,
+        "chunks": 2,
+        "entities": 3,
+        "claims": 1,
+        "relations": 2
+      }
+    },
+    {
+      "id": "minimed.respiratory.ru",
+      "version": "2026.07.30-demo.1",
+      "title": "MiniMed: дыхательная система",
+      "description": "Демонстрационный пакет по бронхиолиту и внебольничной пневмонии у детей: полнотекстовый поиск, сущности, утверждения и точные ссылки на фрагменты.",
+      "language": "ru",
+      "kind": "Медицина · дыхательная система",
+      "categories": [
+        {
+          "id": "pediatrics",
+          "weight": 1
+        }
+      ],
+      "url": "./packs/minimed.respiratory.ru.json",
+      "sha256": "5857029c903e635da06380e775fec91176c0ba13fb26027c0d2ea39773c1d57b",
+      "bytes": 19482,
+      "stats": {
+        "documents": 2,
+        "chunks": 10,
+        "entities": 7,
+        "claims": 6,
+        "relations": 5
+      }
+    },
+    {
+      "id": "minimed.infectious.ru",
+      "version": "2026.07.30-demo.1",
+      "title": "MiniMed: детские инфекции",
+      "description": "Три демонстрационные source-linked карточки: корь, ротавирусный гастроэнтерит и менингококковая инфекция.",
+      "language": "ru",
+      "kind": "Медицина · инфекции",
+      "categories": [
+        {
+          "id": "pediatrics",
+          "weight": 1
+        }
+      ],
+      "url": "./packs/minimed.infectious.ru.json",
+      "sha256": "b3cac19db47de5eb6ee613543628479ffb99bfad89d363f6732f25bf4ab335ef",
+      "bytes": 21870,
+      "stats": {
+        "documents": 3,
+        "chunks": 15,
+        "entities": 8,
+        "claims": 6,
+        "relations": 4
+      }
+    },
+    {
+      "id": "minimed.nephrology.ru",
+      "version": "2026.07.30-demo.1",
+      "title": "MiniMed: нефрология и урология",
+      "description": "Демонстрационный пакет по инфекции мочевых путей у детей с алиасом ИМП, диагностическими связями и точными цитатами.",
+      "language": "ru",
+      "kind": "Медицина · нефрология",
+      "categories": [
+        {
+          "id": "pediatrics",
+          "weight": 1
+        }
+      ],
+      "url": "./packs/minimed.nephrology.ru.json",
+      "sha256": "5fc9387cdbeed445e999b63f78e296ee2bc222a02ec49400a545cad2d01a373b",
+      "bytes": 10786,
+      "stats": {
+        "documents": 1,
+        "chunks": 5,
+        "entities": 7,
+        "claims": 3,
+        "relations": 3
+      }
+    },
+    {
+      "id": "minimed.medications.ru",
+      "version": "2026.07.30-demo.1",
+      "title": "MiniMed: лекарственный реестр",
+      "description": "Небольшой вертикальный пример структурированной регистрационной записи препарата. Пакет намеренно не содержит режима дозирования.",
+      "language": "ru",
+      "kind": "Медицина · реестр препаратов",
+      "categories": [
+        {
+          "id": "pediatrics",
+          "weight": 1
+        }
+      ],
+      "url": "./packs/minimed.medications.ru.json",
+      "sha256": "b25548e7fdff3aa2f2a878a1ef54a0469b76661441c9699bc910f30df3ff0062",
+      "bytes": 6663,
+      "stats": {
+        "documents": 1,
+        "chunks": 2,
+        "entities": 3,
+        "claims": 2,
+        "relations": 2
+      }
+    }
+  ]
+}

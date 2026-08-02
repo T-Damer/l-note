@@ -1,0 +1,62 @@
+.panel-title-row {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-bottom: .65rem;
+}
+
+.panel-title-icon {
+  width: 2rem;
+  height: 2rem;
+  border-radius: .65rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.model-lab > .text--muted {
+  margin-bottom: 1rem;
+}
+
+.model-selector {
+  display: grid;
+  gap: .55rem;
+  margin-bottom: .85rem;
+}
+
+.model-selector select {
+  width: 100%;
+}
+
+.model-storage-summary .text--muted {
+  flex-basis: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.result-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .32rem;
+}
+
+.result-type-icon {
+  font-size: .85rem;
+}
+
+.primary-nav .icon,
+.mobile-nav .icon {
+  font-size: 1.15rem;
+}
+
+.icon-button .icon {
+  font-size: 1.35rem;
+}
+
+.button-with-icon,
+.file-button-with-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+}

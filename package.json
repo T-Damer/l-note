@@ -1,0 +1,45 @@
+{
+  "name": "l-note",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/core/index.d.ts",
+      "import": "./src/core/index.js"
+    },
+    "./core": {
+      "types": "./src/core/index.d.ts",
+      "import": "./src/core/index.js"
+    },
+    "./adapters/browser": {
+      "types": "./src/adapters/index.d.ts",
+      "import": "./src/adapters/index.js"
+    },
+    "./integrations/minimed": {
+      "types": "./src/integrations/index.d.ts",
+      "import": "./src/integrations/index.js"
+    }
+  },
+  "scripts": {
+    "serve": "node tools/build-icons.mjs && node tools/build-styles.mjs && node tools/serve.mjs",
+    "build:icons": "node tools/build-icons.mjs",
+    "build:styles": "node tools/build-styles.mjs",
+    "build:pack": "node tools/build-pack.mjs",
+    "build:static": "node tools/build-static.mjs",
+    "validate": "node tools/validate-packs.mjs",
+    "check:structure": "node tools/check-code-structure.mjs",
+    "test": "node --test",
+    "test:sqlite-e2e": "node tools/sqlite-browser-smoke.mjs",
+    "test:e2e": "node tools/browser-e2e.mjs",
+    "check": "npm run validate && npm run check:structure && npm test && npm run build:static && npm run test:sqlite-e2e && npm run test:e2e",
+    "build:example": "node tools/build-pack.mjs --input examples/custom-pack --output dist/example.pack.json"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@phosphor-icons/web": "2.1.2",
+    "minisearch": "7.2.0"
+  }
+}

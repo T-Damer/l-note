@@ -8,4 +8,5 @@ coverage/
 *.sqlite
 *.sqlite3
 *.gguf
+*.log
 .DS_Store

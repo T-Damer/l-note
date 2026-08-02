@@ -1,0 +1,72 @@
+.source-card {
+  display: grid;
+  width: 100%;
+  gap: .7rem;
+  padding: .9rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  transition: border-color .12s ease, background .12s ease, box-shadow .12s ease, transform .12s ease;
+}
+
+.source-card + .source-card {
+  margin-top: .65rem;
+}
+
+.source-card:hover,
+.source-card:focus-visible {
+  border-color: var(--line-strong);
+  background: color-mix(in srgb, var(--paper) 84%, var(--accent-soft));
+  box-shadow: 0 8px 24px rgb(0 0 0 / 7%);
+  transform: translateY(-1px);
+}
+
+.source-card:active {
+  transform: translateY(0);
+}
+
+.source-card__heading {
+  display: grid;
+  min-width: 0;
+  gap: .18rem;
+}
+
+.source-card__id {
+  color: var(--accent);
+  font-weight: 760;
+}
+
+.source-card__title {
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.source-card__type {
+  color: var(--muted);
+}
+
+.source-card__excerpt {
+  display: block;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.source-card__action {
+  display: inline-flex;
+  align-items: center;
+  justify-self: start;
+  gap: .35rem;
+  color: var(--accent);
+}
+
+.source-card__action-icon {
+  transition: transform .12s ease;
+}
+
+.source-card:hover .source-card__action-icon,
+.source-card:focus-visible .source-card__action-icon {
+  transform: translateX(2px);
+}

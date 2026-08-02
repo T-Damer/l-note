@@ -1,0 +1,191 @@
+{
+  "schemaVersion": 1,
+  "id": "lnote.mixed-domains.demo",
+  "version": "1.0.0",
+  "title": "Демонстрация: педиатрия и стоматология",
+  "description": "Небольшой синтетический пакет для проверки смешанных категорий в графе. Он не содержит клинических возрастных норм.",
+  "language": "ru",
+  "builtAt": "2026-07-31T00:00:00Z",
+  "tags": [
+    "demo",
+    "pediatrics",
+    "dentistry",
+    "knowledge-graph"
+  ],
+  "categories": [
+    {
+      "id": "pediatrics",
+      "weight": 0.5
+    },
+    {
+      "id": "dentistry",
+      "weight": 0.5
+    }
+  ],
+  "license": {
+    "id": "synthetic-demo",
+    "notice": "Синтетические данные для демонстрации структуры L-Note; не медицинская рекомендация."
+  },
+  "source": {
+    "name": "L-Note synthetic graph demo",
+    "contentMode": "synthetic-demo"
+  },
+  "entities": [
+    {
+      "id": "concept:tooth-eruption-timing",
+      "type": "concept",
+      "name": "Сроки прорезывания зубов",
+      "aliases": [
+        "прорезывание зубов",
+        "сроки появления зубов"
+      ],
+      "description": "Междоменное понятие, которое в демонстрации относится одновременно к педиатрии и стоматологии.",
+      "categories": [
+        {
+          "id": "pediatrics",
+          "weight": 0.5
+        },
+        {
+          "id": "dentistry",
+          "weight": 0.5
+        }
+      ]
+    },
+    {
+      "id": "concept:pediatric-development",
+      "type": "concept",
+      "name": "Педиатрическое развитие",
+      "aliases": [
+        "развитие ребёнка"
+      ],
+      "description": "Демонстрационная педиатрическая категория.",
+      "categories": [
+        {
+          "id": "pediatrics",
+          "weight": 1
+        }
+      ]
+    },
+    {
+      "id": "concept:dental-observation",
+      "type": "concept",
+      "name": "Стоматологическое наблюдение",
+      "aliases": [
+        "осмотр стоматолога"
+      ],
+      "description": "Демонстрационная стоматологическая категория.",
+      "categories": [
+        {
+          "id": "dentistry",
+          "weight": 1
+        }
+      ]
+    }
+  ],
+  "documents": [
+    {
+      "id": "lnote.demo.mixed.tooth-eruption",
+      "title": "Как отображается междоменное знание",
+      "summary": "Синтетический документ для проверки категорий, связей и градиентной окраски узлов.",
+      "kind": "demo-guide",
+      "authority": "synthetic-demo",
+      "tags": [
+        "knowledge-graph",
+        "pediatrics",
+        "dentistry"
+      ],
+      "categories": [
+        {
+          "id": "pediatrics",
+          "weight": 0.5
+        },
+        {
+          "id": "dentistry",
+          "weight": 0.5
+        }
+      ],
+      "source": {
+        "title": "L-Note synthetic graph demo",
+        "contentMode": "synthetic-demo"
+      },
+      "sections": [
+        {
+          "id": "purpose",
+          "title": "Назначение примера",
+          "text": "Сроки прорезывания зубов используются здесь только как пример знания на пересечении педиатрии и стоматологии. Пакет не содержит возрастных нормативов и не предназначен для принятия медицинских решений.",
+          "entityIds": [
+            "concept:tooth-eruption-timing",
+            "concept:pediatric-development",
+            "concept:dental-observation"
+          ],
+          "tags": [
+            "demo"
+          ],
+          "categories": [
+            {
+              "id": "pediatrics",
+              "weight": 0.5
+            },
+            {
+              "id": "dentistry",
+              "weight": 0.5
+            }
+          ]
+        },
+        {
+          "id": "graph",
+          "title": "Отображение в графе",
+          "text": "Смешанный узел получает равные веса двух категорий: 50% педиатрия и 50% стоматология. Однокатегорийные понятия остаются одноцветными, а связи сохраняют переходы к исходным карточкам.",
+          "entityIds": [
+            "concept:tooth-eruption-timing",
+            "concept:pediatric-development",
+            "concept:dental-observation"
+          ],
+          "tags": [
+            "graph"
+          ],
+          "categories": [
+            {
+              "id": "pediatrics",
+              "weight": 0.5
+            },
+            {
+              "id": "dentistry",
+              "weight": 0.5
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "claims": [
+    {
+      "id": "claim:mixed-tooth-node",
+      "subjectId": "concept:tooth-eruption-timing",
+      "predicate": "represented_by",
+      "text": "Смешанный узел получает равные веса двух категорий: 50% педиатрия и 50% стоматология.",
+      "authority": "synthetic-demo",
+      "source": {
+        "documentId": "lnote.demo.mixed.tooth-eruption",
+        "sectionId": "graph",
+        "quote": "Смешанный узел получает равные веса двух категорий: 50% педиатрия и 50% стоматология."
+      }
+    }
+  ],
+  "relations": [
+    {
+      "sourceId": "concept:tooth-eruption-timing",
+      "targetId": "concept:pediatric-development",
+      "predicate": "related_to",
+      "description": "Педиатрическая доля междоменного понятия.",
+      "weight": 0.5
+    },
+    {
+      "sourceId": "concept:tooth-eruption-timing",
+      "targetId": "concept:dental-observation",
+      "predicate": "related_to",
+      "description": "Стоматологическая доля междоменного понятия.",
+      "weight": 0.5
+    }
+  ]
+}

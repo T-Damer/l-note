@@ -1,0 +1,118 @@
+.pack-builder {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.pack-builder-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .85rem;
+}
+
+.pack-builder .ui-field > input,
+.pack-builder .ui-field > textarea,
+.pack-builder .ui-field > select {
+  border: 1px solid var(--line);
+  border-radius: .75rem;
+  background: var(--paper);
+}
+
+.pack-builder .ui-field > input,
+.pack-builder .ui-field > select {
+  min-height: 2.75rem;
+  padding: .65rem .75rem;
+}
+
+.pack-builder .ui-field > textarea {
+  min-height: 6rem;
+  padding: .75rem;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.pack-builder input[type='file'] {
+  padding: .7rem;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent) 58%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 42%, transparent);
+  cursor: pointer;
+}
+
+.pack-builder input[type='file']:hover,
+.pack-builder input[type='file']:focus-visible {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 68%, transparent);
+}
+
+.pack-builder-progress {
+  width: 100%;
+  height: .7rem;
+  overflow: hidden;
+  border: 0;
+  border-radius: 999px;
+  accent-color: var(--accent);
+}
+
+.pack-builder-progress[hidden],
+.pack-builder-preview[hidden],
+.pack-builder-actions > [hidden] {
+  display: none;
+}
+
+.pack-builder .is-error {
+  color: var(--red);
+}
+
+.pack-builder .is-success {
+  color: var(--accent);
+}
+
+.pack-builder-preview {
+  display: grid;
+  gap: .75rem;
+  padding: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--paper-strong);
+}
+
+.pack-builder-stats,
+.pack-builder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .55rem;
+}
+
+.pack-builder-documents {
+  display: grid;
+  gap: .5rem;
+  max-height: 18rem;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.pack-builder-document {
+  display: grid;
+  gap: .18rem;
+  padding: .7rem .75rem;
+  border: 1px solid var(--line);
+  border-radius: .75rem;
+  background: var(--paper);
+}
+
+.pack-builder-actions > * {
+  flex: 1 1 10rem;
+}
+
+@media (max-width: 620px) {
+  .pack-builder-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pack-builder-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+}
