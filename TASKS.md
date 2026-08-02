@@ -2,12 +2,12 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search is now implemented; next are reviewed LLM-assisted pack enrichment, stronger-device PDF/DOCX preparation, distributable prebuilt database artifacts and complete transfer-queue wiring. Android/iOS and live MiniMed integration remain deferred.
+**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search and neutral display of reviewed source discrepancies are implemented; next are strong-device discrepancy detection/review, reviewed LLM-assisted pack enrichment, PDF/DOCX preparation, distributable prebuilt database artifacts and complete transfer-queue wiring. Android/iOS and live MiniMed integration remain deferred.
 
 ## Universal core and MiniMed
 
 - [x] Keep L-Note domain-neutral; medicine is a demonstration domain.
-- [x] Version contracts for packs, resources, notes, search and evidence.
+- [x] Version contracts for packs, resources, notes, search, evidence and reviewed statement relations.
 - [x] Add storage, sync/async search, domain-planner, local-model, speech-recognition and evidence-verifier ports.
 - [x] Run the web shell through `KnowledgeApplicationAdapter`.
 - [x] Keep the MiniMed compatibility boundary isolated while clinical parsing, ranking, dose validation, abstention and benchmarks remain MiniMed-owned.
@@ -40,6 +40,25 @@ Single source of future work. Completed items describe the active branch.
 - [ ] Add broader non-demo and large-corpus ranking regressions.
 - [ ] Add an optional OPFS adapter for controlled hosting/native shells with suitable isolation headers.
 
+## Source discrepancies and provenance
+
+- [x] Add optional reviewed `statementRelations` to schema-v1 packages.
+- [x] Support `supports`, `contradicts`, `refines`, `supersedes`, `equivalent` and `different_scope`.
+- [x] Use pack-qualified runtime statement and document IDs (`pack-id::local-id`) for cross-pack routes.
+- [x] Build a symmetric discrepancy index across enabled packs without rewriting source statements.
+- [x] Place a centralized Phosphor warning marker after the exact disputed quote.
+- [x] Group several comparisons under one marker when the same passage has multiple discrepancies.
+- [x] Show every comparison with document title, pack title, date, exact quote and deterministic text diff.
+- [x] Open either compared source through the ordinary routed document reader and browser history.
+- [x] Keep the browser client neutral: never choose one source, infer obsolescence from date or remove another version.
+- [x] Add a non-medical reviewed discrepancy to `lnote.guide` for browser and regression testing.
+- [ ] During strong-device preparation, retrieve candidate claims from the existing preparation corpus and previously installed/exported packs.
+- [ ] Add deterministic candidate checks for numbers, units, negation, dates, shared concepts and apparent scope differences.
+- [ ] Add optional local/server LLM classification into contradiction, refinement, supersession, equivalence, different scope or insufficient context.
+- [ ] Add human review to accept, edit or dismiss every proposed statement relation before export.
+- [ ] Allow a reviewed preparation workflow to designate a preferred/current statement while preserving all versions for the client.
+- [ ] Include relevant confirmed source discrepancies in the evidence envelope supplied to the local answer model.
+
 ## Voice search
 
 - [x] Add a domain-neutral `SpeechRecognitionPort`.
@@ -61,6 +80,7 @@ Single source of future work. Completed items describe the active branch.
 - [x] Add the one-time `Привет, коллега` note and routed note links.
 - [x] Make the desktop sidebar collapsible, persist its state and show tooltips while collapsed.
 - [x] Add a primary `Создать свой пакет` action to the existing Packages page.
+- [x] Use Phosphor rather than emoji or text glyphs for source-discrepancy warnings.
 - [ ] Finish interaction-state, click-target and legacy-glyph auditing.
 - [ ] Let the local model propose note links with explicit user review.
 
@@ -108,14 +128,15 @@ Single source of future work. Completed items describe the active branch.
 - [x] Validate ready-made pack JSON and enforce 32 MiB per file / 64 MiB total browser limits.
 - [ ] Add PDF/DOCX parsing, reviewed OCR and database exporters on a stronger device/server.
 - [ ] Add optional prebuilt SQLite/FTS artifacts to large packs.
-- [ ] Let the user choose deterministic-only or LLM-assisted enrichment in the creator.
-- [ ] Review, accept, edit or remove proposed concepts, statements, aliases and relations before export.
+- [ ] Let the user choose deterministic-only or LLM-assisted enrichment in the creator/preparer.
+- [ ] Review, accept, edit or remove proposed concepts, statements, aliases, entity relations and source discrepancies before export.
 - [ ] Keep heavy preparation jobs and intermediate corpora on disk rather than in application RAM.
 
 ## Documentation
 
 - [x] Keep setup and product use in `README.md`.
 - [x] Keep current architecture and invariants in `docs/ARCHITECTURE.md`.
+- [x] Document the portable package and discrepancy format in `docs/PACK_FORMAT.md`.
 - [x] Keep this file as the only implementation backlog.
 - [x] Keep development and decomposition rules in `AGENTS.md`.
 - [x] Update docs together with behavior changes.
