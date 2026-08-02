@@ -2,9 +2,19 @@ export const LNOTE_CONTRACT_VERSION: '0.1.0';
 export const KNOWLEDGE_PACK_SCHEMA_VERSION: 1;
 export const KNOWLEDGE_RESOURCE_TYPES: readonly KnowledgeResourceType[];
 export const PERSONAL_NOTE_RELATIONS: readonly PersonalNoteRelation[];
+export const STATEMENT_RELATION_TYPES: readonly StatementRelationType[];
+export const STATEMENT_RELATION_STATUSES: readonly StatementRelationStatus[];
 
 export type KnowledgeResourceType = 'package' | 'document' | 'concept' | 'statement' | 'note';
 export type PersonalNoteRelation = 'observation' | 'supports' | 'refines' | 'contradicts' | 'supersedes';
+export type StatementRelationType =
+  | 'supports'
+  | 'contradicts'
+  | 'refines'
+  | 'supersedes'
+  | 'equivalent'
+  | 'different_scope';
+export type StatementRelationStatus = 'proposed' | 'confirmed' | 'dismissed';
 export type KnowledgeAuthority = 'reference' | 'personal' | 'proposed' | string;
 
 export interface KnowledgeSource {
@@ -12,6 +22,8 @@ export interface KnowledgeSource {
   url?: string;
   type?: string;
   license?: string;
+  publishedAt?: string;
+  date?: string;
   [key: string]: unknown;
 }
 
@@ -61,6 +73,21 @@ export interface KnowledgeStatement {
   objectId?: string;
   authority?: KnowledgeAuthority;
   source: StatementSource;
+  runtimeId?: string;
+  localId?: string;
+  packId?: string;
+  [key: string]: unknown;
+}
+
+export interface StatementRelation {
+  id: string;
+  sourceClaimId: string;
+  targetClaimId: string;
+  type: StatementRelationType;
+  status?: StatementRelationStatus;
+  reason?: string;
+  detectedBy?: 'rule' | 'local-model' | 'package-author' | 'user' | string;
+  confidence?: number;
   [key: string]: unknown;
 }
 
@@ -88,6 +115,7 @@ export interface KnowledgePack {
   entities: KnowledgeConcept[];
   claims: KnowledgeStatement[];
   relations: KnowledgeRelation[];
+  statementRelations?: StatementRelation[];
   [key: string]: unknown;
 }
 
@@ -151,8 +179,9 @@ export interface EvidenceSource {
 }
 
 export interface EvidenceConflict {
-  note: PersonalNote;
+  note?: PersonalNote;
   claim?: KnowledgeStatement;
+  statementConflict?: unknown;
 }
 
 export interface EvidenceEnvelope {
