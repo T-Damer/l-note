@@ -17,6 +17,7 @@ https://t-damer.github.io/l-note/
 - exact, prefix, alias and bounded fuzzy matching for Russian and English queries;
 - hash-routed packages, documents, concepts, statements, notes and package creation;
 - linked statements, relations, backlinks and explicit personal overrides;
+- reviewed source discrepancies with inline Phosphor markers, document dates and side-by-side text diffs;
 - list and graph views of installed and available knowledge;
 - internal PDF viewing with document/section page anchors;
 - browser-local creation of installable packs from Markdown, TXT, JSON or pasted text;
@@ -100,6 +101,25 @@ The browser creator can:
 - download the resulting JSON or install it immediately.
 
 The lightweight creator is deterministic and does not require a local model. Source files stay in the browser. Current limits are 32 MiB per file and 64 MiB total.
+
+## Different facts in installed sources
+
+A prepared pack may contain reviewed relations between source statements. When installed documents disagree, L-Note does not replace either statement or decide which one is correct.
+
+The reader places a Phosphor warning icon directly after the exact disputed quote. Opening it shows every linked comparison for that passage:
+
+- both exact source quotes;
+- document and pack titles;
+- edition/effective dates when available;
+- a deterministic word-level diff;
+- the reviewed relation type, such as contradiction, refinement or different scope;
+- routed actions for opening either complete document.
+
+Several discrepancies from several documents may be grouped under one marker. Claim and document routes use pack-qualified runtime IDs, so equal local IDs in different packs remain distinct.
+
+Install or update **L-Note: как устроены пакеты знаний**, then open **Ранний вариант хранения поиска → Крупные пакеты** to see the demonstration. Its older in-memory recommendation is compared with the newer disk-backed SQLite/FTS5 recommendation.
+
+Detection and resolution belong to the stronger desktop/server preparation workflow. That workflow may retrieve similar existing statements, compare numbers, units, negation, dates and scope, ask a local/server model for a classification, and require human review. The browser client only displays the reviewed result and preserves every installed version.
 
 ## Local voice search
 
@@ -191,7 +211,7 @@ REPLICATE_API_TOKEN=... node tools/build-pack.mjs ./my-knowledge \
   --ai-model owner/model
 ```
 
-Preparation may run on a stronger desktop or server. The resulting pack remains usable on a weaker offline client. Model output may propose concepts, aliases, statements and relations, but a proposed statement is accepted only when its evidence quote is an exact source substring.
+Preparation may run on a stronger desktop or server. The resulting pack remains usable on a weaker offline client. Model output may propose concepts, aliases, statements, relations and discrepancy candidates, but a proposed statement is accepted only when its evidence quote is an exact source substring. Source discrepancies must be reviewed before export.
 
 See `docs/PACK_FORMAT.md` for the portable format and `docs/ARCHITECTURE.md` for the runtime boundary.
 
@@ -202,7 +222,7 @@ L-Note Core
   contracts + stable IDs
   pack preparation/installation/composition
   storage/search/model/speech ports
-  graph, notes, evidence and routing
+  graph, source discrepancies, notes, evidence and routing
 
 MiniMed
   clinical query analysis
@@ -215,10 +235,11 @@ Any future MiniMed migration requires separate approval and must pass MiniMed's 
 
 ## Remaining work
 
-- reviewed LLM-assisted enrichment in the browser pack creator;
+- strong-device candidate detection and human review for source discrepancies;
+- reviewed LLM-assisted enrichment in the browser/desktop pack workflow;
 - PDF/DOCX extraction, OCR and database exporters on a stronger device;
 - optional prebuilt SQLite artifacts inside distributable large packs;
-- mobile benchmarks and threshold tuning;
+- complete transfer-queue wiring and mobile threshold benchmarks;
 - optional OPFS and vector-search adapters;
 - signed publisher catalogs, delta updates, encrypted notes and cross-device sync;
 - native Android/iOS packaging after the web core and storage adapters stabilize.
