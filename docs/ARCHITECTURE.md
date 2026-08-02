@@ -9,6 +9,7 @@ L-Note is a hosted, offline-first knowledge workspace with:
 - optional domain query planners outside the generic search engine;
 - hash-routed packages, documents, concepts, statements, notes and package creation;
 - source-linked statements, relations, backlinks and personal-note overlays;
+- reviewed cross-document discrepancies with inline Phosphor markers and source diffs;
 - list and graph views over the same resources;
 - internal PDF viewing with document/section page anchors;
 - a browser-local creator for Markdown/TXT/JSON sources and pasted text;
@@ -150,6 +151,67 @@ The hosted GitHub Pages build uses IndexedDB VFS because the official SQLite OPF
 
 Every reported ranking failure becomes a regression test. Domain vocabulary belongs in a plugin or pack.
 
+## Reviewed source discrepancies
+
+A discrepancy is not inferred from raw document text at display time. A strong-device preparation workflow creates a reviewed relation between two source statements and stores it in optional package-level `statementRelations`.
+
+```text
+statement relation
+  sourceClaimId
+  targetClaimId
+  type
+  status
+  reason
+  detectedBy
+  confidence
+```
+
+Supported relation types are:
+
+```text
+supports
+contradicts
+refines
+supersedes
+equivalent
+different_scope
+```
+
+`different_scope` is deliberately separate from `contradicts`: different populations, jurisdictions, formulations, dates or other conditions may explain an apparent mismatch. `supersedes` is accepted only as an explicit preparation/review decision; the client does not infer obsolescence from publication dates.
+
+Claim IDs and document IDs are local to a pack. Cross-pack routes and relations use qualified runtime IDs:
+
+```text
+pack-id::claim-id
+pack-id::document-id
+```
+
+This prevents equal local IDs from different packages from overwriting one another and ensures that a comparison opens the exact document version.
+
+At runtime:
+
+```text
+enabled packs
+  → symmetric statement-discrepancy index
+  → exact source-quote position in each section
+  → one Phosphor warning marker per disputed passage
+  → one disclosure containing all comparisons attached to that passage
+```
+
+The disclosure shows:
+
+- every linked source statement rather than one selected answer;
+- document and pack titles;
+- `effectiveFrom`, source publication date or pack publication date;
+- the exact evidence quote from each side;
+- a deterministic token-level diff;
+- relation status, reason and preparation provenance;
+- routed actions for opening either complete document.
+
+The browser client is neutral. It never selects a winning source, rewrites a source statement, hides a newer or older version, or converts a conflict into a scope difference. It displays only reviewed relations and silently leaves unresolved external references unavailable until their packages are installed.
+
+A future strong-device preparation stage will retrieve similar existing claims, compare numbers, units, negation, dates and shared entities, optionally ask a local/server LLM to classify the candidate, and require a user/domain reviewer to accept, edit or dismiss it. Selecting a preferred/current statement is also a preparation decision, not a browser-side inference.
+
 ## Worker roles
 
 ```text
@@ -203,6 +265,8 @@ Selecting another model or pressing manual unload calls `engine.unload()` and te
 
 The deterministic evidence verifier splits output into statements and checks citations, content-term overlap, numeric values and negation mismatches. It is conservative and replaceable through `EvidenceVerifierPort`; it is not a clinical NLI model.
 
+Confirmed source discrepancies are currently rendered in readers but are not yet injected into every generated-answer evidence envelope. That is a separate TODO so model prompts do not silently gain unresolved or irrelevant comparisons.
+
 ## Routing, readers and graph
 
 Stable routes:
@@ -221,7 +285,7 @@ Stable routes:
 
 The package creator uses `#/package/new?from=library&depth=1`. Browser history owns nested card traversal. Back moves through the chain; full Close returns to the recorded base page and removes forward card routes. Direct links and reload restore the route. Graph nodes use the same registry and route contract.
 
-A document may reference a local asset and section page anchors. The routed document reader displays the PDF in the same modal and changes the page fragment when a source-linked section is opened.
+A document may reference a local asset and section page anchors. The routed document reader displays the PDF in the same modal and changes the page fragment when a source-linked section is opened. Cross-pack comparison links use qualified document IDs but otherwise follow the same hash-routing contract.
 
 ## Preparation and distribution
 
@@ -242,15 +306,18 @@ Heavy desktop/server path:
 raw files / PDF / DOCX / database export / notes
   → deterministic extraction and provenance
   → OCR only where a text layer is absent
-  → optional strong local/server LLM proposals
-  → chunks, aliases, concepts, statements and relations
+  → chunks, aliases, concepts and source-linked statements
+  → retrieve candidate statements from existing prepared packs
+  → numeric, unit, negation, date and scope checks
+  → optional strong local/server LLM proposals and discrepancy classification
   → exact-quote and referential validation
-  → human review
+  → human review of concepts, statements, relations and discrepancies
+  → optional preferred/current statement designation
   → optional prebuilt SQLite/search artifacts
   → installable L-Note pack
 ```
 
-Model output may propose structure but never silently replace source text.
+Model output may propose structure but never silently replace source text or resolve a source disagreement without review.
 
 ## Transfers
 
@@ -268,7 +335,7 @@ L-Note owns:
 portable contracts and stable IDs
 pack preparation, installation and composition
 storage/search/model/speech ports
-generic concepts, statements, relations and backlinks
+generic concepts, statements, entity relations and reviewed source discrepancies
 personal overlay
 versioned evidence collection and verification boundary
 hash routing and knowledge-graph projection
@@ -290,12 +357,13 @@ Any future connection requires separate approval and MiniMed-owned retrieval, do
 
 ## Next ordered work
 
-1. Add reviewed, optional LLM-assisted enrichment to the package creator.
-2. Add PDF/DOCX extraction, OCR and database exporters on a stronger device/server.
-3. Package optional prebuilt SQLite/FTS artifacts for large distributable packs.
-4. Complete transfer-queue wiring and restore/resume UI.
-5. Benchmark search, speech and models on Snapdragon 7-class 8 GB and 12 GB devices.
-6. Consider OPFS and vector adapters after the IndexedDB/FTS baseline is measured.
-7. Refactor transitional shell only when one of these features requires it.
+1. Add strong-device candidate detection and human review for source discrepancies.
+2. Add reviewed, optional LLM-assisted enrichment to the package creator/preparer.
+3. Add PDF/DOCX extraction, OCR and database exporters on a stronger device/server.
+4. Package optional prebuilt SQLite/FTS artifacts for large distributable packs.
+5. Complete transfer-queue wiring and restore/resume UI.
+6. Benchmark search, speech and models on Snapdragon 7-class 8 GB and 12 GB devices.
+7. Consider OPFS and vector adapters after the IndexedDB/FTS baseline is measured.
+8. Refactor transitional shell only when one of these features requires it.
 
 Live MiniMed integration is excluded from this sequence. Android and iOS remain deferred until the hosted web core is stable.
