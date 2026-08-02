@@ -59,6 +59,7 @@
 }
 
 .primary-nav button {
+  position: relative;
   display: flex;
   width: 100%;
   align-items: center;
@@ -69,8 +70,9 @@
   text-align: left;
 }
 
-.primary-nav button span {
+.primary-nav button > .icon {
   width: 1.4rem;
+  flex: 0 0 1.4rem;
   font-size: 1.15rem;
   text-align: center;
 }

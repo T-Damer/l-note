@@ -23,9 +23,8 @@ export function voiceProgressPercent(progress) {
 }
 
 export function voiceProgressLabel(progress, percent) {
-  const file = progress?.file ? ` · ${progress.file}` : '';
-  if (progress?.status === 'ready') return 'Модель распознавания готова.';
-  return `Загрузка модели ${Math.round(percent)}%${file}`;
+  if (progress?.status === 'ready') return 'Распознавание речи готово.';
+  return `Загрузка распознавания речи: ${Math.round(percent)}%`;
 }
 
 function createModelSelect() {
@@ -54,25 +53,25 @@ export function createVoiceSearchElements({ trigger, slot, input }) {
     input,
     model: createModelSelect(),
     language: createLanguageSelect(),
-    status: Text({ variant: 'muted', text: 'Проверка локального кэша…' }),
+    status: Text({ variant: 'muted', text: 'Проверка загруженных данных…' }),
     summary: Text({ variant: 'caption', text: '' }),
     progress: element('progress', { max: 100, value: 0, hidden: true }),
     load: Button({ variant: 'primary', icon: 'download', text: 'Загрузить модель' }),
     record: Button({ variant: 'primary', icon: 'microphone', text: 'Начать запись' }),
     cancel: Button({ variant: 'secondary', icon: 'close', text: 'Отмена', hidden: true }),
-    unload: Button({ variant: 'ghost', icon: 'unload', text: 'Выгрузить из памяти', hidden: true }),
+    unload: Button({ variant: 'ghost', icon: 'unload', text: 'Выключить', hidden: true }),
   };
   elements.panel = element('section', { className: 'voice-search-panel', hidden: true }, [
     element('header', { className: 'voice-search-heading' }, [
       element('div', {}, [
-        Text({ variant: 'eyebrow', text: 'Локально на устройстве' }),
+        Text({ variant: 'eyebrow', text: 'На этом устройстве' }),
         Text({ variant: 'heading', as: 'h2', text: 'Голосовой поиск' }),
       ]),
       elements.unload,
     ]),
     Text({
       variant: 'muted',
-      text: 'Первая загрузка требует сети. После этого русские и английские запросы распознаются офлайн в отдельном Web Worker.',
+      text: 'Первая загрузка распознавания речи требует сети. После этого голосовые запросы распознаются офлайн.',
     }),
     element('div', { className: 'voice-search-settings' }, [
       Field({ label: 'Модель', control: elements.model }),
@@ -105,15 +104,15 @@ export function renderVoiceSearchElements({
   elements.summary.textContent = [
     profile.label,
     profile.parameters,
-    `около ${formatMegabytes(profile.downloadSizeMB)} на диске`,
-    cached === true ? 'веса на диске' : cached === false ? 'ещё не загружена' : 'кэш неизвестен',
+    `около ${formatMegabytes(profile.downloadSizeMB)}`,
+    cached === true ? 'загружена' : cached === false ? 'ещё не загружена' : 'состояние неизвестно',
     loaded ? 'включена' : 'выключена',
   ].join(' · ');
   elements.model.disabled = busy || recording;
   elements.language.disabled = busy || recording;
   elements.load.hidden = loaded || recording;
   elements.load.disabled = busy;
-  setButtonText(elements.load, cached ? 'Включить модель' : 'Загрузить модель');
+  setButtonText(elements.load, cached ? 'Включить' : 'Загрузить');
   elements.record.hidden = !loaded;
   elements.record.disabled = busy || !recorderAvailable;
   setButtonText(elements.record, recording ? 'Остановить и распознать' : 'Начать запись');

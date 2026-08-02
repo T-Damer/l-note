@@ -31,6 +31,7 @@ export function createVoiceSearchController({
   storagePort,
   audioRecorder = createBrowserAudioRecorder(),
   onTranscript,
+  onActivityProgress = () => {},
   onError = () => {},
 } = {}) {
   const elements = createVoiceSearchElements({
@@ -82,7 +83,7 @@ export function createVoiceSearchController({
     setStatus(
       audioRecorder.available
         ? 'Выберите модель, затем разрешите доступ к микрофону.'
-        : 'Микрофон или MediaRecorder недоступны в этом браузере.',
+        : 'Запись с микрофона недоступна в этом браузере.',
       audioRecorder.available ? 'info' : 'error',
     );
     render();
@@ -92,8 +93,9 @@ export function createVoiceSearchController({
     const profile = currentProfile();
     operation = 'loading';
     elements.progress.value = 0;
+    onActivityProgress({ active: true, progress: 0, label: 'Загрузка распознавания речи' });
     render();
-    setStatus('Подготовка локального хранилища…');
+    setStatus('Подготовка загрузки…');
     try {
       await requestPersistentStorage();
       await speechPort.load({
@@ -101,15 +103,21 @@ export function createVoiceSearchController({
         onProgress(progress) {
           const percent = voiceProgressPercent(progress);
           elements.progress.value = percent;
+          onActivityProgress({
+            active: true,
+            progress: percent,
+            label: 'Загрузка распознавания речи',
+          });
           setStatus(voiceProgressLabel(progress, percent));
         },
       });
       cacheState.set(profile.modelId, true);
-      setStatus('Модель включена. Можно начать запись.', 'success');
+      setStatus('Распознавание речи готово. Можно начать запись.', 'success');
     } catch (error) {
       if (error?.name !== 'AbortError') reportError(error);
     } finally {
       operation = 'idle';
+      onActivityProgress({ active: false, progress: 0, label: 'Загрузка распознавания речи' });
       render();
     }
   }
@@ -130,7 +138,7 @@ export function createVoiceSearchController({
     clearAutoStop();
     operation = 'transcribing';
     render();
-    setStatus('Распознавание на устройстве…');
+    setStatus('Распознавание записи…');
     try {
       const audio = await audioRecorder.stop();
       const result = await speechPort.transcribe(audio, {
@@ -138,7 +146,7 @@ export function createVoiceSearchController({
       });
       if (!result.text) throw new Error('Речь не распознана. Попробуйте говорить ближе к микрофону.');
       elements.input.value = result.text;
-      setStatus(`Распознано локально за ${(result.durationMs / 1000).toFixed(1)} с.`, 'success');
+      setStatus(`Готово за ${(result.durationMs / 1000).toFixed(1)} с.`, 'success');
       onTranscript?.(result.text);
     } catch (error) {
       if (error?.name !== 'AbortError') reportError(error);
@@ -166,13 +174,14 @@ export function createVoiceSearchController({
     if (operation === 'recording') audioRecorder.cancel();
     else await speechPort.cancel();
     operation = 'idle';
-    setStatus('Операция отменена. Загруженные файлы в кэше сохранены.');
+    onActivityProgress({ active: false, progress: 0, label: 'Загрузка распознавания речи' });
+    setStatus('Операция отменена. Загруженные данные сохранены.');
     render();
   }
 
   async function unload() {
     await speechPort.unload();
-    setStatus('Модель выгружена из памяти; веса остались на диске.');
+    setStatus('Распознавание речи выключено. Загруженные данные сохранены.');
     render();
   }
 

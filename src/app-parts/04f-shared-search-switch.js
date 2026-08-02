@@ -5,7 +5,6 @@ if (personalPriorityLabel) {
   const personalPrioritySwitch = Switch({
     input: dom.personalPriority,
     label: 'Поднимать личные заметки выше',
-    hint: 'Меняет только локальное ранжирование и не удаляет справочные результаты.',
     className: 'search-priority-switch',
   });
   personalPriorityLabel.replaceWith(personalPrioritySwitch);

@@ -1,10 +1,19 @@
 .search-box,
 .ask-composer {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
   padding: clamp(1rem, 3vw, 1.6rem);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--paper-strong);
   box-shadow: 0 1px 0 rgb(255 255 255 / 25%) inset;
+}
+
+.ask-composer > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .search-box > label,
@@ -18,7 +27,8 @@
 
 .search-input-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: .65rem;
   margin-top: .45rem;
 }
@@ -29,6 +39,8 @@
 .note-form-body textarea,
 .note-form-body select {
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: .78rem .9rem;
   border: 1px solid var(--line);
   border-radius: .72rem;
@@ -61,21 +73,35 @@
 
 .suggestion-row {
   display: flex;
-  flex-wrap: wrap;
+  min-width: 0;
   gap: .45rem;
-  margin: 1rem 0 1.3rem;
+  margin: .75rem 0 0;
+  padding: 0 0 .15rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+
+.suggestion-row::-webkit-scrollbar {
+  display: none;
 }
 
 .suggestion-row button {
   padding: .44rem .68rem;
+  flex: 0 0 auto;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: transparent;
   color: var(--muted);
   font-size: .76rem;
+  scroll-snap-align: start;
+  white-space: nowrap;
 }
 
-.suggestion-row button:hover {
+.suggestion-row button:hover,
+.suggestion-row button:focus-visible {
   border-color: var(--line-strong);
   color: var(--ink);
 }
@@ -301,6 +327,7 @@
 
 .composer-actions {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   gap: .6rem;
   margin-top: .7rem;
@@ -385,4 +412,19 @@
   border-left: 4px solid var(--red);
   border-radius: .4rem .75rem .75rem .4rem;
   background: color-mix(in srgb, var(--red) 8%, transparent);
+}
+
+@media (max-width: 680px) {
+  .search-input-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .search-options {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .search-priority-switch {
+    width: 100%;
+  }
 }

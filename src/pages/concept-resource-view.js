@@ -1,5 +1,7 @@
 import { Button } from '../ui/components.js';
 import { element } from '../ui/dom.js';
+import { Icon } from '../ui/icons.js';
+import { renderKnowledgeGraph } from '../ui/knowledge-graph.js';
 import { Text } from '../ui/text.js';
 
 function relationRecords(knowledge, entityId) {
@@ -8,7 +10,63 @@ function relationRecords(knowledge, entityId) {
   ));
 }
 
-function renderRelations({ entityId, knowledge, predicateLabel, strengthLabel, navigate }) {
+function categoriesFor(entity) {
+  return Array.isArray(entity?.categories) && entity.categories.length
+    ? entity.categories
+    : [{ id: 'unknown', weight: 1 }];
+}
+
+function relationGraph({ entityId, entity, relations, knowledge, predicateLabel }) {
+  const focusId = `focus:${entityId}`;
+  const nodes = [{
+    id: focusId,
+    type: 'focus',
+    label: entity.name,
+    subtitle: 'Текущее понятие',
+    resourceType: 'concept',
+    resourceId: entityId,
+    categories: categoriesFor(entity),
+  }];
+  const related = new Map();
+  const edges = [];
+
+  for (const relation of relations) {
+    const otherId = relation.sourceId === entityId ? relation.targetId : relation.sourceId;
+    const other = knowledge.entities.get(otherId);
+    if (!other) continue;
+    const nodeId = `concept:${otherId}`;
+    if (!related.has(otherId)) {
+      related.set(otherId, nodeId);
+      nodes.push({
+        id: nodeId,
+        type: 'concept',
+        label: other.name,
+        subtitle: other.type ?? 'Связанное понятие',
+        resourceType: 'concept',
+        resourceId: other.id,
+        categories: categoriesFor(other),
+      });
+    }
+    edges.push({
+      id: `relation:${relation.packId ?? 'pack'}:${relation.sourceId}:${relation.targetId}:${edges.length}`,
+      from: focusId,
+      to: nodeId,
+      type: 'relation',
+      label: predicateLabel(relation.predicate ?? relation.type),
+    });
+  }
+  return { nodes, edges };
+}
+
+function syncRelationToggle(toggle, graphActive) {
+  toggle.replaceChildren(
+    Icon({ name: graphActive ? 'list' : 'graph' }),
+    Text({ variant: 'label', as: 'span', text: graphActive ? 'Список' : 'Граф' }),
+  );
+  toggle.setAttribute('aria-pressed', String(graphActive));
+}
+
+function renderRelations({ entityId, entity, knowledge, predicateLabel, strengthLabel, navigate }) {
   const relations = relationRecords(knowledge, entityId);
   if (!relations.length) return null;
 
@@ -40,9 +98,38 @@ function renderRelations({ entityId, knowledge, predicateLabel, strengthLabel, n
     }));
   }
 
+  const graph = element('div', { className: 'relation-graph-view hidden' }, [
+    renderKnowledgeGraph(
+      relationGraph({ entityId, entity, relations, knowledge, predicateLabel }),
+      {
+        typeOrder: ['focus', 'concept'],
+        typeLabels: { focus: 'Текущее понятие', concept: 'Связанные понятия' },
+        ariaLabel: `Связи понятия ${entity.name}`,
+        edgeLabel: (edge) => edge.label,
+        onOpen: (node) => node.resourceId && navigate('concept', node.resourceId),
+      },
+    ),
+  ]);
+  const toggle = Button({
+    variant: 'secondary',
+    icon: 'graph',
+    text: 'Граф',
+    className: 'relation-view-toggle',
+    'aria-pressed': 'false',
+  });
+  let graphActive = false;
+  toggle.addEventListener('click', () => {
+    graphActive = !graphActive;
+    list.classList.toggle('hidden', graphActive);
+    graph.classList.toggle('hidden', !graphActive);
+    syncRelationToggle(toggle, graphActive);
+  });
+
   return element('details', { className: 'relation-accordion' }, [
     element('summary', { text: `Связи · ${relations.length}` }),
+    element('div', { className: 'relation-view-toolbar' }, [toggle]),
     list,
+    graph,
   ]);
 }
 
@@ -120,7 +207,7 @@ export function renderConceptResource({
       entity.aliases.map((alias) => element('span', { className: 'pill', text: alias }))
     )));
   }
-  body.push(renderRelations({ entityId, knowledge, predicateLabel, strengthLabel, navigate }));
+  body.push(renderRelations({ entityId, entity, knowledge, predicateLabel, strengthLabel, navigate }));
   body.push(...renderMentions({ entityId, knowledge, navigate }));
   body.push(...renderNotes({ entityId, notes, relationLabel, navigate }));
   dialogView.replaceBody(body.filter(Boolean));

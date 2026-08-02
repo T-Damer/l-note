@@ -14,6 +14,7 @@ class FakeWorker {
     this.listeners = new Map();
     this.terminated = false;
     this.deferTranscription = deferTranscription;
+    this.messages = [];
   }
 
   addEventListener(type, listener) {
@@ -27,6 +28,7 @@ class FakeWorker {
   }
 
   postMessage(message) {
+    this.messages.push(message);
     if (message.command === 'transcribe' && this.deferTranscription) return;
     queueMicrotask(() => {
       const result = message.command === 'transcribe'
@@ -61,20 +63,28 @@ test('defines lightweight multilingual RU/EN speech profiles', () => {
   assert.equal(LOCAL_SPEECH_MODEL_PROFILES[0].modelId, DEFAULT_SPEECH_MODEL_ID);
   for (const profile of LOCAL_SPEECH_MODEL_PROFILES) {
     assert.deepEqual(profile.languages, ['auto', 'ru', 'en']);
-    assert.equal(profile.dtype, 'q8');
+    assert.deepEqual(profile.dtype, {
+      encoder_model: 'q8',
+      decoder_model_merged: 'fp16',
+    });
+    assert.deepEqual(profile.fallbackDtype, {
+      encoder_model: 'fp32',
+      decoder_model_merged: 'fp32',
+    });
+    assert.match(profile.modelId, /^onnx-community\/whisper-/u);
     assert.ok(profile.downloadSizeMB < 200);
   }
 });
 
 test('detects persisted Transformers.js model artifacts without loading inference', async () => {
   const cache = fakeCacheStorage([
-    'https://huggingface.co/Xenova/whisper-tiny/resolve/main/onnx/model_quantized.onnx',
+    'https://huggingface.co/onnx-community/whisper-tiny/resolve/main/onnx/encoder_model_quantized.onnx',
   ]);
-  assert.equal(await isSpeechModelCached('Xenova/whisper-tiny', cache), true);
-  assert.equal(await isSpeechModelCached('Xenova/whisper-base', cache), false);
+  assert.equal(await isSpeechModelCached('onnx-community/whisper-tiny', cache), true);
+  assert.equal(await isSpeechModelCached('onnx-community/whisper-base', cache), false);
 });
 
-test('loads one worker model and transcribes a 16 kHz Float32Array', async () => {
+test('loads one worker model with a decoder compatibility fallback and transcribes audio', async () => {
   const workers = [];
   const port = new BrowserSpeechRecognition({
     workerFactory() {
@@ -88,6 +98,15 @@ test('loads one worker model and transcribes a 16 kHz Float32Array', async () =>
   const loaded = await port.load({ modelId: DEFAULT_SPEECH_MODEL_ID });
   assert.equal(loaded.modelId, DEFAULT_SPEECH_MODEL_ID);
   assert.equal(port.modelId, DEFAULT_SPEECH_MODEL_ID);
+  const loadMessage = workers[0].messages.find((message) => message.command === 'load');
+  assert.deepEqual(loadMessage.dtype, {
+    encoder_model: 'q8',
+    decoder_model_merged: 'fp16',
+  });
+  assert.deepEqual(loadMessage.fallbackDtype, {
+    encoder_model: 'fp32',
+    decoder_model_merged: 'fp32',
+  });
 
   const result = await port.transcribe(new Float32Array([0, .25, -.25, 0]), { language: 'ru' });
   assert.equal(result.text, 'локальный голосовой поиск');

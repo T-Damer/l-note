@@ -1,13 +1,23 @@
 const TRANSFORMERS_JS_VERSION = '4.2.0';
 const SPEECH_WORKER_URL = new URL('./workers/speech-worker.js', import.meta.url);
 
+const DEFAULT_WHISPER_DTYPE = Object.freeze({
+  encoder_model: 'q8',
+  decoder_model_merged: 'fp16',
+});
+const FALLBACK_WHISPER_DTYPE = Object.freeze({
+  encoder_model: 'fp32',
+  decoder_model_merged: 'fp32',
+});
+
 export const LOCAL_SPEECH_MODEL_PROFILES = Object.freeze([
   Object.freeze({
     id: 'whisper-tiny',
-    modelId: 'Xenova/whisper-tiny',
+    modelId: 'onnx-community/whisper-tiny',
     label: 'Whisper Tiny',
     parameters: '39M',
-    dtype: 'q8',
+    dtype: DEFAULT_WHISPER_DTYPE,
+    fallbackDtype: FALLBACK_WHISPER_DTYPE,
     downloadSizeMB: 75,
     recommendedRamGB: 8,
     languages: Object.freeze(['auto', 'ru', 'en']),
@@ -16,11 +26,12 @@ export const LOCAL_SPEECH_MODEL_PROFILES = Object.freeze([
   }),
   Object.freeze({
     id: 'whisper-base',
-    modelId: 'Xenova/whisper-base',
+    modelId: 'onnx-community/whisper-base',
     label: 'Whisper Base',
     parameters: '74M',
-    dtype: 'q8',
-    downloadSizeMB: 142,
+    dtype: DEFAULT_WHISPER_DTYPE,
+    fallbackDtype: FALLBACK_WHISPER_DTYPE,
+    downloadSizeMB: 155,
     recommendedRamGB: 8,
     languages: Object.freeze(['auto', 'ru', 'en']),
     role: 'Повышенная точность',
@@ -99,7 +110,7 @@ export class BrowserSpeechRecognition {
     const worker = this.workerFactory();
     worker.addEventListener('message', (event) => this.handleMessage(event.data));
     worker.addEventListener('error', (event) => {
-      this.rejectPending(new Error(event.message || 'Speech worker failed.'));
+      this.rejectPending(new Error(event.message || 'Не удалось запустить распознавание речи.'));
       this.terminateWorker();
     });
     this.worker = worker;
@@ -115,7 +126,7 @@ export class BrowserSpeechRecognition {
     }
     this.pending.delete(message.requestId);
     if (message.type === 'error') {
-      pending.reject(new Error(message.error || 'Speech worker failed.'));
+      pending.reject(new Error(message.error || 'Не удалось запустить распознавание речи.'));
       return;
     }
     pending.resolve(message.result);
@@ -169,9 +180,10 @@ export class BrowserSpeechRecognition {
     const cachedBeforeLoad = await this.isModelCached(modelId);
     const startedAt = monotonicNow();
     try {
-      await this.request('load', {
+      const loaded = await this.request('load', {
         modelId,
         dtype: profile.dtype,
+        fallbackDtype: profile.fallbackDtype,
         runtimeVersion: TRANSFORMERS_JS_VERSION,
       }, { onProgress });
       this.modelId = modelId;
@@ -181,6 +193,7 @@ export class BrowserSpeechRecognition {
         loadMs: monotonicNow() - startedAt,
         reused: false,
         cachedBeforeLoad,
+        fallbackUsed: Boolean(loaded?.fallbackUsed),
         runtime: 'transformers.js-worker',
       };
     } catch (error) {
