@@ -1,3 +1,4 @@
+import { resolveStatement } from '../helpers/statement-conflicts.js';
 import { Button } from '../ui/components.js';
 import { element } from '../ui/dom.js';
 import { Text } from '../ui/text.js';
@@ -20,6 +21,12 @@ function entityPill(entity, navigate) {
     text: entity.name,
     onClick: () => navigate('concept', entity.id),
   });
+}
+
+function sourceDocument(knowledge, claim) {
+  const pack = knowledge.packs.find((item) => item.id === claim.packId);
+  return pack?.documents?.find((item) => item.id === claim.source?.documentId)
+    ?? knowledge.documents.get(claim.source?.documentId);
 }
 
 export function createNoteResourceView({
@@ -52,7 +59,7 @@ export function createNoteResourceView({
     targetSummary.replaceChildren();
     if (!claimId) return;
     const knowledge = getKnowledge();
-    const claim = knowledge.claims.get(claimId);
+    const claim = resolveStatement(knowledge.packs, claimId) ?? knowledge.claims.get(claimId);
     if (!claim) {
       targetSummary.append(Text({
         variant: 'muted',
@@ -60,7 +67,7 @@ export function createNoteResourceView({
       }));
       return;
     }
-    const documentRecord = knowledge.documents.get(claim.source?.documentId);
+    const documentRecord = sourceDocument(knowledge, claim);
     targetSummary.append(
       Text({ variant: 'label', text: 'Связанное утверждение' }),
       Button({
@@ -73,7 +80,7 @@ export function createNoteResourceView({
             text: `${documentRecord?.title ?? claim.source?.documentId} — ${claim.source?.sectionId ?? 'раздел не указан'}`,
           }),
         ],
-        onClick: () => navigate('statement', claim.id),
+        onClick: () => navigate('statement', claim.runtimeId ?? claim.id),
       }),
     );
   }
