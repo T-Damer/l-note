@@ -8,13 +8,26 @@ function packageState(packRecords, catalog, packId) {
   return { installed, entry, pack: installed?.pack ?? null };
 }
 
+function visibleConflictCount(pack, stats) {
+  if (pack?.statementRelations) {
+    return pack.statementRelations.filter((relation) => (
+      relation.status !== 'dismissed'
+      && ['contradicts', 'supersedes', 'different_scope'].includes(relation.type)
+    )).length;
+  }
+  return Number(stats.statementRelations ?? 0);
+}
+
 function renderStats(pack, entry) {
   const stats = entry?.stats ?? {};
-  return element('div', { className: 'storage-summary' }, [
+  const values = [
     element('span', { text: `${pack?.documents?.length ?? stats.documents ?? 0} документов` }),
     element('span', { text: `${pack?.entities?.length ?? stats.entities ?? 0} понятий` }),
     element('span', { text: `${pack?.claims?.length ?? stats.claims ?? 0} утверждений` }),
-  ]);
+  ];
+  const conflicts = visibleConflictCount(pack, stats);
+  if (conflicts) values.push(element('span', { text: `${conflicts} расхождений` }));
+  return element('div', { className: 'storage-summary' }, values);
 }
 
 function renderInstallAction(entry, onInstall) {
