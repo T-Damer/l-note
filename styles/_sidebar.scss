@@ -5,6 +5,7 @@
 
 .nav-label {
   min-width: 0;
+  flex: 1 1 auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -12,8 +13,30 @@
 
 .sidebar-toggle {
   align-self: flex-end;
-  margin-top: .75rem;
+  margin-top: auto;
   flex: 0 0 auto;
+}
+
+.sidebar-activity-progress {
+  --activity-progress: 0%;
+
+  width: .9rem;
+  height: .9rem;
+  margin-left: auto;
+  flex: 0 0 .9rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) var(--activity-progress), var(--line) 0);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--paper-strong) 88%, transparent);
+}
+
+.sidebar-activity-progress[hidden] {
+  display: none;
+}
+
+.sidebar-activity-progress.is-indeterminate {
+  background: conic-gradient(var(--accent) 0 34%, var(--line) 34% 100%);
+  animation: sidebar-progress-spin .9s linear infinite;
 }
 
 .sidebar.is-collapsed {
@@ -42,9 +65,18 @@
   padding-inline: .5rem;
 }
 
+.sidebar.is-collapsed .sidebar-activity-progress {
+  position: absolute;
+  top: .22rem;
+  right: .22rem;
+  width: .72rem;
+  height: .72rem;
+  margin: 0;
+  flex-basis: .72rem;
+}
+
 .sidebar.is-collapsed .sidebar-toggle {
   align-self: center;
-  margin-top: auto;
 }
 
 .sidebar.is-collapsed [data-tooltip] {
@@ -78,6 +110,18 @@
 .sidebar.is-collapsed [data-tooltip]:focus-visible::after {
   transform: translate(0, -50%);
   opacity: 1;
+}
+
+@keyframes sidebar-progress-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-activity-progress.is-indeterminate {
+    animation: none;
+  }
 }
 
 @media (max-width: 980px) {
