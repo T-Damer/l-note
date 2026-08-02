@@ -3,7 +3,9 @@ import test from 'node:test';
 
 import {
   buildStatementConflictIndex,
+  qualifyDocumentId,
   qualifyStatementId,
+  resolveDocument,
   resolveStatement,
   sectionConflictAnnotations,
   statementRelationLabel,
@@ -79,9 +81,10 @@ const packs = [
   },
 ];
 
-test('qualifies statement IDs without rewriting already qualified references', () => {
+test('qualifies statement and document IDs without rewriting qualified references', () => {
   assert.equal(qualifyStatementId('pack.a', 'dose'), 'pack.a::dose');
   assert.equal(qualifyStatementId('pack.a', 'pack.b::dose'), 'pack.b::dose');
+  assert.equal(qualifyDocumentId('pack.b', 'doc.b'), 'pack.b::doc.b');
   assert.equal(qualifyStatementId('', ''), '');
 });
 
@@ -110,6 +113,8 @@ test('builds a symmetric conflict index with document names and dates', () => {
   const conflict = index.conflicts[0];
   assert.equal(conflict.source.claimRef, 'pack.a::dose');
   assert.equal(conflict.target.claimRef, 'pack.b::dose');
+  assert.equal(conflict.source.documentRef, 'pack.a::doc.a');
+  assert.equal(conflict.target.documentRef, 'pack.b::doc.b');
   assert.equal(conflict.source.documentTitle, 'Документ A');
   assert.equal(conflict.target.date, '2026-02-20');
   assert.equal(index.byClaim.get('pack.a::dose').length, 2);
@@ -128,8 +133,10 @@ test('groups several discrepancies under one exact inline marker', () => {
   assert.equal(annotations[0].conflicts.length, 2);
 });
 
-test('resolves duplicate local IDs through pack-qualified statement routes', () => {
+test('resolves statements and documents through pack-qualified routes', () => {
   assert.equal(resolveStatement(packs, 'pack.a::dose').text.includes('5 мг'), true);
   assert.equal(resolveStatement(packs, 'pack.b::dose').text.includes('10 мг'), true);
   assert.equal(resolveStatement(packs, 'dose').packId, 'pack.a');
+  assert.equal(resolveDocument(packs, 'pack.b::doc.b').title, 'Документ B');
+  assert.equal(resolveDocument(packs, 'doc.a').packId, 'pack.a');
 });
