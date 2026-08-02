@@ -13,6 +13,7 @@ const seen = new Set();
 let totalBytes = 0;
 let totalDocuments = 0;
 let totalSections = 0;
+let totalStatementRelations = 0;
 
 if (catalog.schemaVersion !== 1) failures.push('catalog.schemaVersion must be 1');
 if (!Array.isArray(catalog.packs) || catalog.packs.length === 0) failures.push('catalog.packs must be a non-empty array');
@@ -39,14 +40,19 @@ for (const entry of catalog.packs ?? []) {
   if (entry.sha256 !== sha256) failures.push(`${entry.id}: SHA-256 mismatch`);
   if (entry.bytes !== bytes.length) failures.push(`${entry.id}: byte-size mismatch`);
   const sections = pack.documents.reduce((sum, document) => sum + document.sections.length, 0);
+  const statementRelations = pack.statementRelations?.length ?? 0;
   if (entry.stats?.documents !== pack.documents.length) failures.push(`${entry.id}: document count mismatch`);
   if (entry.stats?.chunks !== sections) failures.push(`${entry.id}: section/chunk count mismatch`);
   if (entry.stats?.entities !== pack.entities.length) failures.push(`${entry.id}: entity count mismatch`);
   if (entry.stats?.claims !== pack.claims.length) failures.push(`${entry.id}: claim count mismatch`);
   if (entry.stats?.relations !== pack.relations.length) failures.push(`${entry.id}: relation count mismatch`);
+  if (entry.stats?.statementRelations !== undefined && entry.stats.statementRelations !== statementRelations) {
+    failures.push(`${entry.id}: statement-relation count mismatch`);
+  }
   totalBytes += bytes.length;
   totalDocuments += pack.documents.length;
   totalSections += sections;
+  totalStatementRelations += statementRelations;
 }
 
 if (failures.length > 0) {
@@ -54,5 +60,8 @@ if (failures.length > 0) {
   for (const failure of failures) console.error(`- ${failure}`);
   process.exitCode = 1;
 } else {
-  console.log(`Validated ${catalog.packs.length} packs: ${totalDocuments} documents, ${totalSections} sections, ${totalBytes} bytes.`);
+  console.log(
+    `Validated ${catalog.packs.length} packs: ${totalDocuments} documents, ${totalSections} sections, `
+    + `${totalStatementRelations} statement relations, ${totalBytes} bytes.`,
+  );
 }
