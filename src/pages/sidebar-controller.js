@@ -36,6 +36,13 @@ function prepareNavButton(button) {
   return label;
 }
 
+function normalizedProgress(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return null;
+  const normalized = numeric > 1 ? numeric / 100 : numeric;
+  return Math.max(0, Math.min(1, normalized));
+}
+
 export function createSidebarController({
   sidebar,
   workspace,
@@ -50,6 +57,7 @@ export function createSidebarController({
   }
 
   for (const button of navButtons) prepareNavButton(button);
+  const progressNodes = new Map();
   const toggle = Button({
     variant: 'icon',
     className: 'sidebar-toggle',
@@ -83,9 +91,37 @@ export function createSidebarController({
     return setCollapsed(Boolean(stored), { persist: false });
   }
 
+  function progressNode(section) {
+    if (progressNodes.has(section)) return progressNodes.get(section);
+    const button = navButtons.find((item) => item.dataset.nav === section);
+    if (!button) return null;
+    const node = document.createElement('span');
+    node.className = 'sidebar-activity-progress';
+    node.hidden = true;
+    node.setAttribute('role', 'progressbar');
+    button.append(node);
+    progressNodes.set(section, node);
+    return node;
+  }
+
+  function setActivityProgress(section, { active = false, progress, label = 'Загрузка' } = {}) {
+    const node = progressNode(section);
+    if (!node) return false;
+    const value = normalizedProgress(progress);
+    node.hidden = !active;
+    node.classList.toggle('is-indeterminate', active && value === null);
+    node.style.setProperty('--activity-progress', `${Math.round((value ?? 0) * 100)}%`);
+    node.setAttribute('aria-label', label);
+    node.setAttribute('aria-valuemin', '0');
+    node.setAttribute('aria-valuemax', '100');
+    if (value === null) node.removeAttribute('aria-valuenow');
+    else node.setAttribute('aria-valuenow', String(Math.round(value * 100)));
+    return active;
+  }
+
   toggle.addEventListener('click', () => {
     void setCollapsed(!collapsed).catch((error) => {
-      console.warn('Sidebar preference was not persisted.', error);
+      console.warn('Sidebar preference could not be saved.', error);
     });
   });
 
@@ -93,6 +129,7 @@ export function createSidebarController({
   return Object.freeze({
     element: sidebar,
     restore,
+    setActivityProgress,
     setCollapsed,
     toggle,
     get collapsed() {
