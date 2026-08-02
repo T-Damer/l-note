@@ -32,6 +32,8 @@ const offlineModules = [
   'src/helpers/sqlite-fts.js',
   'src/helpers/disk-search.js',
   'src/helpers/document-assets.js',
+  'src/helpers/statement-conflicts.js',
+  'src/helpers/text-diff.js',
   'src/helpers/transfer-queue.js',
   'src/pages/ask-page-controller.js',
   'src/pages/document-asset-view.js',
@@ -39,6 +41,7 @@ const offlineModules = [
   'src/pages/model-lab-view.js',
   'src/pages/package-builder-view.js',
   'src/pages/search-results-view.js',
+  'src/pages/statement-conflict-view.js',
   'src/pages/transfer-queue-view.js',
   'src/pages/voice-search-controller.js',
   'src/services/ask-workflow.js',
@@ -74,6 +77,7 @@ test('static build contains the complete local-first shell', async () => {
     'vendor/phosphor/style.css',
     'vendor/phosphor/Phosphor.woff2',
     'packs/catalog.json',
+    'packs/lnote-guide.pack.json',
     'src/app.js',
     ...offlineModules,
   ]) await access(path.join(root, 'dist', relative));
@@ -87,6 +91,8 @@ test('static build contains the complete local-first shell', async () => {
     /\.document-asset-frame/u,
     /\.knowledge-graph-node/u,
     /\.pack-builder/u,
+    /\.statement-conflict-marker/u,
+    /\.statement-conflict-diff/u,
   ]);
   await assertContains('index.html', [
     /ph-magnifying-glass/u,
@@ -103,6 +109,8 @@ test('static build contains the complete local-first shell', async () => {
     /createAskWorkflow/u,
     /renderPackageBuilderResource/u,
     /createRoutedResourceRenderer/u,
+    /createStatementConflictDisclosure/u,
+    /buildStatementConflictIndex/u,
   ]);
   await assertContains('src/adapters/adaptive-search.js', [
     /createSqliteFtsSearchPort/u,
@@ -129,6 +137,16 @@ test('static build contains the complete local-first shell', async () => {
     /command === 'search'/u,
     /command === 'suggest'/u,
   ]);
+  await assertContains('src/helpers/statement-conflicts.js', [
+    /qualifyStatementId/u,
+    /buildStatementConflictIndex/u,
+    /sectionConflictAnnotations/u,
+  ]);
+  await assertContains('src/pages/statement-conflict-view.js', [
+    /statement-conflict-marker/u,
+    /В источниках есть разные сведения/u,
+    /не выбирает одну автоматически/u,
+  ]);
   await assertContains('src/services/evidence-support-verifier.js', [
     /verifyStatementSupport/u,
     /unsupportedStatements/u,
@@ -144,11 +162,19 @@ test('static build contains the complete local-first shell', async () => {
     /CreateWebWorkerMLCEngine/u,
     /hasModelInCache/u,
   ]);
+  await assertContains('packs/lnote-guide.pack.json', [
+    /"statementRelations"/u,
+    /"guide\.search\.legacy"/u,
+    /"guide\.search\.disk"/u,
+    /"type":"contradicts"/u,
+  ]);
   await assertContains('service-worker.js', [
-    /l-note-shell-v37/u,
+    /l-note-shell-v38/u,
     /cdn\.jsdelivr\.net/u,
     /sqlite-fts-search\.js/u,
     /sqlite-search-worker\.js/u,
+    /statement-conflicts\.js/u,
+    /statement-conflict-view\.js/u,
     /transfer-queue\.js/u,
     /assets\/lnote-source-demo\.pdf/u,
   ]);
