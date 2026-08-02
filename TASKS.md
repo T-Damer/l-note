@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search and neutral display of reviewed source discrepancies are implemented; next are strong-device discrepancy detection/review, reviewed LLM-assisted pack enrichment, PDF/DOCX preparation, distributable prebuilt database artifacts and complete transfer-queue wiring. Android/iOS and live MiniMed integration remain deferred.
+**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies and the first UI/voice polish release are implemented; next are strong-device discrepancy detection/review, reviewed LLM-assisted pack enrichment, PDF/DOCX preparation, distributable prebuilt database artifacts and complete transfer-queue wiring. Android/iOS and live MiniMed integration remain deferred.
 
 ## Universal core and MiniMed
 
@@ -35,6 +35,7 @@ Single source of future work. Completed items describe the active branch.
 - [x] Reuse an unchanged FTS index through corpus fingerprints and release it through graceful Worker/connection close.
 - [x] Fall back to disk-backed IndexedDB postings when SQLite cannot initialize.
 - [x] Cover real FTS5 build, exact search, fuzzy Russian search, close and persisted reopen in headless Chromium.
+- [x] Place search suggestions directly below the input as a horizontal touch-scroll rail without a visible scrollbar.
 - [ ] Tune the current 5,000-record / approximately 8 MiB threshold on representative mobile devices.
 - [ ] Import optional prebuilt SQLite search artifacts from large distributable packs.
 - [ ] Add broader non-demo and large-corpus ranking regressions.
@@ -68,6 +69,8 @@ Single source of future work. Completed items describe the active branch.
 - [x] Persist downloaded speech-model artifacts and allow manual unload.
 - [x] Send the transcript through the ordinary text-search pipeline.
 - [x] Support cancellation by terminating active speech inference.
+- [x] Use compatible ONNX Community Whisper exports with a safe mixed-precision profile and full-precision fallback for session compatibility.
+- [x] Show speech-model loading in the sidebar and keep technical runtime errors out of ordinary UI copy.
 - [ ] Benchmark accuracy, latency and memory on Snapdragon 7-class devices.
 - [ ] Consider VAD/streaming only after the push-to-record path is stable on target devices.
 
@@ -81,6 +84,11 @@ Single source of future work. Completed items describe the active branch.
 - [x] Make the desktop sidebar collapsible, persist its state and show tooltips while collapsed.
 - [x] Add a primary `Создать свой пакет` action to the existing Packages page.
 - [x] Use Phosphor rather than emoji or text glyphs for source-discrepancy warnings.
+- [x] Fix expanded sidebar label clipping and remove the sidebar status card.
+- [x] Show compact pie progress indicators for language and speech model downloads in the relevant navigation items.
+- [x] Keep model-control panels inside the Ask form on narrow devices.
+- [x] Add list/graph switching inside concept relation accordions.
+- [x] Keep note-form labels directly above their controls.
 - [ ] Finish interaction-state, click-target and legacy-glyph auditing.
 - [ ] Let the local model propose note links with explicit user review.
 
@@ -138,6 +146,6 @@ Single source of future work. Completed items describe the active branch.
 - [x] Keep current architecture and invariants in `docs/ARCHITECTURE.md`.
 - [x] Document the portable package and discrepancy format in `docs/PACK_FORMAT.md`.
 - [x] Keep this file as the only implementation backlog.
-- [x] Keep development and decomposition rules in `AGENTS.md`.
+- [x] Keep development, decomposition and user-facing copy rules in `AGENTS.md`.
 - [x] Update docs together with behavior changes.
 - [ ] Use LLM Wiki only as an optional generated navigation layer.
