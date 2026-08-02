@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v37';
-const RUNTIME_CACHE = 'l-note-runtime-v37';
+const SHELL_CACHE = 'l-note-shell-v38';
+const RUNTIME_CACHE = 'l-note-runtime-v38';
 const SHELL = [
   './',
   './index.html',
@@ -36,6 +36,8 @@ const SHELL = [
   './src/helpers/entity-terms.js',
   './src/helpers/model-formatters.js',
   './src/helpers/pack-source-parser.js',
+  './src/helpers/statement-conflicts.js',
+  './src/helpers/text-diff.js',
   './src/helpers/transfer-queue.js',
   './src/pages/ask-page-controller.js',
   './src/pages/concept-resource-view.js',
@@ -52,6 +54,7 @@ const SHELL = [
   './src/pages/routed-resource-renderer.js',
   './src/pages/search-results-view.js',
   './src/pages/sidebar-controller.js',
+  './src/pages/statement-conflict-view.js',
   './src/pages/statement-resource-view.js',
   './src/pages/transfer-queue-view.js',
   './src/pages/voice-search-controller.js',
