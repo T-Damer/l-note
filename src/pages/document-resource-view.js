@@ -1,6 +1,7 @@
 import { entityTerms } from '../helpers/entity-terms.js';
 import {
   buildStatementConflictIndex,
+  resolveDocument,
   sectionConflictAnnotations,
   statementsForSection,
 } from '../helpers/statement-conflicts.js';
@@ -126,7 +127,7 @@ function renderSection({
   const claims = statementsForSection(
     knowledge.packs,
     documentRecord.packId,
-    documentRecord.id,
+    documentRecord.localId ?? documentRecord.id,
     section.id,
   );
   const disclosures = conflictDisclosures({ section, claims, conflictIndex, navigate });
@@ -175,7 +176,8 @@ export function renderDocumentResource({
   findDocumentForSection,
   normalizeText,
 } = {}) {
-  const documentRecord = findDocumentForSection(knowledge, record);
+  const documentRecord = resolveDocument(knowledge.packs, record.documentId)
+    ?? findDocumentForSection(knowledge, record);
   if (!documentRecord) return false;
   const assetView = createDocumentAssetView({
     documentRecord,
