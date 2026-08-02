@@ -36,14 +36,17 @@ const offlineModules = [
   'src/helpers/text-diff.js',
   'src/helpers/transfer-queue.js',
   'src/pages/ask-page-controller.js',
+  'src/pages/concept-resource-view.js',
   'src/pages/document-asset-view.js',
   'src/pages/document-resource-view.js',
   'src/pages/model-lab-view.js',
   'src/pages/package-builder-view.js',
   'src/pages/search-results-view.js',
+  'src/pages/sidebar-controller.js',
   'src/pages/statement-conflict-view.js',
   'src/pages/transfer-queue-view.js',
   'src/pages/voice-search-controller.js',
+  'src/pages/voice-search-elements.js',
   'src/services/ask-workflow.js',
   'src/services/evidence-query.js',
   'src/services/evidence-support-verifier.js',
@@ -56,6 +59,7 @@ const offlineModules = [
   'src/workers/webllm-worker.js',
   'src/ui/components.js',
   'src/ui/icons.js',
+  'src/ui/knowledge-graph.js',
   'src/ui/routed-dialog.js',
 ];
 
@@ -93,14 +97,23 @@ test('static build contains the complete local-first shell', async () => {
     /\.pack-builder/u,
     /\.statement-conflict-marker/u,
     /\.statement-conflict-diff/u,
+    /\.sidebar-activity-progress/u,
+    /\.relation-view-toolbar/u,
+    /scrollbar-width:\s*none/u,
   ]);
-  await assertContains('index.html', [
+  const html = await assertContains('index.html', [
     /ph-magnifying-glass/u,
     /data-action="toggle-library-view"/u,
     /data-action="create-pack"/u,
     /Создать свой пакет/u,
     /dialog-close-button/u,
+    /id="sidebar-status"[^>]*hidden/u,
   ]);
+  assert.ok(
+    html.indexOf('id="search-input"') < html.indexOf('id="search-suggestions"')
+      && html.indexOf('id="search-suggestions"') < html.indexOf('class="search-options"'),
+    'Search suggestions must be directly below the search input.',
+  );
 
   const app = await assertContains('src/app.js', [
     /createAdaptiveSearchPort/u,
@@ -111,6 +124,8 @@ test('static build contains the complete local-first shell', async () => {
     /createRoutedResourceRenderer/u,
     /renderDocumentResource/u,
     /renderStatementResource/u,
+    /setActivityProgress/u,
+    /relationGraph/u,
   ]);
   await assertContains('src/adapters/adaptive-search.js', [
     /createSqliteFtsSearchPort/u,
@@ -152,15 +167,31 @@ test('static build contains the complete local-first shell', async () => {
     /В источниках есть разные сведения/u,
     /не выбирает одну автоматически/u,
   ]);
+  await assertContains('src/pages/concept-resource-view.js', [
+    /relation-view-toggle/u,
+    /relation-graph-view/u,
+    /renderKnowledgeGraph/u,
+  ]);
+  await assertContains('src/pages/voice-search-elements.js', [
+    /Первая загрузка распознавания речи требует сети/u,
+    /голосовые запросы распознаются офлайн/u,
+  ]);
   await assertContains('src/services/evidence-support-verifier.js', [
     /verifyStatementSupport/u,
     /unsupportedStatements/u,
     /negationMismatch/u,
   ]);
   await assertContains('src/speech.js', [
-    /Xenova\/whisper-tiny/u,
-    /Xenova\/whisper-base/u,
+    /onnx-community\/whisper-tiny/u,
+    /onnx-community\/whisper-base/u,
+    /decoder_model_merged:\s*'fp16'/u,
+    /fallbackDtype/u,
     /BrowserSpeechRecognition/u,
+  ]);
+  await assertContains('src/workers/speech-worker.js', [
+    /TransposeDQWeightsForMatMulNBits/u,
+    /compatibility dtype/u,
+    /Не удалось запустить локальное распознавание речи/u,
   ]);
   await assertContains('src/ai.js', [
     /Qwen3-4B-q4f16_1-MLC/u,
@@ -174,7 +205,7 @@ test('static build contains the complete local-first shell', async () => {
     /"type":"contradicts"/u,
   ]);
   await assertContains('service-worker.js', [
-    /l-note-shell-v38/u,
+    /l-note-shell-v39/u,
     /cdn\.jsdelivr\.net/u,
     /sqlite-fts-search\.js/u,
     /sqlite-search-worker\.js/u,
