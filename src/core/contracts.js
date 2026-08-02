@@ -17,6 +17,21 @@ export const PERSONAL_NOTE_RELATIONS = Object.freeze([
   'supersedes',
 ]);
 
+export const STATEMENT_RELATION_TYPES = Object.freeze([
+  'supports',
+  'contradicts',
+  'refines',
+  'supersedes',
+  'equivalent',
+  'different_scope',
+]);
+
+export const STATEMENT_RELATION_STATUSES = Object.freeze([
+  'proposed',
+  'confirmed',
+  'dismissed',
+]);
+
 export function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
@@ -42,6 +57,9 @@ export function validateKnowledgePackContract(pack) {
   }
   for (const field of ['documents', 'entities', 'claims', 'relations']) {
     if (!Array.isArray(pack[field])) errors.push(`${field} must be an array`);
+  }
+  if (pack.statementRelations !== undefined && !Array.isArray(pack.statementRelations)) {
+    errors.push('statementRelations must be an array');
   }
   return { valid: errors.length === 0, errors };
 }
