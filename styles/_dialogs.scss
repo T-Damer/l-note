@@ -220,6 +220,7 @@
 
 .relation-accordion {
   margin-top: 1rem;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: .8rem;
   background: var(--paper);
@@ -234,10 +235,34 @@
   border-bottom: 1px solid var(--line);
 }
 
+.relation-view-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: .65rem .65rem 0;
+}
+
+.relation-view-toggle {
+  min-width: 6.5rem;
+  justify-content: center;
+}
+
 .relation-accordion .relation-list,
 .relation-accordion .backlink-list {
   margin-top: 0;
   padding: .65rem;
+}
+
+.relation-graph-view {
+  min-width: 0;
+  padding: .65rem;
+}
+
+.relation-graph-view .knowledge-graph-shell {
+  box-shadow: none;
+}
+
+.relation-graph-view .knowledge-graph-canvas {
+  min-width: 34rem;
 }
 
 .relation-strength {
@@ -263,7 +288,11 @@
 
 .note-form-body {
   display: grid;
-  gap: 1rem;
+  gap: .8rem;
+}
+
+.note-form-body > label {
+  gap: .1rem;
 }
 
 .note-form-body textarea {
