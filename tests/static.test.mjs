@@ -109,8 +109,8 @@ test('static build contains the complete local-first shell', async () => {
     /createAskWorkflow/u,
     /renderPackageBuilderResource/u,
     /createRoutedResourceRenderer/u,
-    /createStatementConflictDisclosure/u,
-    /buildStatementConflictIndex/u,
+    /renderDocumentResource/u,
+    /renderStatementResource/u,
   ]);
   await assertContains('src/adapters/adaptive-search.js', [
     /createSqliteFtsSearchPort/u,
@@ -141,6 +141,11 @@ test('static build contains the complete local-first shell', async () => {
     /qualifyStatementId/u,
     /buildStatementConflictIndex/u,
     /sectionConflictAnnotations/u,
+  ]);
+  await assertContains('src/pages/document-resource-view.js', [
+    /buildStatementConflictIndex/u,
+    /createStatementConflictDisclosure/u,
+    /statement-conflict-panels/u,
   ]);
   await assertContains('src/pages/statement-conflict-view.js', [
     /statement-conflict-marker/u,
