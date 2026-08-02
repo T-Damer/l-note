@@ -38,16 +38,19 @@ async function disposeTranscriber() {
   await current?.dispose?.();
 }
 
-async function loadModel(message) {
-  if (transcriber && loadedModelId === message.modelId) return { modelId: loadedModelId, reused: true };
-  await disposeTranscriber();
-  const runtime = await loadRuntime();
-  transcriber = await runtime.pipeline(
+function sessionCompatibilityError(error) {
+  return /can't create a session|missing required scale|TransposeDQWeightsForMatMulNBits/iu.test(
+    error instanceof Error ? error.message : String(error),
+  );
+}
+
+async function createTranscriber(runtime, message, dtype) {
+  return runtime.pipeline(
     'automatic-speech-recognition',
     message.modelId,
     {
       device: 'wasm',
-      dtype: message.dtype ?? 'q8',
+      dtype,
       progress_callback: (progress) => post(
         message.requestId,
         'progress',
@@ -55,8 +58,24 @@ async function loadModel(message) {
       ),
     },
   );
+}
+
+async function loadModel(message) {
+  if (transcriber && loadedModelId === message.modelId) return { modelId: loadedModelId, reused: true };
+  await disposeTranscriber();
+  const runtime = await loadRuntime();
+  let fallbackUsed = false;
+  try {
+    transcriber = await createTranscriber(runtime, message, message.dtype ?? 'q8');
+  } catch (error) {
+    if (!message.fallbackDtype || !sessionCompatibilityError(error)) throw error;
+    console.warn('Retrying speech model with compatibility dtype.', error);
+    await disposeTranscriber();
+    transcriber = await createTranscriber(runtime, message, message.fallbackDtype);
+    fallbackUsed = true;
+  }
   loadedModelId = message.modelId;
-  return { modelId: loadedModelId, reused: false };
+  return { modelId: loadedModelId, reused: false, fallbackUsed };
 }
 
 function whisperLanguage(language) {
@@ -83,6 +102,17 @@ async function transcribe(message) {
   };
 }
 
+function friendlyError(command, error) {
+  console.error(`Speech worker ${command || 'operation'} failed.`, error);
+  if (command === 'load') {
+    return 'Не удалось запустить локальное распознавание речи. Попробуйте другую модель или перезагрузите страницу.';
+  }
+  if (command === 'transcribe') {
+    return 'Не удалось распознать запись. Попробуйте записать запрос ещё раз.';
+  }
+  return error instanceof Error ? error.message : String(error);
+}
+
 self.addEventListener('message', async (event) => {
   const message = event.data ?? {};
   try {
@@ -98,7 +128,7 @@ self.addEventListener('message', async (event) => {
     post(message.requestId, 'result', { result });
   } catch (error) {
     post(message.requestId, 'error', {
-      error: error instanceof Error ? error.message : String(error),
+      error: friendlyError(message.command, error),
     });
   }
 });
