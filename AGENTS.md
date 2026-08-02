@@ -6,12 +6,13 @@ L-Note is a domain-neutral knowledge runtime. Medicine is the primary demonstrat
 
 MiniMed may consume generic contracts, pack composition, storage/search/model/speech ports, graph projection, personal overlays, routing and grounded-evidence orchestration. Medical query analysis, clinical ranking, source policy, dose validation, abstention and medical benchmarks remain MiniMed-owned adapters.
 
-Use only the canonical development line while this feature is active:
+Use one canonical development line per active feature slice:
 
-- `main` is stable;
-- `agent/universal-offline-kb` is the working branch;
-- PR #3 is the single active implementation PR;
-- do not open overlapping branches or PRs for the same work.
+- `main` is the stable released branch;
+- create one `agent/{description}` branch from the current `main` for a new slice;
+- keep one active pull request for that slice;
+- do not open overlapping branches or pull requests for the same work;
+- merge only after the complete validation gate passes.
 
 Never commit API tokens, private corpora, patient information, model weights or generated private packs.
 
@@ -98,6 +99,17 @@ Use shared components for typography, icons, buttons, cards, fields, switches, s
 - Prefer semantic `<button>` and `<a>` elements over click handlers on generic containers.
 - Keep page-specific selectors and event wiring inside the page/controller that owns them.
 - A reusable UI component must not import an application page.
+
+### Product copy
+
+Application text is written for ordinary users, not for maintainers.
+
+- Describe what the user can do, what is happening and what action is available.
+- Avoid implementation details such as Web Worker, IndexedDB, WebGPU, FTS5, runtime, inference session, model artifacts, cache backend or internal port names in ordinary labels, hints, progress text and errors.
+- Technical detail may appear only in an explicitly advanced diagnostics view, developer documentation or the browser console.
+- Convert low-level failures into short, actionable messages. Preserve the original technical error in logging for diagnosis.
+- Do not expose filenames, internal download stages or library error strings unless the user explicitly opens diagnostics.
+- Keep copy concise enough to fit narrow mobile layouts; remove explanatory hints when the label and state already make the action clear.
 
 Every interactive surface must have visible and consistent states:
 
