@@ -25,7 +25,7 @@
           <button type="button" data-nav="library"><i class="ph ph-books icon" aria-hidden="true"></i>Пакеты</button>
           <button type="button" data-nav="notes"><i class="ph ph-note-pencil icon" aria-hidden="true"></i>Заметки <b id="notes-count"></b></button>
         </nav>
-        <section class="sidebar-status" id="sidebar-status" aria-live="polite"></section>
+        <section class="sidebar-status" id="sidebar-status" aria-live="polite" aria-hidden="true" hidden></section>
       </aside>
 
       <main class="workspace">
@@ -43,13 +43,13 @@
               <input id="search-input" name="query" autocomplete="off" placeholder="Например: сыпь не бледнеет при надавливании" />
               <button type="submit" class="primary-button button-with-icon"><i class="ph ph-magnifying-glass icon" aria-hidden="true"></i>Найти</button>
             </div>
+            <div id="search-suggestions" class="suggestion-row" aria-label="Примеры запросов"></div>
             <div class="search-options">
               <label><input id="personal-priority" type="checkbox" /> Поднимать личные заметки выше</label>
               <span id="search-engine-status">Подготовка индекса…</span>
             </div>
           </form>
 
-          <div id="search-suggestions" class="suggestion-row" aria-label="Примеры запросов"></div>
           <section id="search-empty" class="empty-state"></section>
           <section id="search-results" class="results" aria-live="polite"></section>
         </section>
