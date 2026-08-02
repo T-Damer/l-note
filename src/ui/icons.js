@@ -19,6 +19,7 @@ const ICONS = Object.freeze({
   pdf: 'file-pdf',
   concept: 'circles-three-plus',
   statement: 'quotes',
+  conflict: 'warning',
   model: 'brain',
   microphone: 'microphone',
   stop: 'stop-circle',
