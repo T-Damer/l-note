@@ -226,6 +226,27 @@ export function resolveStatement(packs, claimId) {
   return null;
 }
 
+export function resolveDocument(packs, documentId) {
+  const requested = text(documentId);
+  if (!requested) return null;
+  const qualified = requested.includes('::');
+  for (const pack of packs ?? []) {
+    const localId = qualified && requested.startsWith(`${pack.id}::`)
+      ? requested.slice(pack.id.length + 2)
+      : requested;
+    const document = (pack.documents ?? []).find((item) => item.id === localId);
+    if (!document || (qualified && qualifyDocumentId(pack.id, document.id) !== requested)) continue;
+    return {
+      ...document,
+      localId: document.id,
+      runtimeId: qualifyDocumentId(pack.id, document.id),
+      packId: pack.id,
+      packTitle: pack.title,
+    };
+  }
+  return null;
+}
+
 export function sectionConflictAnnotations(sectionText, claims, conflictIndex) {
   const sourceText = String(sectionText ?? '');
   const groups = new Map();
