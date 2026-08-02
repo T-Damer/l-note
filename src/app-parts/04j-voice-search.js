@@ -23,6 +23,7 @@ const voiceSearchController = createVoiceSearchController({
   speechPort: voiceSearchPort,
   storagePort,
   onTranscript: (text) => runSearch(text),
+  onActivityProgress: (activity) => dom.sidebarController?.setActivityProgress('search', activity),
   onError: (message) => toast(message, 'error'),
 });
 
