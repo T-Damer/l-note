@@ -346,7 +346,76 @@ try {
     return Boolean(node && !node.classList.contains('is-uninstalled'));
   })()`), true);
 
-  console.log('Browser E2E passed: routing, single modal scroll, model-independent shell and graph installation flow.');
+  await client.evaluate(`location.hash = '#/package/lnote.guide?from=library&depth=1'; true`);
+  await waitFor(
+    () => client.evaluate(`
+      document.querySelector('#document-dialog')?.open === true &&
+      document.querySelector('#document-dialog-heading')?.textContent.includes('L-Note: как устроены пакеты знаний')
+    `),
+    'Guide package route did not open',
+  );
+  assert.equal(await client.evaluate(`(() => {
+    const button = [...document.querySelectorAll('#document-dialog-body button')]
+      .find((item) => item.textContent.includes('Скачать пакет'));
+    button?.click();
+    return Boolean(button);
+  })()`), true);
+  await waitFor(
+    () => client.evaluate(`
+      [...document.querySelectorAll('#document-dialog-body .backlink-button')]
+        .some((button) => button.textContent.includes('Ранний вариант хранения поиска'))
+    `),
+    'Guide package did not install',
+  );
+  assert.equal(await client.evaluate(`(() => {
+    const button = [...document.querySelectorAll('#document-dialog-body .backlink-button')]
+      .find((item) => item.textContent.includes('Ранний вариант хранения поиска'));
+    button?.click();
+    return Boolean(button);
+  })()`), true);
+  await waitFor(
+    () => client.evaluate(`
+      document.querySelector('#document-dialog-heading')?.textContent.includes('Ранний вариант хранения поиска') &&
+      document.querySelector('.statement-conflict-marker .ph-warning')
+    `),
+    'Inline Phosphor discrepancy marker did not appear',
+  );
+
+  const conflictState = await client.evaluate(`(() => {
+    const marker = document.querySelector('.statement-conflict-marker');
+    marker?.click();
+    const panel = document.querySelector('.statement-conflict-panel');
+    return {
+      marker: Boolean(marker?.querySelector('.ph-warning')),
+      expanded: marker?.getAttribute('aria-expanded') === 'true' && panel && !panel.hidden,
+      sides: panel?.querySelectorAll('.statement-conflict-side').length ?? 0,
+      changes: panel?.querySelectorAll('.statement-conflict-change').length ?? 0,
+      text: panel?.textContent ?? '',
+    };
+  })()`);
+  assert.equal(conflictState.marker, true);
+  assert.equal(conflictState.expanded, true);
+  assert.equal(conflictState.sides, 2);
+  assert.ok(conflictState.changes >= 2);
+  assert.match(conflictState.text, /Ранний вариант хранения поиска/u);
+  assert.match(conflictState.text, /Дисковый поиск для крупных пакетов/u);
+  assert.match(conflictState.text, /не выбирает одну автоматически/u);
+
+  assert.equal(await client.evaluate(`(() => {
+    const buttons = [...document.querySelectorAll('.statement-conflict-side button')]
+      .filter((button) => button.textContent.includes('Открыть документ'));
+    buttons.at(-1)?.click();
+    return buttons.length === 2;
+  })()`), true);
+  await waitFor(
+    () => client.evaluate(`
+      decodeURIComponent(location.hash).includes('#/document/lnote.guide::guide.search.disk') &&
+      document.querySelector('#document-dialog-heading')?.textContent.includes('Дисковый поиск для крупных пакетов')
+    `),
+    'Conflict comparison did not open the exact qualified document route',
+  );
+
+  console.log('Browser E2E passed: routing, single modal scroll, graph installation and neutral source-discrepancy diff.');
 } finally {
   client?.close();
   browser.kill('SIGTERM');
