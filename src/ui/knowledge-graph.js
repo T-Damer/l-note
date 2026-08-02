@@ -26,6 +26,17 @@ function categoryColor(categoryId) {
   return CATEGORY_COLORS[normalizedCategoryId(categoryId)] ?? CATEGORY_COLORS.unknown;
 }
 
+function graphTypeOrder(options = {}) {
+  const requested = Array.isArray(options.typeOrder)
+    ? options.typeOrder.map((value) => String(value ?? '').trim()).filter(Boolean)
+    : [];
+  return requested.length ? [...new Set(requested)] : [...TYPE_ORDER];
+}
+
+function graphTypeLabels(options = {}) {
+  return { ...TYPE_LABELS, ...(options.typeLabels ?? {}) };
+}
+
 export function shortGraphLabel(value, limit = 28) {
   const source = String(value ?? '').trim();
   return source.length > limit ? `${source.slice(0, Math.max(1, limit - 1))}…` : source;
@@ -38,7 +49,9 @@ export function layoutKnowledgeGraph(graph, options = {}) {
   const rowGap = Number(options.rowGap ?? 18);
   const top = Number(options.top ?? 60);
   const left = Number(options.left ?? 28);
-  const groups = new Map(TYPE_ORDER.map((type) => [type, []]));
+  const typeOrder = graphTypeOrder(options);
+  const typeLabels = graphTypeLabels(options);
+  const groups = new Map(typeOrder.map((type) => [type, []]));
   for (const node of graph?.nodes ?? []) {
     if (groups.has(node.type)) groups.get(node.type).push(node);
   }
@@ -46,7 +59,7 @@ export function layoutKnowledgeGraph(graph, options = {}) {
 
   const positioned = new Map();
   let maximumRows = 1;
-  for (const [column, type] of TYPE_ORDER.entries()) {
+  for (const [column, type] of typeOrder.entries()) {
     const nodes = groups.get(type);
     maximumRows = Math.max(maximumRows, nodes.length);
     for (const [row, node] of nodes.entries()) {
@@ -64,9 +77,14 @@ export function layoutKnowledgeGraph(graph, options = {}) {
     nodes: [...positioned.values()],
     edges: (graph?.edges ?? []).filter((edge) => positioned.has(edge.from) && positioned.has(edge.to)),
     positions: positioned,
-    width: left * 2 + (TYPE_ORDER.length - 1) * columnWidth + nodeWidth,
+    width: left * 2 + Math.max(0, typeOrder.length - 1) * columnWidth + nodeWidth,
     height: top + maximumRows * (nodeHeight + rowGap) + 30,
-    columns: TYPE_ORDER.map((type, column) => ({ type, label: TYPE_LABELS[type], x: left + column * columnWidth })),
+    columns: typeOrder.map((type, column) => ({
+      type,
+      label: typeLabels[type] ?? type,
+      x: left + column * columnWidth,
+    })),
+    typeLabels,
   };
 }
 
@@ -109,7 +127,7 @@ function edgePath(from, to) {
 export function renderKnowledgeGraph(graph, options = {}) {
   const layout = layoutKnowledgeGraph(graph, options);
   const shell = document.createElement('div');
-  shell.className = 'knowledge-graph-shell';
+  shell.className = ['knowledge-graph-shell', options.className].filter(Boolean).join(' ');
 
   const summary = document.createElement('div');
   summary.className = 'knowledge-graph-summary';
@@ -124,7 +142,7 @@ export function renderKnowledgeGraph(graph, options = {}) {
     width: layout.width,
     height: layout.height,
     role: 'group',
-    'aria-label': 'Граф установленных и доступных знаний',
+    'aria-label': options.ariaLabel ?? 'Граф установленных и доступных знаний',
   });
   const defs = svg('defs');
   canvas.append(defs);
@@ -152,11 +170,12 @@ export function renderKnowledgeGraph(graph, options = {}) {
 
   const nodeLayer = svg('g', { class: 'knowledge-graph-nodes' });
   for (const node of layout.nodes) {
+    const typeLabel = layout.typeLabels[node.type] ?? node.type;
     const group = svg('g', {
       class: `knowledge-graph-node knowledge-graph-node--${node.type}${node.installed === false ? ' is-uninstalled' : ''}`,
       role: 'button',
       tabindex: '0',
-      'aria-label': `${TYPE_LABELS[node.type]}: ${node.label}`,
+      'aria-label': `${typeLabel}: ${node.label}`,
       transform: `translate(${node.x} ${node.y})`,
     });
     const rect = svg('rect', {
@@ -172,7 +191,7 @@ export function renderKnowledgeGraph(graph, options = {}) {
     const label = svg('text', { x: 12, y: 20, class: 'knowledge-graph-node-label' });
     label.textContent = shortGraphLabel(node.label, 30);
     const subtitle = svg('text', { x: 12, y: 37, class: 'knowledge-graph-node-subtitle' });
-    subtitle.textContent = shortGraphLabel(node.subtitle ?? TYPE_LABELS[node.type], 34);
+    subtitle.textContent = shortGraphLabel(node.subtitle ?? typeLabel, 34);
     group.append(label, subtitle);
 
     const open = () => options.onOpen?.(node);
