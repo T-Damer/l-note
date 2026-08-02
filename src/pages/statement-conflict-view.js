@@ -49,7 +49,7 @@ function renderSide(side, segments, navigate, label) {
     variant: 'ghost',
     icon: 'document',
     text: 'Открыть документ',
-    onClick: () => navigate('document', side.claim.source.documentId, {
+    onClick: () => navigate('document', side.documentRef, {
       sectionId: side.sectionId,
     }),
   });
