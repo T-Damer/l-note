@@ -125,7 +125,6 @@ test('static build contains the complete local-first shell', async () => {
     /renderDocumentResource/u,
     /renderStatementResource/u,
     /setActivityProgress/u,
-    /relationGraph/u,
   ]);
   await assertContains('src/adapters/adaptive-search.js', [
     /createSqliteFtsSearchPort/u,
@@ -168,6 +167,7 @@ test('static build contains the complete local-first shell', async () => {
     /не выбирает одну автоматически/u,
   ]);
   await assertContains('src/pages/concept-resource-view.js', [
+    /relationGraph/u,
     /relation-view-toggle/u,
     /relation-graph-view/u,
     /renderKnowledgeGraph/u,
