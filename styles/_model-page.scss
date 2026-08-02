@@ -1,3 +1,15 @@
+#model-control-slot,
+.model-control-panel,
+.model-compact-row,
+.model-download-panel,
+.answer-mode-panel,
+.model-active-panel,
+.model-workspace {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 .model-control-panel {
   display: grid;
   gap: 1rem;
@@ -14,14 +26,22 @@
   background: var(--paper);
 }
 
+.model-compact-row > * {
+  min-width: 0;
+}
+
 .model-picker {
   display: grid;
-  min-width: min(18rem, 100%);
+  width: min(100%, 24rem);
+  min-width: 0;
+  flex: 1 1 18rem;
   gap: .3rem;
 }
 
 .model-select,
 .answer-mode-select {
+  width: 100%;
+  min-width: 0;
   min-height: 2.55rem;
   padding: .55rem 2.2rem .55rem .7rem;
   border: 1px solid var(--line);
@@ -33,6 +53,7 @@
 .model-compact-meta,
 .model-power {
   display: inline-flex;
+  min-width: 0;
   min-height: 2.55rem;
   align-items: center;
   padding: .55rem .72rem;
@@ -42,6 +63,7 @@
   color: var(--muted);
   font-size: .78rem;
   font-weight: 720;
+  overflow-wrap: anywhere;
 }
 
 .model-power {
@@ -51,6 +73,7 @@
 .model-power-dot {
   width: .6rem;
   height: .6rem;
+  flex: 0 0 .6rem;
   border-radius: 50%;
   background: var(--line-strong);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--line) 55%, transparent);
@@ -87,6 +110,7 @@
   color: var(--muted);
   font-size: .78rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .model-download-panel,
@@ -123,6 +147,7 @@
 
 .model-progress-heading {
   display: flex;
+  min-width: 0;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
@@ -162,6 +187,7 @@
 
 .model-progress-stats {
   display: flex;
+  min-width: 0;
   flex-wrap: wrap;
   gap: .45rem .9rem;
   color: var(--muted);
@@ -178,10 +204,12 @@
   color: var(--red);
   font-size: .78rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .model-load-button,
 .model-unload-button {
+  max-width: 100%;
   justify-self: start;
 }
 
