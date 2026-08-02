@@ -103,6 +103,11 @@ function renderModelPageState() {
     runtimeAvailable: state.localAi.available,
     modelAvailable: modelIsAvailable(profile),
   });
+  dom.sidebarController?.setActivityProgress('ask', {
+    active: state.modelLoadState.status === MODEL_LOAD_STATUS.LOADING,
+    progress: state.modelLoadState.progress,
+    label: 'Загрузка локальной модели',
+  });
   syncLocalAiButton();
 }
 
