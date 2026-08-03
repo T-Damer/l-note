@@ -162,6 +162,7 @@ test('static build contains the complete local-first shell', async () => {
   ]);
   await assertContains('src/workers/sqlite-runtime-modules.js', [
     /@subframe7536\/sqlite-wasm/u,
+    /esm\.run/u,
     /cdn\.jsdelivr\.net/u,
     /wa-sqlite-async\.wasm/u,
     /initSQLite/u,
