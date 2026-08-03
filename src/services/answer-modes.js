@@ -42,6 +42,23 @@ export function clipText(value, maxChars) {
   return `${text.slice(0, limit - 1).trimEnd()}…`;
 }
 
+function promptSources(evidence, mode) {
+  const selected = [];
+  let primaryCount = 0;
+  let supplementalCount = 0;
+  for (const source of evidence?.sources ?? []) {
+    if (source.supplemental) {
+      if (supplementalCount >= mode.discrepancyLimit) continue;
+      supplementalCount += 1;
+    } else {
+      if (primaryCount >= mode.sourceLimit) continue;
+      primaryCount += 1;
+    }
+    selected.push(source);
+  }
+  return selected;
+}
+
 function discrepancySide(label, side) {
   const date = side?.date ? `, дата: ${side.date}` : '';
   return `${label} [${side.evidenceId}] (${side.documentTitle}${date}): ${clipText(side.quote, 600)}`;
@@ -68,8 +85,7 @@ export function buildEvidencePrompt(evidence, modeId = DEFAULT_ANSWER_MODE_ID) {
   const includedNoteIds = [];
   let remainingChars = mode.evidenceChars;
 
-  const sourceLimit = mode.sourceLimit + mode.discrepancyLimit;
-  for (const source of (evidence?.sources ?? []).slice(0, sourceLimit)) {
+  for (const source of promptSources(evidence, mode)) {
     const sourceName = source.document?.source?.title
       ?? source.document?.title
       ?? source.result?.documentTitle
