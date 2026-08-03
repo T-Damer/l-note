@@ -1,6 +1,11 @@
 import { createHash } from 'node:crypto';
 
 const ALLOWED_KINDS = new Set(['entity', 'claim', 'relation']);
+const KIND_COLLECTION = Object.freeze({
+  entity: 'entities',
+  claim: 'claims',
+  relation: 'relations',
+});
 
 function clean(value) {
   return String(value ?? '').trim();
@@ -168,7 +173,7 @@ function acceptedBySection(review) {
       relations: [],
       candidates: [],
     };
-    group[`${candidate.kind}s`].push(candidate.data);
+    group[KIND_COLLECTION[candidate.kind]].push(candidate.data);
     group.candidates.push(candidate);
     groups.set(key, group);
   }
