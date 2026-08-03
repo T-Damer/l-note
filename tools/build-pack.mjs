@@ -51,6 +51,15 @@ async function readJson(filename, fallback) {
   }
 }
 
+async function readOptionalJson(filename) {
+  try {
+    return JSON.parse(await readFile(filename, 'utf8'));
+  } catch (error) {
+    if (error?.code === 'ENOENT') return undefined;
+    throw new Error(`Unable to read ${filename}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 function assertValidPack(pack, label = 'Pack') {
   const validation = validatePack(pack);
   if (!validation.valid) throw new Error(`${label} validation failed:\n- ${validation.errors.join('\n- ')}`);
@@ -78,14 +87,16 @@ export async function buildPack(inputRoot) {
     .sort();
   if (documentNames.length === 0) throw new Error('The documents directory contains no .json documents.');
   const documents = await Promise.all(documentNames.map((name) => readJson(join(documentRoot, name))));
-  return assertValidPack({
+  const statementRelations = await readOptionalJson(join(root, 'statement-relations.json'));
+  const pack = {
     ...manifest,
     documents,
     entities: await readJson(join(root, 'entities.json'), []),
     claims: await readJson(join(root, 'claims.json'), []),
     relations: await readJson(join(root, 'relations.json'), []),
-    statementRelations: await readJson(join(root, 'statement-relations.json'), undefined),
-  });
+  };
+  if (statementRelations !== undefined) pack.statementRelations = statementRelations;
+  return assertValidPack(pack);
 }
 
 function usage() {
