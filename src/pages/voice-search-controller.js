@@ -77,6 +77,14 @@ export function createVoiceSearchController({
     render();
   }
 
+  function notifyLoaded(modelId) {
+    cacheState.set(modelId, true);
+    if (currentProfile()?.modelId === modelId) {
+      setStatus('Распознавание речи готово. Можно начать запись.', 'success');
+    }
+    render();
+  }
+
   async function inspectCache() {
     const inspected = await speechPort.inspectModels?.({ includeCache: true }) ?? [];
     for (const item of inspected) cacheState.set(item.modelId, item.cached);
@@ -111,8 +119,7 @@ export function createVoiceSearchController({
           setStatus(voiceProgressLabel(progress, percent));
         },
       });
-      cacheState.set(profile.modelId, true);
-      setStatus('Распознавание речи готово. Можно начать запись.', 'success');
+      notifyLoaded(profile.modelId);
     } catch (error) {
       if (error?.name !== 'AbortError') reportError(error);
     } finally {
@@ -219,5 +226,5 @@ export function createVoiceSearchController({
     setPanelOpen(false);
   }
 
-  return Object.freeze({ init, setPanelOpen, cancel, unload });
+  return Object.freeze({ init, setPanelOpen, notifyLoaded, cancel, unload });
 }
