@@ -1,8 +1,7 @@
 import {
-  MAX_SEARCH_ARTIFACT_BYTES,
-  resolveSearchArtifactUrl,
-  validateSearchArtifact,
-} from '../helpers/search-artifacts.js';
+  MAX_PREBUILT_SEARCH_ARTIFACT_BYTES,
+  validatePrebuiltSearchArtifacts,
+} from '../helpers/prebuilt-search-artifacts.js';
 
 function numericHeader(response, name) {
   const value = Number(response?.headers?.get?.(name));
@@ -70,39 +69,63 @@ export async function readResponseBuffer(response, {
   return output.buffer;
 }
 
-async function downloadSearchArtifact(pack, entryUrl, dependencies, context) {
-  const artifact = pack.searchArtifact;
-  if (!artifact) return null;
-  const errors = validateSearchArtifact(artifact);
-  if (errors.length) throw new Error(errors.join('\n'));
-  const url = resolveSearchArtifactUrl({ ...artifact, sourceUrl: entryUrl }, entryUrl);
+function artifactUrl(descriptor, entryUrl) {
+  const packUrl = new URL(entryUrl, globalThis.location?.href ?? import.meta.url);
+  return new URL(descriptor.url, packUrl).href;
+}
+
+async function downloadOneArtifact(descriptor, entryUrl, dependencies, context, range) {
+  const url = artifactUrl(descriptor, entryUrl);
   const response = await dependencies.fetchImpl(url, { cache: 'no-cache', signal: context.signal });
   const buffer = await readResponseBuffer(response, {
     signal: context.signal,
-    expectedBytes: artifact.bytes,
-    maxBytes: MAX_SEARCH_ARTIFACT_BYTES,
-    progressStart: .72,
-    progressEnd: .94,
+    expectedBytes: descriptor.bytes,
+    maxBytes: MAX_PREBUILT_SEARCH_ARTIFACT_BYTES,
+    progressStart: range.start,
+    progressEnd: range.end,
     onProgress: context.report,
   });
-  if (buffer.byteLength !== artifact.bytes) {
-    throw new Error('Размер поискового индекса не совпал с описанием пакета.');
+  if (buffer.byteLength !== descriptor.bytes) {
+    throw new Error('Размер готового индекса не совпал с описанием пакета.');
   }
-  context.report({ progress: .96, loaded: buffer.byteLength, total: buffer.byteLength, message: 'Проверка индекса…' });
   const actual = await dependencies.sha256Hex(buffer);
-  if (!actual || actual !== artifact.sha256) {
-    throw new Error('SHA-256 поискового индекса не совпал с описанием пакета.');
+  if (!actual || actual !== descriptor.sha256) {
+    throw new Error('Контрольная сумма готового индекса не совпала с описанием пакета.');
   }
   return {
-    schemaVersion: artifact.schemaVersion,
-    profile: artifact.profile,
-    sha256: artifact.sha256,
-    fingerprint: artifact.fingerprint,
-    bytes: artifact.bytes,
-    recordCount: artifact.recordCount,
+    id: descriptor.id,
+    sha256: descriptor.sha256,
+    corpusFingerprint: descriptor.corpusFingerprint,
+    bytes: descriptor.bytes,
     url,
     blob: new Blob([buffer], { type: 'application/vnd.sqlite3' }),
   };
+}
+
+async function downloadSearchArtifacts(pack, entryUrl, dependencies, context) {
+  const descriptors = pack.searchArtifacts ?? [];
+  if (!descriptors.length) return { files: [], warnings: [] };
+  const errors = validatePrebuiltSearchArtifacts(pack);
+  if (errors.length) return { files: [], warnings: errors };
+  const files = [];
+  const warnings = [];
+  const width = .24 / descriptors.length;
+  for (const [index, descriptor] of descriptors.entries()) {
+    try {
+      files.push(await downloadOneArtifact(
+        descriptor,
+        entryUrl,
+        dependencies,
+        context,
+        { start: .72 + width * index, end: .72 + width * (index + 1) },
+      ));
+    } catch (error) {
+      if (error?.name === 'AbortError') throw error;
+      console.warn('Optional prebuilt search artifact was skipped.', error);
+      warnings.push(error instanceof Error ? error.message : String(error));
+    }
+  }
+  return { files, warnings };
 }
 
 export function createPackageTransferHandler({
@@ -127,30 +150,32 @@ export function createPackageTransferHandler({
       onProgress: report,
     });
     if (entry.sha256) {
-      report({ progress: .7, loaded: buffer.byteLength, total: buffer.byteLength, message: 'Проверка SHA-256…' });
+      report({ progress: .7, loaded: buffer.byteLength, total: buffer.byteLength, message: 'Проверка пакета…' });
       const actual = await sha256Hex(buffer);
-      if (actual && actual !== entry.sha256) throw new Error('SHA-256 пакета не совпал с каталогом.');
+      if (actual && actual !== entry.sha256) throw new Error('Контрольная сумма пакета не совпала с каталогом.');
     }
     const pack = JSON.parse(new TextDecoder().decode(buffer));
-    const searchArtifactFile = await downloadSearchArtifact(
+    const artifacts = await downloadSearchArtifacts(
       pack,
       entry.url,
       dependencies,
       { signal, report },
     );
     report({ progress: .98, loaded: buffer.byteLength, total: buffer.byteLength, message: 'Проверка структуры…' });
+    const artifactBytes = artifacts.files.reduce((sum, file) => sum + file.bytes, 0);
     await installPack(pack, {
       url: entry.url,
       sha256: entry.sha256,
-      sizeBytes: buffer.byteLength + (searchArtifactFile?.bytes ?? 0),
-      searchArtifactFile,
+      sizeBytes: buffer.byteLength + artifactBytes,
+      searchArtifactFiles: artifacts.files,
     });
     report({ progress: 1, loaded: buffer.byteLength, total: buffer.byteLength, message: 'Установлено' });
     return {
       packId: pack.id,
       title: pack.title,
       bytes: buffer.byteLength,
-      searchArtifactBytes: searchArtifactFile?.bytes ?? 0,
+      searchArtifactBytes: artifactBytes,
+      warnings: artifacts.warnings,
     };
   };
 }
