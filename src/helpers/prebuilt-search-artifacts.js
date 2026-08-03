@@ -85,3 +85,15 @@ export function selectPrebuiltSearchArtifact({
     blob: stored.blob,
   });
 }
+
+export function resolvePrebuiltSearchArtifactUrl(descriptor, sourceUrl, fallbackBase) {
+  const raw = String(descriptor?.url ?? '').trim();
+  if (!raw) return '';
+  try {
+    const fallback = fallbackBase ?? globalThis.location?.href;
+    const base = sourceUrl ? new URL(sourceUrl, fallback) : new URL(fallback);
+    return new URL(raw, base).href;
+  } catch {
+    return raw;
+  }
+}
