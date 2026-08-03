@@ -14,10 +14,12 @@ L-Note is a hosted offline-first knowledge workspace with:
 - confirmed discrepancy counterparts in bounded local-answer evidence;
 - deterministic preparation-time comparison against existing pack files;
 - standalone JSON/HTML review artifacts for proposed statement relations;
-- strong-device PDF/DOCX extraction with page/paragraph provenance and mandatory reviewed OCR;
+- shared browser/Node PDF classification and structured Markdown extraction through pinned `pdf-inspector` WASM;
+- page-aware OCR routing with mandatory accept/edit/dismiss review;
+- strong-device DOCX extraction with paragraph provenance;
 - strong-device SQLite table/view import and relational pack export/restore;
 - mandatory JSON/HTML review for LLM-proposed concepts, aliases, statements and relations;
-- browser-local Markdown/TXT/JSON package creation;
+- browser-local PDF/Markdown/TXT/JSON package creation;
 - local RU/EN voice search;
 - optional local WebLLM answers over bounded evidence;
 - deterministic citation and statement-support verification;
@@ -49,7 +51,7 @@ src/services/      workflows, queues and state transitions
 src/pages/         page and routed-resource rendering/controllers
 src/ui/            reusable controls, typography, dialogs and graphs
 src/helpers/       deterministic parsing, matching and formatting
-src/workers/       SQLite, fallback search, speech and WebLLM runtimes
+src/workers/       PDF, SQLite, fallback search, speech and WebLLM runtimes
 src/integrations/  isolated external-product boundaries
 tools/lib/         strong-device extraction, preparation, review and interchange helpers
 ```
@@ -71,7 +73,7 @@ EvidenceVerifierPort
 
 The generic core contains no DOM, IndexedDB, SQL, WebGPU, speech-runtime or medical-policy assumptions. The optional prebuilt search descriptor is serializable pack metadata; Blob storage, SQLite import and compatibility checks remain adapter/Worker concerns.
 
-Strong-device database and document adapters operate outside the browser runtime. They consume or emit existing pack, authoring and review contracts rather than adding source-specific resource types to the core.
+PDF parsing is a browser service/Worker concern that produces ordinary source-preserving document sections. Strong-device database and document adapters consume or emit the same pack, authoring and review contracts rather than adding source-specific resource types to the core.
 
 ## Adaptive search
 
@@ -199,30 +201,42 @@ The review artifact is temporary preparation state and is not installable by the
 
 ## Document extraction and OCR review
 
-PDF and DOCX preparation runs outside the hosted application:
+PDF preparation shares one parser contract between the hosted creator and strong-device CLI:
 
 ```text
-PDF / DOCX file or directory
-  → bounded external extractor process
-  → text-layer sections immediately
-  → scanned pages become OCR review candidates
+PDF bytes
+  → pinned pdf-inspector WASM
+  → classification + structured Markdown + page markers
+  → reliable pages become ordinary source sections
+  → pagesNeedingOcr remain outside searchable evidence
+  → optional Tesseract TSV recognition
   → standalone local JSON/HTML review
-  → accept edited text or dismiss each page
-  → reviewed authoring directory
-  → existing build-pack validator/compiler
-  → installable pack
+  → accept edited text or dismiss each OCR page
+  → reviewed authoring directory / installable browser pack
 ```
 
-PDF processing:
+Browser PDF processing:
 
-- `pdftotext -layout` supplies one-based page text;
-- each text-layer section keeps `assetAnchor.page` and `provenance.kind = pdf-page`;
+- a module Dedicated Worker initializes the vendored WASM runtime;
+- parsing stays local and receives the PDF as a transferred `ArrayBuffer`;
+- Markdown tables, headings, lists and reading order are retained as section text;
+- every reliable section keeps one-based `assetAnchor.page` and `provenance.kind = pdf-inspector-markdown`;
+- parser version, PDF type, confidence, layout and encoding diagnostics are retained;
+- mixed PDFs may contribute reliable pages while displaying warnings for omitted OCR pages;
+- scanned-only PDFs are rejected and directed to the reviewed CLI path.
+
+Strong-device PDF processing:
+
+- Node loads the same pinned WASM package; Poppler `pdftotext` is not required;
+- page-aware Markdown is normalized into the established authoring-section contract;
 - the original PDF becomes an internal reader asset;
-- only pages without a usable text layer are rasterized through `pdftoppm`;
+- only pages listed in `pagesNeedingOcr` are rasterized through `pdftoppm` when `--ocr` is enabled;
 - Tesseract TSV supplies recognized text, confidence and word bounding boxes;
 - OCR text remains outside searchable sections until explicitly accepted;
 - accepted edited text keeps source SHA-256, candidate ID, confidence summary, reviewer and review time;
 - dismissed pages do not enter the pack.
+
+The WASM result currently represents detected images as Markdown placeholders. It does not expose extracted binary image assets, so image extraction remains a separate future adapter rather than an implicit evidence path.
 
 `manifest.preparationReviews` records whether the OCR review remains pending or is complete. `build-pack.mjs` refuses to compile any authoring directory with an incomplete preparation review. Candidate identity includes the source PDF SHA-256, path, page and OCR language, so a changed source invalidates an old decision.
 
@@ -234,7 +248,7 @@ DOCX processing:
 - XML entities, tabs and line breaks are decoded deterministically;
 - the original DOCX is retained as a source asset even though the hosted reader currently embeds PDF only.
 
-External commands have execution time and output-size limits. hOCR, PAGE XML and Label Studio may become optional review adapters, but cannot bypass the same accept/edit/dismiss and source-hash gates.
+External OCR commands have execution time and output-size limits. hOCR, PAGE XML and Label Studio may become optional review adapters, but cannot bypass the same accept/edit/dismiss and source-hash gates.
 
 ## Database preparation and interchange
 
@@ -272,6 +286,9 @@ DuckDB remains optional. For large CSV/JSON/Parquet or PostgreSQL/MySQL/ODBC sou
 ```text
 service-worker.js
   offline shell and runtime-asset delivery only
+
+pdf-inspector-worker.js
+  local PDF classification and structured Markdown extraction
 
 sqlite-search-worker.js
   serialized SQLite/FTS5 connection and import/build fallback orchestration
@@ -351,8 +368,9 @@ A document may reference an internal asset plus document/section page anchors. C
 Light browser path:
 
 ```text
-Markdown / TXT / JSON / pasted text
-  → deterministic parsing and sectioning
+PDF / Markdown / TXT / JSON / pasted text
+  → local deterministic parsing and sectioning
+  → PDF layout/table preservation and OCR-page exclusion
   → abbreviation discovery
   → validation and preview
   → JSON download or immediate installation
@@ -364,7 +382,8 @@ Strong-device path:
 PDF / DOCX / SQLite / databases / notes
   → deterministic extraction and provenance
   → optional DuckDB staging for bulk/remote sources
-  → mandatory OCR review where the text layer is absent
+  → pdf-inspector page classification and Markdown extraction
+  → mandatory OCR review for flagged pages
   → source-preserving base pack
   → optional semantic proposals
   → mandatory semantic review
@@ -376,7 +395,7 @@ PDF / DOCX / SQLite / databases / notes
   → pack JSON + derived artifacts
 ```
 
-PDF/DOCX deterministic extraction, mandatory OCR review, SQLite import/export, statement-discrepancy review, confirmed-discrepancy answer evidence, semantic-proposal review and prebuilt SQLite/FTS artifact generation/import are implemented. An optional DuckDB bridge and discrepancy LLM classification remain pending.
+Shared browser/Node PDF parsing, DOCX extraction, mandatory OCR review, SQLite import/export, statement-discrepancy review, confirmed-discrepancy answer evidence, semantic-proposal review and prebuilt SQLite/FTS artifact generation/import are implemented. An optional DuckDB bridge and discrepancy LLM classification remain pending.
 
 Model output and OCR may propose structure/text but never silently become evidence. Generated search and relational databases are derived/interchange data and never become evidence without the source-preserving pack.
 
