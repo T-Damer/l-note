@@ -5,8 +5,6 @@ import {
 } from '../helpers/prebuilt-search-artifacts.js';
 import { SQLITE_FTS_RUNTIME_VERSION } from '../helpers/sqlite-fts.js';
 
-const DATABASE_NAME = 'l-note-search.db';
-
 function firstValue(row) {
   return row ? Object.values(row)[0] : null;
 }
@@ -16,26 +14,6 @@ async function sha256Hex(buffer) {
   return [...new Uint8Array(digest)]
     .map((value) => value.toString(16).padStart(2, '0'))
     .join('');
-}
-
-async function deleteDatabase(name, timeoutMs = 5_000) {
-  if (!globalThis.indexedDB) throw new Error('IndexedDB is unavailable.');
-  await new Promise((resolve, reject) => {
-    const request = indexedDB.deleteDatabase(name);
-    const timer = setTimeout(() => reject(new Error('Search database reset timed out.')), timeoutMs);
-    request.onsuccess = () => {
-      clearTimeout(timer);
-      resolve();
-    };
-    request.onerror = () => {
-      clearTimeout(timer);
-      reject(request.error ?? new Error('Search database reset failed.'));
-    };
-    request.onblocked = () => {
-      clearTimeout(timer);
-      reject(new Error('Search database reset was blocked.'));
-    };
-  });
 }
 
 async function artifactBuffer(artifact, onProgress) {
@@ -111,7 +89,6 @@ export async function importSqliteSearchArtifact(runtime, artifact, {
 }
 
 export async function resetSqliteSearchStorage(runtime) {
-  await runtime.close();
-  await deleteDatabase(DATABASE_NAME);
   await runtime.init();
+  await runtime.clear();
 }
