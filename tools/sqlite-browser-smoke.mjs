@@ -229,9 +229,10 @@ try {
         // The outer browser process is terminated after this evaluation.
       }
     };
+    const sqliteModuleUrl = new URL('./src/adapters/sqlite-fts-search.js', location.href).href;
     const { createSqliteFtsSearchPort } = await bounded(
       'module-import',
-      import('./src/adapters/sqlite-fts-search.js'),
+      import(sqliteModuleUrl),
     );
     const records = [{
       id: 'section:smoke:bronchiolitis',
