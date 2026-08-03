@@ -1,9 +1,13 @@
-function reusableSearchArtifactFile(previous, pack, source) {
-  if (source.searchArtifactFile) return source.searchArtifactFile;
-  const sameVersion = previous?.pack?.version === pack.version;
-  const sameArtifact = previous?.pack?.searchArtifact?.sha256
-    && previous.pack.searchArtifact.sha256 === pack.searchArtifact?.sha256;
-  return sameVersion && sameArtifact ? previous.searchArtifactFile ?? null : null;
+function reusableSearchArtifactFiles(previous, pack, source) {
+  if (Array.isArray(source.searchArtifactFiles)) return source.searchArtifactFiles;
+  const descriptors = new Map((pack.searchArtifacts ?? []).map((artifact) => [artifact.id, artifact]));
+  return (previous?.searchArtifactFiles ?? []).filter((file) => {
+    const descriptor = descriptors.get(file?.id);
+    return descriptor
+      && descriptor.sha256 === file.sha256
+      && descriptor.corpusFingerprint === file.corpusFingerprint
+      && file.blob;
+  });
 }
 
 export function createInstalledPackRecord({
@@ -20,7 +24,7 @@ export function createInstalledPackRecord({
     sizeBytes: source.sizeBytes ?? fallbackSizeBytes,
     sourceUrl: source.url ?? previous?.sourceUrl ?? null,
     sha256: source.sha256 ?? previous?.sha256 ?? null,
-    searchArtifactFile: reusableSearchArtifactFile(previous, pack, source),
+    searchArtifactFiles: reusableSearchArtifactFiles(previous, pack, source),
     pack,
   };
 }
