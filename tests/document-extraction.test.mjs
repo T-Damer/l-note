@@ -26,6 +26,14 @@ const DOCX_XML = `<?xml version="1.0" encoding="UTF-8"?>
   </w:body>
 </w:document>`;
 
+const OCR_TSV = [
+  'level\tpage_num\tblock_num\tpar_num\tline_num\tword_num\tleft\ttop\twidth\theight\tconf\ttext',
+  '1\t1\t0\t0\t0\t0\t0\t0\t1200\t1600\t-1\t',
+  '5\t1\t1\t1\t1\t1\t100\t120\t180\t40\t94.5\tРаспознанная',
+  '5\t1\t1\t1\t1\t2\t300\t120\t140\t40\t72.0\tстраница.',
+  '',
+].join('\n');
+
 function fakeRunner(command, args) {
   if (command === 'pdftotext') {
     return Promise.resolve({
@@ -35,7 +43,8 @@ function fakeRunner(command, args) {
   }
   if (command === 'pdftoppm') return Promise.resolve({ stdout: Buffer.alloc(0), stderr: '' });
   if (command === 'tesseract') {
-    return Promise.resolve({ stdout: Buffer.from('Распознанная вторая страница.'), stderr: '' });
+    assert.equal(args.at(-1), 'tsv');
+    return Promise.resolve({ stdout: Buffer.from(OCR_TSV), stderr: '' });
   }
   if (command === 'unzip' && args.includes('word/document.xml')) {
     return Promise.resolve({ stdout: Buffer.from(DOCX_XML), stderr: '' });
@@ -51,7 +60,7 @@ test('splits pdftotext output into stable page records', () => {
   ]);
 });
 
-test('uses OCR only for PDF pages without a text layer', async () => {
+test('collects OCR review data only for PDF pages without a text layer', async () => {
   const calls = [];
   const extracted = await extractPdfDocument('/tmp/source.pdf', {
     ocr: true,
@@ -60,11 +69,15 @@ test('uses OCR only for PDF pages without a text layer', async () => {
       return fakeRunner(command, args);
     },
   });
-  assert.equal(extracted.sections.length, 3);
-  assert.deepEqual(extracted.sections.map((section) => section.assetAnchor.page), [1, 2, 3]);
-  assert.match(extracted.sections[1].text, /Распознанная/u);
+  assert.equal(extracted.sections.length, 2);
+  assert.deepEqual(extracted.sections.map((section) => section.assetAnchor.page), [1, 3]);
+  assert.equal(extracted.ocrPages.length, 1);
+  assert.equal(extracted.ocrPages[0].page, 2);
+  assert.equal(extracted.ocrPages[0].recognition.text, 'Распознанная страница.');
+  assert.equal(extracted.ocrPages[0].recognition.lowConfidenceWords, 1);
   assert.equal(calls.filter(([command]) => command === 'tesseract').length, 1);
-  assert.equal(extracted.extractor, 'pdftotext+tesseract');
+  assert.equal(extracted.extractor, 'pdftotext+tesseract-tsv');
+  assert.match(extracted.warnings[0], /обязательной проверки/u);
 });
 
 test('parses DOCX headings and keeps paragraph anchors', () => {
@@ -79,7 +92,7 @@ test('parses DOCX headings and keeps paragraph anchors', () => {
   });
 });
 
-test('prepares an authoring directory that compiles into a valid pack', async () => {
+test('prepares text-layer PDF and DOCX content as a valid pack without OCR', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'l-note-documents-'));
   const input = path.join(root, 'input');
   const output = path.join(root, 'prepared');
@@ -92,12 +105,13 @@ test('prepares an authoring directory that compiles into a valid pack', async ()
       outputPath: output,
       id: 'example.prepared-documents',
       title: 'Prepared documents',
-      ocr: true,
+      ocr: false,
       runner: fakeRunner,
       generatedAt: '2026-08-03T12:00:00.000Z',
     });
     assert.equal(result.files, 2);
-    assert.equal(result.sections, 5);
+    assert.equal(result.sections, 4);
+    assert.equal(result.ocrReview, null);
 
     const pack = await buildPack(output);
     assert.equal(validatePack(pack).valid, true);
@@ -105,7 +119,7 @@ test('prepares an authoring directory that compiles into a valid pack', async ()
     const pdf = pack.documents.find((document) => document.tags.includes('pdf'));
     const docx = pack.documents.find((document) => document.tags.includes('docx'));
     assert.equal(pdf.asset.mimeType, 'application/pdf');
-    assert.equal(pdf.sections[1].assetAnchor.page, 2);
+    assert.deepEqual(pdf.sections.map((section) => section.assetAnchor.page), [1, 3]);
     assert.equal(docx.sections[0].provenance.paragraphStart, 3);
     assert.equal(await readFile(path.join(output, 'assets', 'guide.pdf'), 'utf8'), 'fake-pdf');
     assert.equal(await readFile(path.join(output, 'assets', 'notes.docx'), 'utf8'), 'fake-docx');
@@ -114,17 +128,23 @@ test('prepares an authoring directory that compiles into a valid pack', async ()
   }
 });
 
-test('CLI parses OCR and preparation options', () => {
+test('CLI parses OCR review and preparation options', () => {
   const args = prepareArguments([
     './sources',
     '--output', './prepared',
     '--id', 'example.documents',
     '--ocr',
     '--ocr-language', 'rus+eng',
+    '--ocr-review-in', './review.json',
+    '--ocr-review-out', './prepared/ocr-review.json',
+    '--ocr-review-html', './prepared/ocr-review.html',
     '--max-section-chars', '4000',
   ]);
   assert.equal(args.input, './sources');
   assert.equal(args.ocr, true);
   assert.equal(args.ocrLanguage, 'rus+eng');
+  assert.equal(args.ocrReviewIn, './review.json');
+  assert.equal(args.ocrReviewOut, './prepared/ocr-review.json');
+  assert.equal(args.ocrReviewHtml, './prepared/ocr-review.html');
   assert.equal(args.maxSectionChars, '4000');
 });

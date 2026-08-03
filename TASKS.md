@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, confirmed-discrepancy answer evidence, local voice search, the persisted transfer queue, deterministic discrepancy review, PDF/DOCX and SQLite preparation, relational pack interchange, mandatory review of LLM semantic proposals and distributable prebuilt search artifacts are implemented; next are OCR review and an optional DuckDB bulk/remote bridge. Android/iOS and live MiniMed integration remain deferred.
+**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, confirmed-discrepancy answer evidence, local voice search, the persisted transfer queue, deterministic discrepancy review, mandatory OCR review, PDF/DOCX and SQLite preparation, relational pack interchange, mandatory review of LLM semantic proposals and distributable prebuilt search artifacts are implemented; next are an optional DuckDB bulk/remote bridge and chronology-aware discrepancy preparation. Android/iOS and live MiniMed integration remain deferred.
 
 ## Universal core and MiniMed
 
@@ -152,7 +152,7 @@ Single source of future work. Completed items describe the active branch.
 - [x] Extract DOCX headings and paragraph groups with paragraph start/end provenance.
 - [x] Copy original PDF/DOCX files into the prepared assets directory and compile the result through the existing pack builder.
 - [x] Bound external-tool runtime and output size and report extraction warnings instead of inventing missing text.
-- [ ] Add a review workflow for OCR output before publication.
+- [x] Require accept/edit/dismiss review for OCR output before publication.
 - [x] Add direct SQLite table/view import and relational pack export/restore adapters.
 - [ ] Add an optional DuckDB bridge for Parquet/CSV and remote database scanners.
 - [x] Add optional prebuilt SQLite/FTS artifacts to large packs.
@@ -164,6 +164,7 @@ Single source of future work. Completed items describe the active branch.
 - [x] Keep current architecture and invariants in `docs/ARCHITECTURE.md`.
 - [x] Document the portable package and preparation-review formats in `docs/PACK_FORMAT.md`.
 - [x] Document database import/export and external-system boundaries.
+- [x] Document the mandatory OCR review workflow and source-change protection.
 - [x] Keep this file as the only implementation backlog.
 - [x] Keep development, decomposition and user-facing copy rules in `AGENTS.md`.
 - [x] Update docs together with behavior changes.

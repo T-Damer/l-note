@@ -14,7 +14,7 @@ L-Note is a hosted offline-first knowledge workspace with:
 - confirmed discrepancy counterparts in bounded local-answer evidence;
 - deterministic preparation-time comparison against existing pack files;
 - standalone JSON/HTML review artifacts for proposed statement relations;
-- strong-device PDF/DOCX extraction with page/paragraph provenance and optional OCR;
+- strong-device PDF/DOCX extraction with page/paragraph provenance and mandatory reviewed OCR;
 - strong-device SQLite table/view import and relational pack export/restore;
 - mandatory JSON/HTML review for LLM-proposed concepts, aliases, statements and relations;
 - browser-local Markdown/TXT/JSON package creation;
@@ -71,7 +71,7 @@ EvidenceVerifierPort
 
 The generic core contains no DOM, IndexedDB, SQL, WebGPU, speech-runtime or medical-policy assumptions. The optional prebuilt search descriptor is serializable pack metadata; Blob storage, SQLite import and compatibility checks remain adapter/Worker concerns.
 
-Strong-device database adapters operate outside the browser runtime. They consume or emit existing pack and authoring contracts rather than adding a database-specific resource type to the core.
+Strong-device database and document adapters operate outside the browser runtime. They consume or emit existing pack, authoring and review contracts rather than adding source-specific resource types to the core.
 
 ## Adaptive search
 
@@ -197,16 +197,18 @@ Pending and dismissed proposals remain outside the pack. Accepted records keep `
 
 The review artifact is temporary preparation state and is not installable by the hosted application. Provider-specific network calls remain at the strong-device boundary; the final pack does not depend on the provider or a server.
 
-## Document extraction
+## Document extraction and OCR review
 
 PDF and DOCX preparation runs outside the hosted application:
 
 ```text
 PDF / DOCX file or directory
   → bounded external extractor process
-  → normalized documents and sections
-  → original files copied into assets/
-  → authoring directory
+  → text-layer sections immediately
+  → scanned pages become OCR review candidates
+  → standalone local JSON/HTML review
+  → accept edited text or dismiss each page
+  → reviewed authoring directory
   → existing build-pack validator/compiler
   → installable pack
 ```
@@ -214,10 +216,15 @@ PDF / DOCX file or directory
 PDF processing:
 
 - `pdftotext -layout` supplies one-based page text;
-- each searchable section keeps `assetAnchor.page` and `provenance.kind = pdf-page`;
+- each text-layer section keeps `assetAnchor.page` and `provenance.kind = pdf-page`;
 - the original PDF becomes an internal reader asset;
-- when `--ocr` is enabled, only pages with an empty text layer are rasterized through `pdftoppm` and passed to Tesseract;
-- pages that remain empty generate warnings rather than invented content.
+- only pages without a usable text layer are rasterized through `pdftoppm`;
+- Tesseract TSV supplies recognized text, confidence and word bounding boxes;
+- OCR text remains outside searchable sections until explicitly accepted;
+- accepted edited text keeps source SHA-256, candidate ID, confidence summary, reviewer and review time;
+- dismissed pages do not enter the pack.
+
+`manifest.preparationReviews` records whether the OCR review remains pending or is complete. `build-pack.mjs` refuses to compile any authoring directory with an incomplete preparation review. Candidate identity includes the source PDF SHA-256, path, page and OCR language, so a changed source invalidates an old decision.
 
 DOCX processing:
 
@@ -227,7 +234,7 @@ DOCX processing:
 - XML entities, tabs and line breaks are decoded deterministically;
 - the original DOCX is retained as a source asset even though the hosted reader currently embeds PDF only.
 
-External commands have execution time and output-size limits. Extraction output is not automatically considered reviewed: OCR text still requires a review workflow before trusted publication.
+External commands have execution time and output-size limits. hOCR, PAGE XML and Label Studio may become optional review adapters, but cannot bypass the same accept/edit/dismiss and source-hash gates.
 
 ## Database preparation and interchange
 
@@ -357,7 +364,7 @@ Strong-device path:
 PDF / DOCX / SQLite / databases / notes
   → deterministic extraction and provenance
   → optional DuckDB staging for bulk/remote sources
-  → OCR only where text is absent
+  → mandatory OCR review where the text layer is absent
   → source-preserving base pack
   → optional semantic proposals
   → mandatory semantic review
@@ -369,9 +376,9 @@ PDF / DOCX / SQLite / databases / notes
   → pack JSON + derived artifacts
 ```
 
-PDF/DOCX deterministic extraction, SQLite import/export, statement-discrepancy review, confirmed-discrepancy answer evidence, semantic-proposal review and prebuilt SQLite/FTS artifact generation/import are implemented. OCR review, an optional DuckDB bridge and discrepancy LLM classification remain pending.
+PDF/DOCX deterministic extraction, mandatory OCR review, SQLite import/export, statement-discrepancy review, confirmed-discrepancy answer evidence, semantic-proposal review and prebuilt SQLite/FTS artifact generation/import are implemented. An optional DuckDB bridge and discrepancy LLM classification remain pending.
 
-Model output may propose structure but never silently replace source text or resolve a source disagreement. Generated search and relational databases are derived/interchange data and never become evidence without the source-preserving pack.
+Model output and OCR may propose structure/text but never silently become evidence. Generated search and relational databases are derived/interchange data and never become evidence without the source-preserving pack.
 
 ## L-Note and MiniMed
 
@@ -381,11 +388,10 @@ MiniMed retains medical query parsing, clinical ranking, source policy, dose/reg
 
 ## Next ordered work
 
-1. Add review for OCR output.
-2. Add an optional DuckDB bridge for Parquet/CSV and remote database scanners.
+1. Add an optional DuckDB bridge for Parquet/CSV and remote database scanners.
+2. Add explicit date/edition chronology signals without automatic source precedence.
 3. Add optional local/server LLM classification for deterministic discrepancy candidates.
-4. Add explicit date/edition chronology signals without automatic source precedence.
-5. Benchmark search, speech and models on representative Snapdragon 7-class devices.
-6. Consider OPFS and vector adapters after the current baseline is measured.
+4. Benchmark search, speech and models on representative Snapdragon 7-class devices.
+5. Consider OPFS and vector adapters after the current baseline is measured.
 
 Live MiniMed integration and native Android/iOS packaging remain deferred.

@@ -1,9 +1,20 @@
 import { spawn } from 'node:child_process';
-import { copyFile, mkdir, mkdtemp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { copyFile, mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import {
+  OCR_REVIEW_KIND,
+  createOcrReview,
+  ocrReviewState,
+  sha256File,
+} from './ocr-review.mjs';
 import { slugify, stableId } from './pack-builder.mjs';
+import {
+  acceptedPdfOcrSections,
+  createPdfOcrCandidates,
+  pdfPageSections,
+  recognizeMissingPdfPages,
+} from './pdf-ocr-preparation.mjs';
 
 const SUPPORTED_DOCUMENT_EXTENSIONS = new Set(['.pdf', '.docx']);
 const DEFAULT_MAX_SECTION_CHARS = 5000;
@@ -127,21 +138,6 @@ export function parsePdfTextPages(value) {
   return pages.map((page, index) => ({ page: index + 1, text: cleanText(page) }));
 }
 
-async function ocrPdfPage(filename, pageNumber, { runner, language, workDir }) {
-  const prefix = path.join(workDir, `page-${pageNumber}`);
-  await runner('pdftoppm', [
-    '-f', String(pageNumber),
-    '-l', String(pageNumber),
-    '-png',
-    '-singlefile',
-    filename,
-    prefix,
-  ]);
-  const image = `${prefix}.png`;
-  const result = await runner('tesseract', [image, 'stdout', '-l', language]);
-  return cleanText(result.stdout.toString('utf8'));
-}
-
 export async function extractPdfDocument(filename, {
   runner = runCommand,
   ocr = false,
@@ -150,52 +146,38 @@ export async function extractPdfDocument(filename, {
 } = {}) {
   const result = await runner('pdftotext', ['-layout', filename, '-']);
   const pages = parsePdfTextPages(result.stdout);
+  const ocrPages = ocr
+    ? await recognizeMissingPdfPages(filename, pages, { runner, language: ocrLanguage })
+    : [];
+  const recognizedPages = new Map(ocrPages.map((page) => [page.page, page]));
   const warnings = [];
-  let workDir = null;
-  try {
-    if (ocr && pages.some((page) => !page.text)) {
-      workDir = await mkdtemp(path.join(tmpdir(), 'l-note-ocr-'));
-      for (const page of pages) {
-        if (page.text) continue;
-        page.text = await ocrPdfPage(filename, page.page, {
-          runner,
-          language: ocrLanguage,
-          workDir,
-        });
-        if (!page.text) warnings.push(`Страница ${page.page}: текст не распознан.`);
-      }
-    }
-  } finally {
-    if (workDir) await rm(workDir, { recursive: true, force: true });
-  }
-
   const sections = [];
   for (const page of pages) {
-    if (!page.text) {
-      warnings.push(`Страница ${page.page}: текстовый слой отсутствует${ocr ? ' после OCR' : '; используйте --ocr'}.`);
+    if (page.text) {
+      sections.push(...pdfPageSections({
+        page: page.page,
+        text: page.text,
+        maxChars: maxSectionChars,
+      }));
       continue;
     }
-    const paragraphs = page.text.split(/\n{2,}/gu).filter(Boolean).map((text, index) => ({
-      index: index + 1,
-      text,
-    }));
-    sections.push(...sectionChunks({
-      id: `page-${page.page}`,
-      title: `Страница ${page.page}`,
-      paragraphs,
-      maxChars: maxSectionChars,
-      anchor: () => ({
-        assetAnchor: { page: page.page },
-        provenance: { kind: 'pdf-page', page: page.page },
-      }),
-    }));
+    const recognized = recognizedPages.get(page.page);
+    if (recognized) {
+      if (!recognized.recognition.text) warnings.push(`Страница ${page.page}: OCR не распознал текст; требуется решение рецензента.`);
+      else warnings.push(`Страница ${page.page}: OCR-текст ожидает обязательной проверки.`);
+    } else {
+      warnings.push(`Страница ${page.page}: текстовый слой отсутствует${ocr ? ' после OCR' : '; используйте --ocr'}.`);
+    }
   }
-  if (!sections.length) throw new Error(`PDF ${filename} contains no extractable text. Run again with --ocr if the document is scanned.`);
+  if (!sections.length && !ocrPages.length) {
+    throw new Error(`PDF ${filename} contains no extractable text. Run again with --ocr if the document is scanned.`);
+  }
   return {
     title: titleFromFilename(filename),
     sections,
+    ocrPages,
     warnings: [...new Set(warnings)],
-    extractor: ocr ? 'pdftotext+tesseract' : 'pdftotext',
+    extractor: ocrPages.length ? 'pdftotext+tesseract-tsv' : 'pdftotext',
   };
 }
 
@@ -274,7 +256,7 @@ export function parseDocxDocumentXml(xml, filename = 'document.docx', {
       }),
     }));
   }
-  return { title, sections, warnings: [], extractor: 'docx-xml' };
+  return { title, sections, ocrPages: [], warnings: [], extractor: 'docx-xml' };
 }
 
 export async function extractDocxDocument(filename, { runner = runCommand, maxSectionChars } = {}) {
@@ -316,6 +298,33 @@ function uniqueAssetName(relative, used) {
   return name;
 }
 
+function assertReviewInput(review, packId) {
+  if (!review) return;
+  if (review.kind !== OCR_REVIEW_KIND || review.targetPackId !== packId) {
+    throw new Error('The OCR review does not belong to this prepared pack.');
+  }
+}
+
+function reviewManifest(review) {
+  if (!review) return [];
+  const state = ocrReviewState(review);
+  return [{
+    kind: 'ocr',
+    reviewKind: OCR_REVIEW_KIND,
+    status: state.complete ? 'completed' : 'pending',
+    candidates: review.candidates.length,
+    accepted: state.accept,
+    dismissed: state.dismiss,
+    pending: state.pending,
+    reviewedAt: review.reviewedAt ?? null,
+    reviewedBy: review.reviewedBy ?? null,
+  }];
+}
+
+function pageOrder(section) {
+  return Number(section.assetAnchor?.page ?? Number.MAX_SAFE_INTEGER);
+}
+
 export async function prepareDocumentDirectory({
   inputPath,
   outputPath,
@@ -326,12 +335,14 @@ export async function prepareDocumentDirectory({
   language = 'ru',
   ocr = false,
   ocrLanguage = 'rus+eng',
+  ocrReview = null,
   maxSectionChars = DEFAULT_MAX_SECTION_CHARS,
   runner = runCommand,
   generatedAt = new Date().toISOString(),
   onProgress = () => {},
 } = {}) {
   if (!inputPath || !outputPath || !id) throw new TypeError('inputPath, outputPath and id are required.');
+  assertReviewInput(ocrReview, id);
   const files = await listDocumentSourceFiles(inputPath);
   if (!files.length) throw new Error('No supported .pdf or .docx files found.');
   const outputRoot = path.resolve(outputPath);
@@ -343,7 +354,8 @@ export async function prepareDocumentDirectory({
   await mkdir(assetRoot, { recursive: true });
   const usedAssets = new Set();
   const warnings = [];
-  let sections = 0;
+  const drafts = [];
+  const candidates = [];
 
   for (const [index, filename] of files.entries()) {
     const relative = path.relative(inputRoot, filename).split(path.sep).join('/');
@@ -353,38 +365,85 @@ export async function prepareDocumentDirectory({
       ? await extractPdfDocument(filename, { runner, ocr, ocrLanguage, maxSectionChars })
       : await extractDocxDocument(filename, { runner, maxSectionChars });
     const assetName = uniqueAssetName(relative, usedAssets);
+    const assetUrl = `./assets/${assetName}`;
     await copyFile(filename, path.join(assetRoot, assetName));
     const documentId = `doc.${slugify(relative)}`;
-    const document = {
-      id: documentId,
-      title: extracted.title,
-      summary: `Извлечено из ${relative}`,
-      authority: 'reference',
-      effectiveFrom: null,
-      source: {
-        title: relative,
-        path: `./assets/${assetName}`,
-        mimeType: extension === '.pdf'
-          ? 'application/pdf'
-          : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        extractor: extracted.extractor,
-        preparedAt: generatedAt,
-      },
-      tags: [extension.slice(1)],
-      sections: extracted.sections,
-      ...(extracted.warnings.length ? { extractionWarnings: extracted.warnings } : {}),
-    };
-    if (extension === '.pdf') {
-      document.asset = {
-        url: `./assets/${assetName}`,
-        mimeType: 'application/pdf',
+    const documentCandidates = extension === '.pdf' && extracted.ocrPages.length
+      ? createPdfOcrCandidates({
+        targetPackId: id,
+        sourcePath: relative,
+        sourceSha256: await sha256File(filename),
+        assetUrl,
+        documentId,
+        documentTitle: extracted.title,
+        language: ocrLanguage,
+        ocrPages: extracted.ocrPages,
+      })
+      : [];
+    candidates.push(...documentCandidates);
+    drafts.push({
+      relative,
+      extension,
+      extracted,
+      documentCandidates,
+      document: {
+        id: documentId,
         title: extracted.title,
+        summary: `Извлечено из ${relative}`,
+        authority: 'reference',
+        effectiveFrom: null,
+        source: {
+          title: relative,
+          path: assetUrl,
+          mimeType: extension === '.pdf'
+            ? 'application/pdf'
+            : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          extractor: extracted.extractor,
+          preparedAt: generatedAt,
+        },
+        tags: [extension.slice(1)],
+        sections: [...extracted.sections],
+        ...(extracted.warnings.length ? { extractionWarnings: extracted.warnings } : {}),
+      },
+      assetName,
+    });
+  }
+
+  const review = candidates.length
+    ? createOcrReview({
+      targetPackId: id,
+      candidates,
+      previousReview: ocrReview,
+      generatedAt,
+    })
+    : null;
+  const reviewState = review ? ocrReviewState(review) : null;
+  let writtenDocuments = 0;
+  let sections = 0;
+  for (const draft of drafts) {
+    const document = draft.document;
+    if (review && draft.documentCandidates.length) {
+      document.sections.push(...acceptedPdfOcrSections(review, draft.documentCandidates, {
+        maxChars: maxSectionChars,
+      }));
+      document.sections.sort((left, right) => pageOrder(left) - pageOrder(right) || left.id.localeCompare(right.id));
+    }
+    if (!document.sections.length && reviewState?.complete) {
+      warnings.push(`${draft.relative}: все OCR-страницы отклонены; документ не включён.`);
+      continue;
+    }
+    if (draft.extension === '.pdf') {
+      document.asset = {
+        url: `./assets/${draft.assetName}`,
+        mimeType: 'application/pdf',
+        title: draft.extracted.title,
         page: 1,
       };
     }
-    await writeJson(path.join(documentRoot, `${slugify(relative)}.json`), document);
-    warnings.push(...extracted.warnings.map((warning) => `${relative}: ${warning}`));
-    sections += extracted.sections.length;
+    await writeJson(path.join(documentRoot, `${slugify(draft.relative)}.json`), document);
+    warnings.push(...draft.extracted.warnings.map((warning) => `${draft.relative}: ${warning}`));
+    sections += document.sections.length;
+    writtenDocuments += 1;
   }
 
   await Promise.all([
@@ -398,6 +457,7 @@ export async function prepareDocumentDirectory({
       publishedAt: generatedAt,
       license: 'user-supplied',
       tags: ['user-pack', 'prepared-documents'],
+      ...(review ? { preparationReviews: reviewManifest(review) } : {}),
     }),
     writeJson(path.join(outputRoot, 'entities.json'), []),
     writeJson(path.join(outputRoot, 'claims.json'), []),
@@ -407,7 +467,10 @@ export async function prepareDocumentDirectory({
   return {
     outputPath: outputRoot,
     files: files.length,
+    documents: writtenDocuments,
     sections,
-    warnings,
+    warnings: [...new Set(warnings)],
+    ocrReview: review,
+    ocrReviewState: reviewState,
   };
 }

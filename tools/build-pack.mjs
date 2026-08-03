@@ -15,6 +15,7 @@ import {
   createReplicateProvider,
   mergeAiSection,
 } from './lib/pack-builder.mjs';
+import { assertPreparationReviewsComplete } from './lib/preparation-review-guard.mjs';
 import { collectSemanticReview } from './lib/semantic-proposal-collector.mjs';
 import { renderSemanticReviewHtml } from './lib/semantic-review-html.mjs';
 import { applySemanticReview } from './lib/semantic-review.mjs';
@@ -89,6 +90,7 @@ async function writeJson(filename, value) {
 export async function buildPack(inputRoot) {
   const root = resolve(toPath(inputRoot));
   const manifest = await readJson(join(root, 'manifest.json'));
+  assertPreparationReviewsComplete(manifest);
   const documentRoot = join(root, 'documents');
   const documentNames = (await readdir(documentRoot, { withFileTypes: true }))
     .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
