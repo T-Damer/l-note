@@ -10,11 +10,13 @@ function defaultWorkerFactory() {
 function preparedArtifact(artifact) {
   if (!artifact?.blob) return null;
   return {
-    schemaVersion: artifact.schemaVersion,
-    profile: artifact.profile,
+    id: artifact.id,
+    kind: artifact.kind,
+    formatVersion: artifact.formatVersion,
+    runtime: artifact.runtime,
     sha256: artifact.sha256,
     bytes: artifact.bytes,
-    fingerprint: artifact.fingerprint,
+    corpusFingerprint: artifact.corpusFingerprint,
     recordCount: artifact.recordCount,
     blob: artifact.blob,
   };
