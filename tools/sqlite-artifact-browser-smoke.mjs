@@ -52,6 +52,17 @@ async function waitForProcessExit(child, timeoutMs = 2_000) {
   ]);
 }
 
+async function closeServer(server) {
+  await Promise.race([
+    new Promise((resolvePromise) => {
+      server.close(resolvePromise);
+      server.closeIdleConnections?.();
+      server.closeAllConnections?.();
+    }),
+    new Promise((resolvePromise) => setTimeout(resolvePromise, 2_000)),
+  ]);
+}
+
 function createStaticServer() {
   const types = new Map([
     ['.html', 'text/html; charset=utf-8'],
@@ -235,8 +246,8 @@ try {
     browser.kill('SIGKILL');
     await waitForProcessExit(browser, 1_000);
   }
-  await new Promise((resolvePromise) => server.close(resolvePromise));
-  await rm(profileDir, { recursive: true, force: true });
+  await closeServer(server);
+  await rm(profileDir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
   await rm(databasePath, { force: true });
   await rm(packPath, { force: true });
 }
