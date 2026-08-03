@@ -80,8 +80,10 @@ function hasNegation(value) {
 
 function scopeCues(value) {
   const output = new Set();
+  const source = normalized(value);
   for (const pattern of SCOPE_PATTERNS) {
-    for (const match of normalized(value).matchAll(pattern)) output.add(match[0]);
+    const matcher = new RegExp(pattern.source, pattern.flags);
+    for (const match of source.matchAll(matcher)) output.add(match[0]);
   }
   return [...output].sort();
 }
@@ -161,7 +163,7 @@ function candidateFor(left, right) {
   if (negationMismatch) signals.push('negation_difference');
   if (scopeDifference) signals.push('scope_difference');
   if (objectMismatch) signals.push('object_difference');
-  const suggestedType = scopeDifference && !numbers.length && !negationMismatch && !objectMismatch
+  const suggestedType = scopeDifference && !negationMismatch && !objectMismatch
     ? 'different_scope'
     : 'contradicts';
   const confidence = Math.min(.98, .5 + (subjectMatches ? .18 : 0) + similarity.overlap * .2 + signals.length * .07);
