@@ -3,7 +3,6 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { fileURLToPath } from 'node:url';
 
 import { parsePdfTextPages } from '../tools/lib/document-extraction.mjs';
 import {
@@ -12,7 +11,6 @@ import {
 } from '../tools/lib/pdf-inspector-preparation.mjs';
 import { prepareFromArguments } from '../tools/prepare-documents.mjs';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIXED_RESULT = {
   pdfType: 'Mixed',
   pageCount: 3,
@@ -30,6 +28,25 @@ const MIXED_RESULT = {
     '[Image 1]',
     '<!-- Page 3 -->',
     'Финал.',
+  ].join('\n'),
+};
+const TEXT_RESULT = {
+  pdfType: 'TextBased',
+  pageCount: 2,
+  parserVersion: '0.1.3',
+  confidence: .99,
+  pagesNeedingOcr: [],
+  ocrReasonsByPage: [],
+  layout: { isComplex: true, pagesWithTables: [1], pagesWithColumns: [] },
+  markdown: [
+    '<!-- Page 1 -->',
+    '# Отчёт',
+    '',
+    '| Показатель | Значение |',
+    '| --- | ---: |',
+    '| A | 42 |',
+    '<!-- Page 2 -->',
+    'Вывод.',
   ].join('\n'),
 };
 
@@ -82,14 +99,21 @@ test('prepared PDF metadata records pdf-inspector instead of the compatibility c
   assert.match(document.extractionWarnings.join(' '), /2/u);
 });
 
-test('prepare:documents parses a real text PDF without Poppler', async (t) => {
+test('prepare:documents uses pdf-inspector output without invoking Poppler text extraction', async (t) => {
   const directory = await temporaryDirectory(t);
+  const source = path.join(directory, 'report.pdf');
   const output = path.join(directory, 'prepared');
+  await writeFile(source, '%PDF deterministic fixture');
   const result = await prepareFromArguments({
-    input: path.join(root, 'assets', 'lnote-source-demo.pdf'),
+    input: source,
     output,
     id: 'test.pdf-inspector',
     title: 'PDF inspector test',
+  }, {
+    pdfInspector: async () => TEXT_RESULT,
+    baseRunner: async (command) => {
+      throw new Error(`Unexpected external command: ${command}`);
+    },
   });
   const documentFiles = (await readdir(path.join(output, 'documents'))).filter((name) => name.endsWith('.json'));
   assert.equal(result.documents, 1);
@@ -97,6 +121,6 @@ test('prepare:documents parses a real text PDF without Poppler', async (t) => {
   const document = JSON.parse(await readFile(path.join(output, 'documents', documentFiles[0]), 'utf8'));
   assert.equal(document.source.extractor, '@firecrawl/pdf-inspector-wasm');
   assert.equal(document.source.inspection.pdfType, 'TextBased');
-  assert.ok(document.sections.length >= 1);
-  assert.ok(document.sections.every((section) => Number.isInteger(section.assetAnchor?.page)));
+  assert.deepEqual(document.sections.map((section) => section.assetAnchor?.page), [1, 2]);
+  assert.match(document.sections[0].text, /\| A \| 42 \|/u);
 });
