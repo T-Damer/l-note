@@ -187,13 +187,14 @@ try {
   await client.send('Runtime.enable');
 
   const result = await client.evaluate(`(async () => {
+    const baseUrl = 'http://127.0.0.1:${appPort}/';
     const [{ createSqliteFtsSearchPort }, { flattenKnowledge }, { knowledgeCorpusFingerprint }] = await Promise.all([
-      import('./src/adapters/sqlite-fts-search.js'),
-      import('./src/packs.js'),
-      import('./src/core/runtime.js'),
+      import(baseUrl + 'src/adapters/sqlite-fts-search.js'),
+      import(baseUrl + 'src/packs.js'),
+      import(baseUrl + 'src/core/runtime.js'),
     ]);
-    const pack = await fetch('./${packName}').then((response) => response.json());
-    const blob = await fetch('./${databaseName}').then((response) => response.blob());
+    const pack = await fetch(baseUrl + '${packName}').then((response) => response.json());
+    const blob = await fetch(baseUrl + '${databaseName}').then((response) => response.blob());
     const records = flattenKnowledge([pack], []);
     const fingerprint = knowledgeCorpusFingerprint([pack], []);
     const descriptor = { ...pack.searchArtifacts[0], blob };
