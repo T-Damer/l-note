@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v41';
-const RUNTIME_CACHE = 'l-note-runtime-v41';
+const SHELL_CACHE = 'l-note-shell-v42';
+const RUNTIME_CACHE = 'l-note-runtime-v42';
 const SHELL = [
   './',
   './index.html',
@@ -9,6 +9,9 @@ const SHELL = [
   './assets/lnote-source-demo.pdf',
   './vendor/minisearch.js',
   './vendor/minisearch.LICENSE.txt',
+  './vendor/pdf-inspector/pdf_inspector_wasm.js',
+  './vendor/pdf-inspector/pdf_inspector_wasm_bg.wasm',
+  './vendor/pdf-inspector/LICENSE.txt',
   './vendor/phosphor/style.css',
   './vendor/phosphor/Phosphor.woff2',
   './src/app.js',
@@ -37,6 +40,7 @@ const SHELL = [
   './src/helpers/entity-terms.js',
   './src/helpers/model-formatters.js',
   './src/helpers/pack-source-parser.js',
+  './src/helpers/pdf-inspector-result.js',
   './src/helpers/statement-conflicts.js',
   './src/helpers/text-diff.js',
   './src/helpers/transfer-queue.js',
@@ -64,6 +68,7 @@ const SHELL = [
   './src/services/ask-workflow.js',
   './src/services/audio-recorder.js',
   './src/services/browser-pack-builder.js',
+  './src/services/browser-pdf-inspector.js',
   './src/services/evidence-discrepancies.js',
   './src/services/evidence-query.js',
   './src/services/evidence-support-verifier.js',
@@ -79,6 +84,7 @@ const SHELL = [
   './src/services/storage-persistence.js',
   './src/services/transfer-queue.js',
   './src/services/welcome-note.js',
+  './src/workers/pdf-inspector-worker.js',
   './src/workers/search-worker.js',
   './src/workers/sqlite-artifact-runtime.js',
   './src/workers/sqlite-fts-runtime.js',
