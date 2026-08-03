@@ -42,6 +42,11 @@ export function clipText(value, maxChars) {
   return `${text.slice(0, limit - 1).trimEnd()}…`;
 }
 
+function discrepancySide(label, side) {
+  const date = side?.date ? `, дата: ${side.date}` : '';
+  return `${label} [${side.evidenceId}] (${side.documentTitle}${date}): ${clipText(side.quote, 600)}`;
+}
+
 function discrepancyBlock(discrepancy) {
   const sourceId = discrepancy?.source?.evidenceId;
   const targetId = discrepancy?.target?.evidenceId;
@@ -49,6 +54,8 @@ function discrepancyBlock(discrepancy) {
   return [
     `ПОДТВЕРЖДЁННОЕ РАСХОЖДЕНИЕ: [${sourceId}] ↔ [${targetId}]`,
     `Тип связи: ${discrepancy.type}.`,
+    discrepancySide('Версия A', discrepancy.source),
+    discrepancySide('Версия B', discrepancy.target),
     discrepancy.reason ? `Пояснение рецензента: ${discrepancy.reason}` : '',
     'Представь обе версии нейтрально. Не выбирай один источник автоматически.',
   ].filter(Boolean).join('\n');
