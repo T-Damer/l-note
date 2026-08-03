@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v39';
-const RUNTIME_CACHE = 'l-note-runtime-v39';
+const SHELL_CACHE = 'l-note-shell-v40';
+const RUNTIME_CACHE = 'l-note-runtime-v40';
 const SHELL = [
   './',
   './index.html',
@@ -72,6 +72,7 @@ const SHELL = [
   './src/services/model-progress.js',
   './src/services/note-workflow.js',
   './src/services/package-transfer.js',
+  './src/services/queued-runtime-loader.js',
   './src/services/storage-persistence.js',
   './src/services/transfer-queue.js',
   './src/services/welcome-note.js',
