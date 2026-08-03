@@ -103,16 +103,19 @@ function tablePlan(object, mapping) {
     .sort((left, right) => left.primaryKeyOrder - right.primaryKeyOrder)
     .map((column) => column.name);
   const idColumns = mapping.idColumns ?? primaryKeyColumns;
+  const orderColumns = mapping.orderColumns ?? idColumns;
   const textColumns = mapping.textColumns ?? columnNames;
   const tagColumns = mapping.tagColumns ?? [];
   const titleColumn = mapping.titleColumn ?? null;
   assertColumnsExist(object.name, columns, idColumns, 'identity');
+  assertColumnsExist(object.name, columns, orderColumns, 'order');
   assertColumnsExist(object.name, columns, textColumns, 'text');
   assertColumnsExist(object.name, columns, tagColumns, 'tag');
   if (titleColumn) assertColumnsExist(object.name, columns, [titleColumn], 'title');
   return {
     columns,
     idColumns,
+    orderColumns,
     textColumns,
     tagColumns,
     titleColumn,
@@ -153,10 +156,30 @@ function rowTags(plan, row, object) {
   return [...new Set(tags)];
 }
 
+function selectSql(object, plan, warnings) {
+  if (plan.orderColumns.length) {
+    return `SELECT * FROM ${quoteIdentifier(object.name)} ORDER BY ${plan.orderColumns.map(quoteIdentifier).join(', ')}`;
+  }
+  if (object.type === 'table') return `SELECT * FROM ${quoteIdentifier(object.name)} ORDER BY rowid`;
+  warnings.push(`${object.name}: порядок строк view не определён; задайте orderColumns в mapping.`);
+  return `SELECT * FROM ${quoteIdentifier(object.name)}`;
+}
+
+function uniqueRowId(object, identity, rowNumber, usedIds, warnings) {
+  let id = rowStableId(object.name, identity, rowNumber);
+  if (usedIds.has(id)) {
+    warnings.push(`${object.name}, строка ${rowNumber}: identity не уникален; ID дополнен номером строки.`);
+    id = rowStableId(object.name, { ...identity, __rowNumber: rowNumber }, rowNumber);
+  }
+  usedIds.add(id);
+  return id;
+}
+
 function importObject(database, object, mapping, options, warnings, onProgress) {
   const plan = tablePlan(object, mapping);
   const sections = [];
-  const statement = database.prepare(`SELECT * FROM ${quoteIdentifier(object.name)}`);
+  const usedIds = new Set();
+  const statement = database.prepare(selectSql(object, plan, warnings));
   let rowNumber = 0;
   let truncated = false;
   for (const row of statement.iterate()) {
@@ -166,7 +189,7 @@ function importObject(database, object, mapping, options, warnings, onProgress) 
       break;
     }
     const identity = rowIdentity(row, plan.idColumns);
-    const id = rowStableId(object.name, identity, rowNumber);
+    const id = uniqueRowId(object, identity, rowNumber, usedIds, warnings);
     const title = rowTitle(plan, row, identity, rowNumber);
     const metadata = {
       provenance: {
@@ -176,6 +199,7 @@ function importObject(database, object, mapping, options, warnings, onProgress) 
         rowNumber,
         identity,
         columns: plan.textColumns,
+        orderColumns: plan.orderColumns,
       },
     };
     const rowSections = splitSection({
@@ -214,6 +238,7 @@ function importObject(database, object, mapping, options, warnings, onProgress) 
       adapter: 'node:sqlite',
       preparedAt: options.generatedAt,
       columns: plan.columns,
+      orderColumns: plan.orderColumns,
     },
     tags: ['sqlite', object.type, object.name],
     sections,
