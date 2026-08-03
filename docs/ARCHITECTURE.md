@@ -6,6 +6,7 @@ L-Note is a hosted offline-first knowledge workspace with:
 
 - independently installable knowledge packs in IndexedDB;
 - adaptive MiniSearch / SQLite-FTS5 / IndexedDB-postings retrieval;
+- optional distributable SQLite/FTS5 indexes for large packs;
 - hash-routed packages, documents, concepts, statements, notes and package creation;
 - list and graph views over the same resources;
 - internal PDF viewing with exact page anchors;
@@ -18,7 +19,7 @@ L-Note is a hosted offline-first knowledge workspace with:
 - local RU/EN voice search;
 - optional local WebLLM answers over bounded evidence;
 - deterministic citation and statement-support verification;
-- a persisted transfer queue shared by packages, language models and speech models;
+- a persisted transfer queue shared by packages, optional search files, language models and speech models;
 - a collapsible desktop sidebar and a static PWA build.
 
 A routed dialog has exactly one vertical scroll container: `.dialog-body`.
@@ -66,7 +67,7 @@ SpeechRecognitionPort
 EvidenceVerifierPort
 ```
 
-The generic core contains no DOM, IndexedDB, SQL, WebGPU, speech-runtime or medical-policy assumptions.
+The generic core contains no DOM, IndexedDB, SQL, WebGPU, speech-runtime or medical-policy assumptions. The optional prebuilt search descriptor is serializable pack metadata; Blob storage, SQLite import and compatibility checks remain adapter/Worker concerns.
 
 ## Adaptive search
 
@@ -74,8 +75,13 @@ The generic core contains no DOM, IndexedDB, SQL, WebGPU, speech-runtime or medi
 small corpus
   → MiniSearch in JavaScript memory
 
-large corpus
-  → SQLite + FTS5
+one exact active pack + verified compatible artifact + no personal notes
+  → prebuilt SQLite + FTS5 database
+  → Dedicated Worker
+  → IndexedDB virtual filesystem
+
+large corpus without a usable artifact
+  → SQLite + FTS5 built locally
   → Dedicated Worker
   → IndexedDB virtual filesystem
 
@@ -90,7 +96,9 @@ The initial large-corpus threshold is 5,000 search records or approximately 8 Mi
 
 FTS5 stores weighted title, document, alias, entity, tag and body fields. It supplies BM25 candidates and a vocabulary for bounded typo correction. The application then converts results into the common `SearchResult` contract and integer `0–100%` relative relevance.
 
-A corpus fingerprint allows an unchanged database to reopen without rebuilding. When disk search is active, the page drops the large flattened record array and retains only knowledge metadata and bounded result/evidence working sets.
+A corpus fingerprint allows an unchanged database to reopen without rebuilding. A prebuilt artifact is selected only when its descriptor, stored Blob and active corpus agree exactly. The Worker validates its byte size, SHA-256, format/runtime metadata, `PRAGMA quick_check`, required tables, record count and fingerprint before replacing the local database. Failure resets the partially imported database and follows the normal local-build/fallback chain.
+
+When disk search is active, the page drops the large flattened record array and retains only knowledge metadata and bounded result/evidence working sets.
 
 The SQLite connection belongs to one Dedicated Worker. Commands are serialized, and close is awaited before a fallback backend or replacement Worker is opened.
 
@@ -218,7 +226,10 @@ service-worker.js
   offline shell and runtime-asset delivery only
 
 sqlite-search-worker.js
-  serialized SQLite/FTS5 connection
+  serialized SQLite/FTS5 connection and import/build fallback orchestration
+
+sqlite-artifact-runtime.js
+  offline Blob verification, database import and integrity/compatibility checks
 
 search-worker.js
   IndexedDB-postings fallback
@@ -243,7 +254,7 @@ The local language-model profiles target devices with approximately 8–12 GB sh
 All long browser downloads use one `TransferQueue` persisted through `StoragePort`:
 
 ```text
-package download
+package JSON + optional search artifacts
 language-model load
 speech-model load
         ↓
@@ -262,6 +273,8 @@ The queue provides:
 - automatic package-download restart after reload;
 - explicit manual continuation for interrupted model loads;
 - a compact global panel shown only while attention is needed.
+
+Optional search files are fetched sequentially within their owning package task, resolved relative to the package URL, size-limited and checksummed before they enter the installed pack record. A failed optional artifact yields a warning and does not block installation of the authoritative JSON pack.
 
 Model handlers still enforce the separate invariant that only one inference model is active, even when ordinary package files download in parallel. Low-level failures are logged for diagnostics, while the panel stores short user-facing messages.
 
@@ -309,13 +322,13 @@ PDF / DOCX / databases / notes
   → compare against existing prepared claims
   → quantity, negation and scope checks
   → mandatory discrepancy review
-  → optional prebuilt SQLite/FTS artifacts
-  → installable pack
+  → optional build-search-artifact.mjs
+  → pack JSON + SQLite/FTS file publication
 ```
 
-PDF/DOCX deterministic extraction, statement-discrepancy review and semantic-proposal review are implemented. OCR review, database adapters, discrepancy LLM classification and prebuilt database artifacts remain pending.
+PDF/DOCX deterministic extraction, statement-discrepancy review, semantic-proposal review and prebuilt SQLite/FTS artifact generation/import are implemented. OCR review, database import/export adapters and discrepancy LLM classification remain pending.
 
-Model output may propose structure but never silently replace source text or resolve a source disagreement.
+Model output may propose structure but never silently replace source text or resolve a source disagreement. A generated search database is derived acceleration data and never becomes an evidence source.
 
 ## L-Note and MiniMed
 
@@ -325,9 +338,9 @@ MiniMed retains medical query parsing, clinical ranking, source policy, dose/reg
 
 ## Next ordered work
 
-1. Add review for OCR output.
-2. Add database import/export adapters and optional prebuilt SQLite/FTS artifacts.
-3. Include confirmed source discrepancies in the local-answer evidence envelope.
+1. Include confirmed source discrepancies in the local-answer evidence envelope.
+2. Add review for OCR output.
+3. Add database import/export adapters.
 4. Add optional local/server LLM classification for deterministic discrepancy candidates.
 5. Add explicit date/edition chronology signals without automatic source precedence.
 6. Benchmark search, speech and models on representative Snapdragon 7-class devices.
