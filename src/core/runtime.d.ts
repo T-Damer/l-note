@@ -7,7 +7,9 @@ import type {
   KnowledgeSection,
   KnowledgeStatement,
   PersonalNote,
+  PrebuiltSearchArtifact,
   SearchRecord,
+  StoredSearchArtifactFile,
 } from './contracts.js';
 import type { DomainQueryPlannerPort, SearchPort, SearchPortFactory } from './ports.js';
 
@@ -23,10 +25,13 @@ export interface KnowledgeState {
   claimNotes: Map<string, PersonalNote[]>;
 }
 
+export type RuntimePrebuiltSearchArtifact = PrebuiltSearchArtifact & Pick<StoredSearchArtifactFile, 'blob'>;
+
 export interface KnowledgeRuntimeCapabilities {
   search: true;
   asynchronousSearch: boolean;
   diskBackedSearch: boolean;
+  prebuiltSearchArtifact: boolean;
   fuzzySearch: true;
   personalOverlay: true;
   domainQueryPlannerIds: readonly string[];
@@ -38,6 +43,7 @@ export interface KnowledgeRuntime {
   records: SearchRecord[];
   search: SearchPort;
   corpusFingerprint: string;
+  prebuiltSearchArtifact: RuntimePrebuiltSearchArtifact | null;
   capabilities: KnowledgeRuntimeCapabilities;
 }
 
