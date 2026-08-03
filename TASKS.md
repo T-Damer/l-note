@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies and the first UI/voice polish release are implemented; next are strong-device discrepancy detection/review, reviewed LLM-assisted pack enrichment, PDF/DOCX preparation, distributable prebuilt database artifacts and complete transfer-queue wiring. Android/iOS and live MiniMed integration remain deferred.
+**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, local voice search and the persisted transfer queue are implemented; next are strong-device discrepancy detection/review, reviewed LLM-assisted pack enrichment, PDF/DOCX preparation and distributable prebuilt database artifacts. Android/iOS and live MiniMed integration remain deferred.
 
 ## Universal core and MiniMed
 
@@ -89,6 +89,7 @@ Single source of future work. Completed items describe the active branch.
 - [x] Keep model-control panels inside the Ask form on narrow devices.
 - [x] Add list/graph switching inside concept relation accordions.
 - [x] Keep note-form labels directly above their controls.
+- [x] Add a compact global operations panel that appears only for active, interrupted, failed or cancelled work.
 - [ ] Finish interaction-state, click-target and legacy-glyph auditing.
 - [ ] Let the local model propose note links with explicit user review.
 
@@ -109,7 +110,7 @@ Single source of future work. Completed items describe the active branch.
 - [x] Show progress, estimated bytes, speed, errors and retry.
 - [x] Check statement support in addition to citation-ID existence, including terms, numbers and negation mismatches.
 - [x] Add a model-load cancellation primitive that terminates the loading Worker.
-- [ ] Expose consistent Cancel/Resume controls for every long-running model operation.
+- [x] Expose consistent Cancel/Continue/Retry controls for model and speech-model loading through the shared queue.
 - [ ] Benchmark representative Snapdragon 7-class 8 GB and 12 GB devices before selecting a mobile default.
 - [ ] Consider a small local entailment verifier after measuring the deterministic lexical verifier.
 
@@ -119,9 +120,10 @@ Single source of future work. Completed items describe the active branch.
 - [x] Add AbortSignal-based cancellation and retry primitives.
 - [x] Add a streaming package-download handler with checksum validation.
 - [x] Add queue state and concurrency tests.
-- [ ] Route every package, model and speech-model download through the same queue.
-- [ ] Finish the user-facing queue panel and restore/resume policy for interrupted heavy downloads.
-- [ ] Keep only one active inference model even while multiple files may download concurrently.
+- [x] Route every package, model and speech-model download through the same queue.
+- [x] Finish the user-facing queue panel and restore/resume policy for interrupted heavy downloads.
+- [x] Resume package downloads automatically after reload and require explicit continuation for model loads.
+- [x] Keep only one active inference model even while several ordinary files may download concurrently.
 
 ## Universal pack preparation
 
