@@ -9,6 +9,7 @@ import {
   defineKnowledgeApplicationAdapter,
 } from './core/application-adapter.js';
 import { minimedDomainQueryPlanner } from './domain-plugins/minimed.js';
+import { createInstalledPackRecord } from './services/installed-pack-record.js';
 
 const storagePort = createIndexedDbStoragePort();
 const domainQueryPlanners = [minimedDomainQueryPlanner];
@@ -52,15 +53,12 @@ installPack = async function installPackThroughStoragePort(pack, source = {}) {
   const validation = validatePack(pack);
   if (!validation.valid) throw new Error(validation.errors.join('\n'));
   const previous = await applicationAdapter.storagePort.getOne('packs', pack.id);
-  await applicationAdapter.storagePort.putOne('packs', {
-    id: pack.id,
-    enabled: previous?.enabled ?? true,
-    installedAt: new Date().toISOString(),
-    sizeBytes: source.sizeBytes ?? packByteSize(pack),
-    sourceUrl: source.url ?? previous?.sourceUrl ?? null,
-    sha256: source.sha256 ?? previous?.sha256 ?? null,
+  await applicationAdapter.storagePort.putOne('packs', createInstalledPackRecord({
     pack,
-  });
+    previous,
+    source,
+    fallbackSizeBytes: packByteSize(pack),
+  }));
   await refreshState();
 };
 
