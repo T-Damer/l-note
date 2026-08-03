@@ -31,6 +31,11 @@ const TERMINAL = new Set([
   TRANSFER_STATUS.FAILED,
   TRANSFER_STATUS.CANCELLED,
 ]);
+const FAILURE_MESSAGES = Object.freeze({
+  package: 'Не удалось загрузить пакет. Проверьте подключение и повторите.',
+  model: 'Не удалось загрузить модель. Повторите операцию.',
+  'speech-model': 'Не удалось загрузить распознавание речи. Повторите операцию.',
+});
 
 function taskNormalizationOptions(now, idFactory) {
   return {
@@ -41,6 +46,11 @@ function taskNormalizationOptions(now, idFactory) {
     interruptedStatus: TRANSFER_STATUS.INTERRUPTED,
     defaultPriority: TRANSFER_PRIORITY.DEFAULT,
   };
+}
+
+function publicFailure(task, error) {
+  console.error('Transfer failed.', { kind: task.kind, resourceId: task.resourceId, error });
+  return String(error?.userMessage ?? FAILURE_MESSAGES[task.kind] ?? 'Не удалось завершить операцию. Повторите ещё раз.');
 }
 
 export function createTransferQueue({
@@ -158,8 +168,8 @@ export function createTransferQueue({
       const cancelled = controller.signal.aborted || error?.name === 'AbortError';
       const failed = update(task.id, {
         status: cancelled ? TRANSFER_STATUS.CANCELLED : TRANSFER_STATUS.FAILED,
-        message: cancelled ? 'Отменено' : 'Ошибка',
-        error: cancelled ? null : error instanceof Error ? error.message : String(error),
+        message: cancelled ? 'Отменено' : 'Не завершено',
+        error: cancelled ? null : publicFailure(task, error),
       });
       settleWaiters(
         task.id,
