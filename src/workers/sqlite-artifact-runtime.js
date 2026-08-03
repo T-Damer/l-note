@@ -5,6 +5,9 @@ import {
 } from '../helpers/prebuilt-search-artifacts.js';
 import { SQLITE_FTS_RUNTIME_VERSION } from '../helpers/sqlite-fts.js';
 
+const SQLITE_HEADER_BYTES = 32;
+const SQLITE_MAGIC = new TextEncoder().encode('SQLite format 3\0');
+
 function firstValue(row) {
   return row ? Object.values(row)[0] : null;
 }
@@ -14,6 +17,40 @@ async function sha256Hex(buffer) {
   return [...new Uint8Array(digest)]
     .map((value) => value.toString(16).padStart(2, '0'))
     .join('');
+}
+
+function sqliteFileLayout(buffer) {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.byteLength < SQLITE_HEADER_BYTES) throw new Error('Prebuilt search file is truncated.');
+  for (let index = 0; index < SQLITE_MAGIC.length; index += 1) {
+    if (bytes[index] !== SQLITE_MAGIC[index]) throw new Error('Prebuilt search file is not SQLite.');
+  }
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const rawPageSize = view.getUint16(16);
+  const pageSize = rawPageSize === 1 ? 65_536 : rawPageSize;
+  const pageCount = view.getUint32(28);
+  const databaseBytes = pageSize * pageCount;
+  if (!pageSize || !pageCount || databaseBytes !== bytes.byteLength) {
+    throw new Error('Prebuilt search file has an invalid SQLite page layout.');
+  }
+  return { bytes, pageSize, pageCount };
+}
+
+export function sqliteImportStream(buffer) {
+  const { bytes, pageSize, pageCount } = sqliteFileLayout(buffer);
+  return new ReadableStream({
+    start(controller) {
+      // sqlite-wasm 1.3.1 verifies a separate 32-byte header and then reads
+      // every complete page. Supplying both prevents its reader from dropping
+      // the remainder of the first browser stream chunk.
+      controller.enqueue(bytes.slice(0, SQLITE_HEADER_BYTES));
+      for (let page = 0; page < pageCount; page += 1) {
+        const offset = page * pageSize;
+        controller.enqueue(bytes.slice(offset, offset + pageSize));
+      }
+      controller.close();
+    },
+  });
 }
 
 async function artifactBuffer(artifact, onProgress) {
@@ -75,12 +112,7 @@ export async function importSqliteSearchArtifact(runtime, artifact, {
 } = {}) {
   const buffer = await artifactBuffer(artifact, onProgress);
   onProgress({ stage: 'artifact-import', completed: 0, total: buffer.byteLength });
-  const databaseFile = new File(
-    [new Uint8Array(buffer)],
-    `${artifact.id || 'l-note-search'}.sqlite`,
-    { type: 'application/vnd.sqlite3' },
-  );
-  await runtime.reopenFromFile(databaseFile);
+  await runtime.reopenFromFile(sqliteImportStream(buffer));
   onProgress({ stage: 'artifact-validate', completed: buffer.byteLength, total: buffer.byteLength });
   await validateImportedDatabase(runtime, artifact);
   return {
