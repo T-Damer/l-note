@@ -22,12 +22,14 @@ The released site is built from `main` after the complete validation gate passes
 - reviewed source discrepancies with document dates and text diffs;
 - confirmed discrepancies included as two ordinary citable answer sources;
 - preparation-time comparison against existing pack files;
-- strong-device PDF/DOCX extraction with page or paragraph provenance;
+- local PDF classification and structured Markdown extraction through `pdf-inspector` WASM;
+- preserved PDF tables, headings, reading order and one-based page provenance;
 - mandatory accept/edit/dismiss review for scanned-PDF OCR pages;
+- strong-device DOCX extraction with paragraph provenance;
 - SQLite table/view import into the standard authoring layout;
 - relational SQLite pack export, FTS5 access and exact restoration;
 - mandatory human review for LLM-proposed concepts, aliases, statements and relations;
-- browser-local pack creation from Markdown, TXT, JSON or pasted text;
+- browser-local pack creation from PDF, Markdown, TXT, JSON or pasted text;
 - local Russian/English voice search;
 - optional local WebLLM answers over bounded evidence;
 - citation, number, negation and statement-support checks;
@@ -47,7 +49,7 @@ npm run serve
 
 Open `http://127.0.0.1:4173/`.
 
-`npm run check` includes pack validation, structure checks, unit/static tests, a real Chromium SQLite/FTS5 lifecycle test and browser routing/modal/graph E2E.
+`npm run check` includes pack validation, structure checks, unit/static tests, a real `pdf-inspector` WASM smoke test, a real Chromium SQLite/FTS5 lifecycle test and browser routing/modal/graph E2E.
 
 ## Search architecture
 
@@ -99,15 +101,21 @@ Open **Пакеты → Создать свой пакет**.
 
 The creator can:
 
-- combine multiple `.md`, `.markdown`, `.txt` and `.json` files;
+- combine multiple `.pdf`, `.md`, `.markdown`, `.txt` and `.json` files;
 - include pasted Markdown text;
+- parse PDF bytes locally in a Dedicated Worker without uploading them;
+- preserve PDF headings, lists, Markdown tables and reading order;
+- retain one-based page anchors and parser diagnostics;
+- omit pages that `pdf-inspector` marks as requiring OCR and show a warning;
 - preserve document titles, headings and source text;
 - split oversized sections;
 - discover common abbreviation definitions;
-- preview documents, sections, concepts and package size;
+- preview documents, sections, concepts, warnings and package size;
 - download the JSON or install it immediately.
 
-Files remain in the browser. Current limits are 32 MiB per file and 64 MiB total.
+A scanned-only PDF is rejected by the browser creator because OCR text cannot enter a pack without review. Use the strong-device workflow below for Tesseract recognition and accept/edit/dismiss review.
+
+Files remain in the browser. Current limits are 32 MiB per file and 64 MiB total. The pinned WASM parser and its license are included in the offline application shell; the browser does not fetch a parser from a CDN.
 
 ## Different facts in installed sources
 
@@ -236,9 +244,11 @@ The packaged database is an optimization rather than a second source of truth. S
 
 The document preparer turns a file or directory into a normalized authoring directory. Original files are copied into `assets/`.
 
+PDF preparation uses the pinned `@firecrawl/pdf-inspector-wasm` package in both browser and Node workflows. It produces structured Markdown with headings, lists, reading order, tables and one-based page markers. Pages reported in `pagesNeedingOcr` remain outside searchable evidence until the OCR workflow is completed.
+
 Required local tools:
 
-- PDF text: `pdftotext` from Poppler;
+- ordinary PDF text/layout: no external executable; the bundled WASM parser is used;
 - DOCX: `unzip`;
 - scanned-PDF OCR: `pdftoppm` from Poppler and `tesseract` with the selected language data.
 
@@ -251,7 +261,7 @@ npm run prepare:documents -- ./documents \
   --title "My documents"
 ```
 
-For scanned PDF pages without a text layer, run the first pass:
+For scanned or mixed PDF pages flagged by `pdf-inspector`, run the first pass:
 
 ```bash
 npm run prepare:documents -- ./documents \
@@ -287,16 +297,21 @@ node tools/build-pack.mjs \
 The preparer preserves:
 
 - one-based PDF page numbers through `assetAnchor.page`;
+- structured Markdown tables and document layout from reliable text-layer pages;
+- PDF classification, confidence, parser version and layout diagnostics;
+- the exact page list and reasons reported by `pagesNeedingOcr`;
 - the original PDF for the internal reader;
 - Tesseract TSV confidence and bounding-box diagnostics in the review artifact;
 - source PDF SHA-256 and reviewer provenance for accepted OCR sections;
 - DOCX heading groups and paragraph start/end ranges;
 - extractor name, preparation time and source path;
-- warnings for pages with no usable text.
+- warnings for pages with no trusted text.
 
-OCR runs only for PDF pages whose text layer is empty. OCR text remains outside searchable sections until explicitly accepted. `build-pack.mjs` rejects any authoring directory with unresolved `preparationReviews`, and a changed PDF hash invalidates an older review.
+`pdf-inspector` routes pages but does not perform OCR. The current WASM API represents detected images as Markdown placeholders; it does not expose extracted binary image files. Image asset extraction remains a separate future adapter rather than silently creating evidence.
 
-See `docs/OCR_REVIEW.md` for the review contract and external hOCR/PAGE/Label Studio adapter boundary.
+OCR runs only for pages flagged by `pdf-inspector`. OCR text remains outside searchable sections until explicitly accepted. `build-pack.mjs` rejects any authoring directory with unresolved `preparationReviews`, and a changed PDF hash invalidates an older review.
+
+See `docs/OCR_REVIEW.md` for the parser/OCR boundary, review contract and external hOCR/PAGE/Label Studio adapter boundary.
 
 ### Compare with existing prepared packs
 
@@ -408,4 +423,4 @@ Future MiniMed integration requires separate approval and MiniMed-owned retrieva
 - signed catalogs, delta updates, encrypted notes and synchronization;
 - native Android/iOS packaging after the web core is stable.
 
-See `docs/PACK_FORMAT.md` for the portable format, `docs/OCR_REVIEW.md` for scanned-document review, `docs/DATABASE_ADAPTERS.md` for database interchange, `docs/RETRIEVAL_ARCHITECTURE_RESEARCH.md` for external-system research and `docs/ARCHITECTURE.md` for runtime invariants.
+See `docs/PACK_FORMAT.md` for the portable format, `docs/OCR_REVIEW.md` for PDF parsing and scanned-document review, `docs/DATABASE_ADAPTERS.md` for database interchange, `docs/RETRIEVAL_ARCHITECTURE_RESEARCH.md` for external-system research and `docs/ARCHITECTURE.md` for runtime invariants.
