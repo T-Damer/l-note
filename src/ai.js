@@ -4,6 +4,7 @@ import {
   answerModeProfile,
   buildEvidencePrompt,
 } from './services/answer-modes.js';
+import { addConfirmedDiscrepancyEvidence } from './services/evidence-discrepancies.js';
 
 const WEBLLM_URL = 'https://esm.run/@mlc-ai/web-llm@0.2.84';
 const WEBLLM_WORKER_URL = new URL('./workers/webllm-worker.js', import.meta.url);
@@ -93,9 +94,14 @@ function evidenceLimit(options) {
   return Math.max(1, Math.floor(Number(options?.sourceLimit ?? options?.limit ?? 8)));
 }
 
+function discrepancyLimit(options) {
+  if (typeof options === 'number') return 2;
+  return Math.max(0, Math.floor(Number(options?.discrepancyLimit ?? 2)));
+}
+
 export function collectEvidence(query, results, knowledgeState, options = {}) {
   const limit = evidenceLimit(options);
-  const sources = results
+  const baseSources = results
     .filter((result) => result.kind === 'section')
     .slice(0, limit)
     .map((result, index) => ({
@@ -105,6 +111,11 @@ export function collectEvidence(query, results, knowledgeState, options = {}) {
       section: knowledgeState.sections.get(`${result.documentId}/${result.sectionId}`),
       claims: (result.claimIds ?? []).map((id) => knowledgeState.claims.get(id)).filter(Boolean),
     }));
+  const { sources, discrepancies } = addConfirmedDiscrepancyEvidence({
+    sources: baseSources,
+    packs: knowledgeState.packs,
+    limit: discrepancyLimit(options),
+  });
 
   const sourceClaimIds = new Set(sources.flatMap((source) => source.claims.map((claim) => claim.id)));
   const relatedNotes = knowledgeState.notes.filter((note) => {
@@ -118,7 +129,13 @@ export function collectEvidence(query, results, knowledgeState, options = {}) {
     .filter((note) => note.relation === 'contradicts' || note.relation === 'supersedes')
     .map((note) => ({ note, claim: note.targetClaimId ? knowledgeState.claims.get(note.targetClaimId) : undefined }));
 
-  return createEvidenceEnvelope({ query, sources, relatedNotes, conflicts });
+  return createEvidenceEnvelope({
+    query,
+    sources,
+    relatedNotes,
+    conflicts,
+    discrepancies,
+  });
 }
 
 export function evidencePrompt(evidence, modeId = DEFAULT_ANSWER_MODE_ID) {
@@ -323,7 +340,8 @@ export class BrowserLocalAi {
             'Используй только предоставленные фрагменты. Не добавляй факты из памяти.',
             'Каждое содержательное утверждение подтверждай ссылкой вида [S1].',
             'Личные заметки обозначай отдельно и не выдавай их за официальный источник.',
-            'При противоречии явно опиши его. Если данных недостаточно, так и скажи.',
+            'Подтверждённые расхождения описывай нейтрально, со ссылками на обе стороны, и не выбирай один источник автоматически.',
+            'Если данных недостаточно, так и скажи.',
             'Не выводи внутренние рассуждения или скрытую цепочку мыслей.',
             `Режим ответа: ${mode.label}.`,
             'Отвечай по-русски, структурированно и без лишних повторов.',
