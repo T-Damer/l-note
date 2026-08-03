@@ -6,10 +6,9 @@ import { Text } from '../ui/text.js';
 
 const STATUS_LABELS = Object.freeze({
   [TRANSFER_STATUS.QUEUED]: 'В очереди',
-  [TRANSFER_STATUS.ACTIVE]: 'Выполняется',
-  [TRANSFER_STATUS.INTERRUPTED]: 'Прервано',
-  [TRANSFER_STATUS.COMPLETED]: 'Готово',
-  [TRANSFER_STATUS.FAILED]: 'Ошибка',
+  [TRANSFER_STATUS.ACTIVE]: 'Загружается',
+  [TRANSFER_STATUS.INTERRUPTED]: 'Нужно продолжить',
+  [TRANSFER_STATUS.FAILED]: 'Не завершено',
   [TRANSFER_STATUS.CANCELLED]: 'Отменено',
 });
 
@@ -54,11 +53,9 @@ function actionButtons(task, queue) {
     values.push(Button({
       variant: 'secondary',
       icon: 'retry',
-      text: 'Повторить',
+      text: task.status === TRANSFER_STATUS.INTERRUPTED ? 'Продолжить' : 'Повторить',
       onClick: () => queue.retry(task.id),
     }));
-  }
-  if ([TRANSFER_STATUS.COMPLETED, TRANSFER_STATUS.CANCELLED].includes(task.status)) {
     values.push(Button({
       variant: 'ghost',
       text: 'Убрать',
@@ -87,6 +84,7 @@ function transferItem(task, queue) {
     element('div', {
       className: 'transfer-progress',
       role: 'progressbar',
+      'aria-label': task.label,
       'aria-valuemin': '0',
       'aria-valuemax': '100',
       'aria-valuenow': String(progress),
@@ -99,12 +97,12 @@ function transferItem(task, queue) {
 export function createTransferQueueView({ queue, container } = {}) {
   if (!queue?.subscribe) throw new TypeError('Transfer queue is required.');
   if (!(container instanceof HTMLElement)) throw new TypeError('Transfer queue container is required.');
+  const count = Text({ variant: 'caption', text: '' });
   const heading = element('header', { className: 'transfer-queue-heading' }, [
     element('div', {}, [
-      Text({ variant: 'eyebrow', text: 'Локальные операции' }),
-      Text({ variant: 'heading', as: 'h2', text: 'Загрузки и подготовка' }),
+      Text({ variant: 'heading', as: 'h2', text: 'Загрузки' }),
     ]),
-    Text({ variant: 'caption', text: `до ${queue.maxConcurrent} параллельно` }),
+    count,
   ]);
   const list = element('div', { className: 'transfer-list' });
   const panel = element('section', { className: 'transfer-queue-panel', hidden: true }, [heading, list]);
@@ -112,9 +110,10 @@ export function createTransferQueueView({ queue, container } = {}) {
 
   const unsubscribe = queue.subscribe((tasks) => {
     const visible = tasks
-      .filter((task) => task.status !== TRANSFER_STATUS.COMPLETED || Date.now() - Date.parse(task.updatedAt) < 60_000)
-      .slice(0, 12);
+      .filter((task) => task.status !== TRANSFER_STATUS.COMPLETED)
+      .slice(0, 8);
     panel.hidden = visible.length === 0;
+    count.textContent = visible.length === 1 ? '1 операция' : `${visible.length} операций`;
     list.replaceChildren(...visible.map((task) => transferItem(task, queue)));
   });
   return Object.freeze({ panel, destroy: unsubscribe });
