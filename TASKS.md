@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, local voice search, the persisted transfer queue, deterministic discrepancy review and PDF/DOCX extraction are implemented; next are review of OCR and other proposed semantic records, optional LLM-assisted classification, database exporters and distributable prebuilt search artifacts. Android/iOS and live MiniMed integration remain deferred.
+**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, local voice search, the persisted transfer queue, deterministic discrepancy review, PDF/DOCX extraction and mandatory review of LLM semantic proposals are implemented; next are OCR review, database exporters, distributable prebuilt search artifacts and confirmed-discrepancy evidence. Android/iOS and live MiniMed integration remain deferred.
 
 ## Universal core and MiniMed
 
@@ -132,8 +132,14 @@ Single source of future work. Completed items describe the active branch.
 ## Universal pack preparation
 
 - [x] Build reviewed JSON or Markdown/TXT/JSON into portable packs with provenance through the desktop/server CLI.
-- [x] Allow optional local OpenAI-compatible or Replicate extraction proposals in the heavy preparation workflow.
-- [x] Require exact evidence quotes before proposed statements enter a pack.
+- [x] Support optional local OpenAI-compatible or Replicate proposal collection in the strong-device workflow.
+- [x] Build and validate the deterministic source-preserving pack before requesting any LLM proposal.
+- [x] Store proposed concepts, aliases, statements and entity relations in a separate review artifact.
+- [x] Generate safe editable JSON and standalone offline HTML review pages for semantic proposals.
+- [x] Require exact evidence quotes and block invalid proposed statements from acceptance.
+- [x] Apply only eligible semantic candidates explicitly marked `decision: accept`.
+- [x] Keep pending and dismissed semantic proposals outside the final pack.
+- [x] Preserve proposal provider, reviewer and review-time provenance on accepted records.
 - [x] Allow heavy preparation on a stronger desktop/server for weaker offline clients.
 - [x] Add a browser-local creator reachable from the existing Packages page.
 - [x] Accept multiple Markdown/TXT/JSON files or pasted Markdown text without uploading them.
@@ -149,15 +155,13 @@ Single source of future work. Completed items describe the active branch.
 - [ ] Add a review workflow for OCR output before publication.
 - [ ] Add database import/export adapters.
 - [ ] Add optional prebuilt SQLite/FTS artifacts to large packs.
-- [ ] Let the user choose deterministic-only or LLM-assisted enrichment in the creator/preparer.
-- [ ] Review, accept, edit or remove proposed concepts, statements, aliases and entity relations before export.
 - [ ] Keep heavy preparation jobs and intermediate corpora on disk rather than in application RAM.
 
 ## Documentation
 
 - [x] Keep setup and product use in `README.md`.
 - [x] Keep current architecture and invariants in `docs/ARCHITECTURE.md`.
-- [x] Document the portable package and discrepancy format in `docs/PACK_FORMAT.md`.
+- [x] Document the portable package and preparation-review formats in `docs/PACK_FORMAT.md`.
 - [x] Keep this file as the only implementation backlog.
 - [x] Keep development, decomposition and user-facing copy rules in `AGENTS.md`.
 - [x] Update docs together with behavior changes.
