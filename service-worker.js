@@ -81,6 +81,7 @@ const SHELL = [
   './src/workers/search-worker.js',
   './src/workers/sqlite-artifact-runtime.js',
   './src/workers/sqlite-fts-runtime.js',
+  './src/workers/sqlite-runtime-modules.js',
   './src/workers/sqlite-search-worker.js',
   './src/workers/speech-worker.js',
   './src/workers/webllm-worker.js',
