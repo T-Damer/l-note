@@ -44,11 +44,13 @@ function backendCandidates(options) {
       id: 'sqlite-fts5',
       factory: options.sqliteFactory ?? createSqliteFtsSearchPort,
       options: options.sqliteOptions,
+      artifact: options.prebuiltSearchArtifact ?? null,
     },
     {
       id: 'indexeddb-postings',
       factory: options.diskFactory ?? createIndexedDbSearchPort,
       options: options.diskOptions,
+      artifact: null,
     },
   ];
 }
@@ -82,6 +84,7 @@ function createPersistentSearchFacade(records, entities, options) {
         const stats = await port.build(sourceRecords, {
           fingerprint: options.corpusFingerprint ?? '',
           onProgress: options.onProgress,
+          artifact: candidate.artifact,
         });
         activePort = port;
         sourceRecords = null;
