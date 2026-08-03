@@ -141,9 +141,11 @@ Both entity endpoints must exist in the same pack in schema version 1. Cross-pac
   "targetClaimId": "new-guideline::claim:dose-new",
   "type": "contradicts",
   "status": "confirmed",
-  "detectedBy": "package-author",
+  "detectedBy": "rule+human-review",
   "confidence": 1,
-  "reason": "The two editions specify different values for the same scoped condition."
+  "reason": "The two editions specify different values for the same scoped condition.",
+  "reviewedAt": "2026-08-03T10:00:00Z",
+  "reviewedBy": "Reviewer"
 }
 ```
 
@@ -173,6 +175,69 @@ The browser runtime does **not** decide which source is correct. It:
 5. preserves every installed version.
 
 Selecting a preferred statement, marking one edition obsolete, or changing `contradicts` to `different_scope` belongs to the stronger desktop/server preparation workflow and human/domain review. A client-side package update may display the reviewed result but must not silently resolve it.
+
+## Preparation-only discrepancy review artifact
+
+The CLI may produce a separate review object before `statementRelations` are written:
+
+```json
+{
+  "schemaVersion": 1,
+  "kind": "lnote.statement-relation-review",
+  "generatedAt": "2026-08-03T10:00:00Z",
+  "targetPackId": "example.new-guideline",
+  "referencePackIds": ["example.old-guideline"],
+  "candidates": [
+    {
+      "id": "statement-review.0123456789abcdef",
+      "sourceClaimId": "claim:dose-new",
+      "targetClaimId": "example.old-guideline::claim:dose-old",
+      "suggestedType": "contradicts",
+      "selectedType": "contradicts",
+      "decision": "pending",
+      "confidence": 0.91,
+      "signals": ["numeric_difference"],
+      "reason": "различаются значения: 5 ↔ 10 мг",
+      "source": {
+        "quote": "...",
+        "documentTitle": "New edition",
+        "packTitle": "New pack",
+        "date": "2026-08-03"
+      },
+      "target": {
+        "quote": "...",
+        "documentTitle": "Old edition",
+        "packTitle": "Old pack",
+        "date": "2024-01-01"
+      }
+    }
+  ]
+}
+```
+
+This object is **not** a knowledge pack and is never installed by the web runtime. It is temporary preparation state.
+
+Every candidate starts as `pending`. A reviewer may:
+
+- set `decision` to `accept` or `dismiss`;
+- change `selectedType`;
+- edit `reason`;
+- leave the candidate unresolved.
+
+Only accepted candidates are converted to confirmed `statementRelations`. Pending and dismissed candidates remain outside the final pack.
+
+The deterministic detector currently considers:
+
+- the same subject or sufficiently similar statement wording;
+- different values after compatible-unit normalization;
+- negation present in only one statement;
+- different linked objects for the same subject;
+- population and age-scope differences;
+- exact source quotes, document names, pack names, and dates.
+
+Compatible values are canonicalized before comparison. For example, `500 мг` and `0,5 г` are equivalent, while `500 мг` and `1 г` are different. Approximate calendar conversions such as months to years are intentionally not performed.
+
+Dates are context only. A newer date does not automatically create `supersedes` or select a winning source.
 
 ## Personal notes
 
@@ -204,7 +269,7 @@ my-pack/
   entities.json             optional; defaults to []
   claims.json               optional; defaults to []
   relations.json            optional; defaults to []
-  statement-relations.json  optional; future normalized input
+  statement-relations.json  optional
   documents/
     document-a.json
     document-b.json
@@ -227,7 +292,35 @@ node tools/build-pack.mjs ./source-directory \
   --output dist/example.pack.json
 ```
 
-The preparer preserves filenames and section headings, splits very long sections, and discovers common abbreviation patterns. Optional `--ai-provider openai` and `--ai-provider replicate` modes can propose entities, claims, relations, and future discrepancy candidates. Proposed claims survive only when their evidence quote is an exact source substring.
+The preparer preserves filenames and section headings, splits very long sections, and discovers common abbreviation patterns. Optional `--ai-provider openai` and `--ai-provider replicate` modes can propose entities, claims, and relations. Proposed claims survive only when their evidence quote is an exact source substring.
+
+### Review possible differences against existing packs
+
+Generate JSON and an optional standalone offline HTML page:
+
+```bash
+node tools/build-pack.mjs ./source-directory \
+  --id com.example.pack \
+  --title "Example pack" \
+  --output dist/example.pack.json \
+  --compare-pack existing/first.pack.json \
+  --compare-pack existing/second.pack.json \
+  --discrepancy-review-out dist/example.review.json \
+  --discrepancy-review-html dist/example.review.html
+```
+
+After review, apply the downloaded JSON:
+
+```bash
+node tools/build-pack.mjs ./source-directory \
+  --id com.example.pack \
+  --title "Example pack" \
+  --output dist/example.reviewed.pack.json \
+  --discrepancy-review-in downloads/com.example.pack.discrepancy-review.json \
+  --reviewed-by "Reviewer name"
+```
+
+The comparison step never mutates the pack by itself.
 
 A larger production pipeline may place Docling, Marker, OCR, database exporters, or domain-specific transformations before either contract:
 
@@ -236,7 +329,7 @@ source extraction
 → deterministic segmentation and provenance
 → proposed entities/claims/relations
 → candidate retrieval against existing claims
-→ numeric, negation, date, and scope checks
+→ quantity, negation, date, and scope checks
 → optional LLM classification
 → exact-quote and reference validation
 → human/domain review of every discrepancy

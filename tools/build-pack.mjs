@@ -5,17 +5,24 @@ import { fileURLToPath } from 'node:url';
 
 import { validatePack } from '../src/packs.js';
 import {
+  applyDiscrepancyReview,
+  createDiscrepancyReview,
+} from './lib/discrepancy-review.mjs';
+import { renderDiscrepancyReviewHtml } from './lib/discrepancy-review-html.mjs';
+import {
   buildPackFromPath,
   createOpenAiCompatibleProvider,
   createReplicateProvider,
 } from './lib/pack-builder.mjs';
 
+const REPEATABLE_OPTIONS = new Set(['comparePack']);
+
 function toPath(value) {
   return value instanceof URL ? fileURLToPath(value) : String(value);
 }
 
-function argumentsFrom(argv) {
-  const result = { aiProvider: 'none' };
+export function argumentsFrom(argv) {
+  const result = { aiProvider: 'none', comparePack: [] };
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === '--help' || token === '-h') {
@@ -29,7 +36,8 @@ function argumentsFrom(argv) {
     const key = token.slice(2).replace(/-([a-z])/gu, (_, letter) => letter.toUpperCase());
     const value = argv[index + 1];
     if (!value || value.startsWith('--')) throw new Error(`Missing value for ${token}`);
-    result[key] = value;
+    if (REPEATABLE_OPTIONS.has(key)) result[key].push(value);
+    else result[key] = value;
     index += 1;
   }
   return result;
@@ -44,6 +52,36 @@ async function readJson(filename, fallback) {
   }
 }
 
+async function readOptionalJson(filename) {
+  try {
+    return JSON.parse(await readFile(filename, 'utf8'));
+  } catch (error) {
+    if (error?.code === 'ENOENT') return undefined;
+    throw new Error(`Unable to read ${filename}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+function assertValidPack(pack, label = 'Pack') {
+  const validation = validatePack(pack);
+  if (!validation.valid) throw new Error(`${label} validation failed:\n- ${validation.errors.join('\n- ')}`);
+  return pack;
+}
+
+async function readPackFile(filename) {
+  return assertValidPack(await readJson(resolve(filename)), `Comparison pack ${filename}`);
+}
+
+async function writeText(filename, value) {
+  const output = resolve(filename);
+  await mkdir(dirname(output), { recursive: true });
+  await writeFile(output, value);
+  return output;
+}
+
+async function writeJson(filename, value) {
+  return writeText(filename, `${JSON.stringify(value, null, 2)}\n`);
+}
+
 export async function buildPack(inputRoot) {
   const root = resolve(toPath(inputRoot));
   const manifest = await readJson(join(root, 'manifest.json'));
@@ -54,6 +92,7 @@ export async function buildPack(inputRoot) {
     .sort();
   if (documentNames.length === 0) throw new Error('The documents directory contains no .json documents.');
   const documents = await Promise.all(documentNames.map((name) => readJson(join(documentRoot, name))));
+  const statementRelations = await readOptionalJson(join(root, 'statement-relations.json'));
   const pack = {
     ...manifest,
     documents,
@@ -61,9 +100,8 @@ export async function buildPack(inputRoot) {
     claims: await readJson(join(root, 'claims.json'), []),
     relations: await readJson(join(root, 'relations.json'), []),
   };
-  const validation = validatePack(pack);
-  if (!validation.valid) throw new Error(`Pack validation failed:\n- ${validation.errors.join('\n- ')}`);
-  return pack;
+  if (statementRelations !== undefined) pack.statementRelations = statementRelations;
+  return assertValidPack(pack);
 }
 
 function usage() {
@@ -85,8 +123,14 @@ Direct preparation options:
   --openai-base-url http://127.0.0.1:11434/v1
   --replicate-input path/to/input-overrides.json
 
-OpenAI-compatible mode works with local Ollama, LM Studio, vLLM, or another /v1/chat/completions server.
-Replicate reads REPLICATE_API_TOKEN or REPLICATE_API from the environment.`;
+Reviewed discrepancy workflow:
+  --compare-pack path/to/existing.pack.json   repeat for several packs
+  --discrepancy-review-out review.json        write possible statement differences
+  --discrepancy-review-html review.html       write an interactive offline review page
+  --discrepancy-review-in reviewed.json       apply only entries marked decision=accept
+  --reviewed-by "Reviewer name"
+
+The comparison step never changes the pack by itself. Review candidates in JSON or the generated HTML page, download the result, then run the builder again with --discrepancy-review-in.`;
 }
 
 async function buildFromRawSources(args) {
@@ -118,6 +162,30 @@ async function buildFromRawSources(args) {
   });
 }
 
+export async function applyReviewOptions(pack, args) {
+  let output = pack;
+  if (args.discrepancyReviewIn) {
+    const review = await readJson(resolve(args.discrepancyReviewIn));
+    output = applyDiscrepancyReview(output, review, {
+      reviewedBy: args.reviewedBy ?? 'local-reviewer',
+    });
+  }
+  return assertValidPack(output, 'Reviewed pack');
+}
+
+async function writeDiscrepancyReview(pack, args) {
+  if (!args.discrepancyReviewOut && !args.discrepancyReviewHtml) return null;
+  const referencePacks = await Promise.all((args.comparePack ?? []).map(readPackFile));
+  const review = createDiscrepancyReview({ pack, referencePacks });
+  const jsonFilename = args.discrepancyReviewOut
+    ? await writeJson(args.discrepancyReviewOut, review)
+    : null;
+  const htmlFilename = args.discrepancyReviewHtml
+    ? await writeText(args.discrepancyReviewHtml, renderDiscrepancyReviewHtml(review))
+    : null;
+  return { jsonFilename, htmlFilename, review };
+}
+
 async function main() {
   const args = argumentsFrom(process.argv.slice(2));
   if (args.help) {
@@ -125,13 +193,18 @@ async function main() {
     return;
   }
   if (!args.input || !args.output) throw new Error(`${usage()}\n\n--input and --output are required.`);
-  const pack = args.id ? await buildFromRawSources(args) : await buildPack(args.input);
-  const output = resolve(args.output);
-  await mkdir(dirname(output), { recursive: true });
-  const serialized = `${JSON.stringify(pack, null, 2)}\n`;
-  await writeFile(output, serialized);
+  const built = args.id ? await buildFromRawSources(args) : await buildPack(args.input);
+  const pack = await applyReviewOptions(built, args);
+  const output = await writeJson(args.output, pack);
+  const reviewResult = await writeDiscrepancyReview(pack, args);
+  const serializedBytes = Buffer.byteLength(`${JSON.stringify(pack, null, 2)}\n`);
   console.log(`Built ${output}`);
-  console.log(`${pack.documents.length} documents, ${pack.entities.length} entities, ${pack.claims.length} claims, ${Buffer.byteLength(serialized)} bytes`);
+  console.log(`${pack.documents.length} documents, ${pack.entities.length} entities, ${pack.claims.length} claims, ${serializedBytes} bytes`);
+  if (reviewResult) {
+    console.log(`Possible differences: ${reviewResult.review.candidates.length}`);
+    if (reviewResult.jsonFilename) console.log(`Review JSON: ${reviewResult.jsonFilename}`);
+    if (reviewResult.htmlFilename) console.log(`Review page: ${reviewResult.htmlFilename}`);
+  }
 }
 
 const isEntrypoint = process.argv[1] && import.meta.url === new URL(`file://${resolve(process.argv[1])}`).href;

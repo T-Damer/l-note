@@ -19,6 +19,7 @@ The released site is built from `main` after the complete validation gate passes
 - list and graph representations of knowledge;
 - internal PDF viewing with exact page anchors;
 - reviewed source discrepancies with document dates and text diffs;
+- preparation-time comparison against existing pack files;
 - browser-local pack creation from Markdown, TXT, JSON or pasted text;
 - local Russian/English voice search;
 - optional local WebLLM answers over bounded evidence;
@@ -107,7 +108,7 @@ A Phosphor warning marker appears after the disputed passage. Opening it shows:
 - the reviewed relation type and reason;
 - actions for opening either full document.
 
-Detection and resolution belong to the strong-device preparation workflow. The browser only displays reviewed relations.
+Detection and review belong to the strong-device preparation workflow. The hosted browser only displays confirmed relations and never chooses a winning document.
 
 ## Local voice search
 
@@ -137,7 +138,7 @@ small search index                  JavaScript memory
 large FTS database                  SQLite over IndexedDB VFS
 large-search fallback               IndexedDB postings
 model data                           browser model caches
-active results and evidence          bounded JavaScript working set
+active results and evidence         bounded JavaScript working set
 ```
 
 The Service Worker delivers offline files only. It does not own the database, search state or transfer queue.
@@ -153,6 +154,50 @@ node tools/build-pack.mjs ./my-knowledge \
   --description "Private reference data" \
   --output ./dist/my-pack.json
 ```
+
+### Compare with existing prepared packs
+
+Create the new pack and a separate review file. Repeat `--compare-pack` for every existing pack that should be checked.
+
+```bash
+node tools/build-pack.mjs ./my-knowledge \
+  --id com.example.my-pack \
+  --title "My knowledge" \
+  --output ./dist/my-pack.json \
+  --compare-pack ./existing/first.pack.json \
+  --compare-pack ./existing/second.pack.json \
+  --discrepancy-review-out ./dist/my-pack.review.json \
+  --discrepancy-review-html ./dist/my-pack.review.html
+```
+
+Open the generated HTML file. For every proposed comparison:
+
+- inspect both exact quotes, document titles and dates;
+- leave it unresolved, accept it or dismiss it;
+- change the proposed relation type when the difference is caused by scope rather than a direct contradiction;
+- edit the explanation;
+- download the reviewed JSON.
+
+Apply only accepted decisions during the final build:
+
+```bash
+node tools/build-pack.mjs ./my-knowledge \
+  --id com.example.my-pack \
+  --title "My knowledge" \
+  --output ./dist/my-pack.reviewed.json \
+  --discrepancy-review-in ./downloads/com.example.my-pack.discrepancy-review.json \
+  --reviewed-by "Reviewer name"
+```
+
+The deterministic check currently proposes candidates for:
+
+- different numbers and compatible units;
+- negation present in only one statement;
+- different linked values for the same subject;
+- different populations and age ranges;
+- similar source statements across several packs.
+
+No candidate is added to a pack before explicit acceptance. A newer date is shown for context but does not automatically make one source preferred or obsolete.
 
 ### Optional local OpenAI-compatible enrichment
 
@@ -187,9 +232,8 @@ Future MiniMed integration requires separate approval and MiniMed-owned retrieva
 
 ## Remaining work
 
-- deterministic candidate detection against existing prepared statements;
-- review of proposed concepts, statements and relations;
-- optional local/server LLM classification after deterministic retrieval;
+- optional local/server LLM classification after deterministic discrepancy retrieval;
+- review of proposed concepts, statements, aliases and entity relations;
 - PDF/DOCX extraction, OCR and database exporters;
 - optional prebuilt SQLite/FTS artifacts in large packs;
 - representative mobile benchmarks;
