@@ -13,6 +13,7 @@ L-Note is a hosted offline-first knowledge workspace with:
 - deterministic preparation-time comparison against existing pack files;
 - standalone JSON/HTML review artifacts for proposed statement relations;
 - strong-device PDF/DOCX extraction with page/paragraph provenance and optional OCR;
+- mandatory JSON/HTML review for LLM-proposed concepts, aliases, statements and relations;
 - browser-local Markdown/TXT/JSON package creation;
 - local RU/EN voice search;
 - optional local WebLLM answers over bounded evidence;
@@ -156,6 +157,28 @@ Compatible units are canonicalized before comparison. For example, `500 мг` an
 
 Dates are retained for human context but do not imply precedence. Explicit chronology-based candidate signals, optional LLM classification and preferred/current designation remain separate future steps.
 
+## LLM semantic proposal review
+
+LLM enrichment follows the same prepare-review-apply boundary and cannot mutate the deterministic pack during collection:
+
+```text
+source-preserving deterministic pack
+  → provider receives one source section at a time
+  → concepts, aliases, statements and relations are proposed
+  → proposals enter lnote.semantic-proposal-review
+  → exact claim quotes are checked against the original section
+  → safe JSON and standalone offline HTML review files are generated
+  → reviewer edits, accepts or dismisses every candidate
+  → second deterministic build applies accepted candidates only
+  → final pack validation
+```
+
+Every candidate records its document and section, provider, source context and editable data. Claims additionally retain the exact proposed quote. Claims with missing or non-matching quotes are marked ineligible and cannot be accepted.
+
+Pending and dismissed proposals remain outside the pack. Accepted records keep `proposedBy`, `reviewedBy` and `reviewedAt`; accepted claims use `authority: reviewed`. Source section text is never replaced by model output.
+
+The review artifact is temporary preparation state and is not installable by the hosted application. Provider-specific network calls remain at the strong-device boundary; the final pack does not depend on the provider or a server.
+
 ## Document extraction
 
 PDF and DOCX preparation runs outside the hosted application:
@@ -186,7 +209,7 @@ DOCX processing:
 - XML entities, tabs and line breaks are decoded deterministically;
 - the original DOCX is retained as a source asset even though the hosted reader currently embeds PDF only.
 
-External commands have execution time and output-size limits. Extraction output is not automatically considered reviewed: OCR text and semantic proposals still require a review workflow before trusted publication.
+External commands have execution time and output-size limits. Extraction output is not automatically considered reviewed: OCR text still requires a review workflow before trusted publication.
 
 ## Worker roles
 
@@ -280,16 +303,17 @@ Strong-device path:
 PDF / DOCX / databases / notes
   → deterministic extraction and provenance
   → OCR only where text is absent
-  → chunks, aliases, concepts and source-linked statements
+  → source-preserving base pack
+  → optional semantic proposals
+  → mandatory semantic review
   → compare against existing prepared claims
   → quantity, negation and scope checks
-  → optional LLM proposals
-  → mandatory human review
+  → mandatory discrepancy review
   → optional prebuilt SQLite/FTS artifacts
   → installable pack
 ```
 
-PDF/DOCX deterministic extraction and statement-discrepancy review are implemented. OCR review, database adapters, review of other semantic proposals, LLM classification and prebuilt database artifacts remain pending.
+PDF/DOCX deterministic extraction, statement-discrepancy review and semantic-proposal review are implemented. OCR review, database adapters, discrepancy LLM classification and prebuilt database artifacts remain pending.
 
 Model output may propose structure but never silently replace source text or resolve a source disagreement.
 
@@ -301,11 +325,11 @@ MiniMed retains medical query parsing, clinical ranking, source policy, dose/reg
 
 ## Next ordered work
 
-1. Add review for OCR output and proposed concepts, statements, aliases and entity relations.
+1. Add review for OCR output.
 2. Add database import/export adapters and optional prebuilt SQLite/FTS artifacts.
-3. Add optional local/server LLM classification after deterministic candidate retrieval.
-4. Add explicit date/edition chronology signals without automatic source precedence.
-5. Include confirmed source discrepancies in the local-answer evidence envelope.
+3. Include confirmed source discrepancies in the local-answer evidence envelope.
+4. Add optional local/server LLM classification for deterministic discrepancy candidates.
+5. Add explicit date/edition chronology signals without automatic source precedence.
 6. Benchmark search, speech and models on representative Snapdragon 7-class devices.
 7. Consider OPFS and vector adapters after the current baseline is measured.
 
