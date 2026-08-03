@@ -52,6 +52,7 @@ function sourceSummary(files, manualText) {
 }
 
 function progressText(progress) {
+  if (progress.stage === 'pdf') return `Разбор PDF: ${progress.filename ?? 'документ'}`;
   if (progress.stage === 'reading') return `Чтение: ${progress.filename ?? 'файл'}`;
   if (progress.stage === 'indexing') return 'Разметка разделов и поиск сокращений…';
   if (progress.stage === 'ready') return 'Пакет собран и проверен.';
@@ -82,6 +83,7 @@ function renderStats(container, pack) {
       element('span', { className: 'pill muted', text: `${stats.documents} документов` }),
       element('span', { className: 'pill muted', text: `${stats.sections} разделов` }),
       element('span', { className: 'pill muted', text: `${stats.entities} понятий` }),
+      ...(stats.warnings ? [element('span', { className: 'pill muted', text: `${stats.warnings} предупреждений` })] : []),
       element('span', { className: 'pill muted', text: formatBytes(stats.bytes) }),
     ]),
     element('div', { className: 'pack-builder-documents' }, documents),
@@ -236,7 +238,7 @@ export function renderPackageBuilderResource({ dialogView, onInstall, onDownload
   const root = element('section', { className: 'pack-builder' }, [
     Text({
       variant: 'muted',
-      text: 'Выберите Markdown, TXT или JSON либо вставьте текст. L-Note разобьёт материалы на разделы, найдёт явные сокращения и соберёт пакет без сети.',
+      text: 'Выберите PDF, Markdown, TXT или JSON либо вставьте текст. PDF с текстовым слоем разбираются локально с сохранением таблиц и структуры.',
     }),
     element('div', { className: 'pack-builder-grid' }, [
       Field({ label: 'Название', control: title, required: true }),
@@ -248,7 +250,7 @@ export function renderPackageBuilderResource({ dialogView, onInstall, onDownload
     Field({
       label: 'Исходные файлы',
       control: files,
-      hint: 'До 32 МБ на файл и 64 МБ суммарно. Большие корпуса лучше готовить через CLI.',
+      hint: 'Сканированные страницы без текстового слоя нужно подготовить через CLI с OCR-проверкой.',
     }),
     selectedSources,
     Field({ label: 'Или вставьте текст', control: manualText }),
