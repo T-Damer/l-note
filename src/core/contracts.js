@@ -76,11 +76,22 @@ export function validateSearchResultContract(result) {
   return { valid: errors.length === 0, errors };
 }
 
-export function createEvidenceEnvelope({ query, sources = [], relatedNotes = [], conflicts = [] }) {
+export function createEvidenceEnvelope({
+  query,
+  sources = [],
+  relatedNotes = [],
+  conflicts = [],
+  discrepancies = [],
+}) {
   if (typeof query !== 'string' || query.trim().length === 0) {
     throw new TypeError('Evidence query must be a non-empty string.');
   }
-  for (const [name, value] of Object.entries({ sources, relatedNotes, conflicts })) {
+  for (const [name, value] of Object.entries({
+    sources,
+    relatedNotes,
+    conflicts,
+    discrepancies,
+  })) {
     if (!Array.isArray(value)) throw new TypeError(`Evidence ${name} must be an array.`);
   }
   return {
@@ -89,5 +100,6 @@ export function createEvidenceEnvelope({ query, sources = [], relatedNotes = [],
     sources,
     relatedNotes,
     conflicts,
+    discrepancies,
   };
 }
