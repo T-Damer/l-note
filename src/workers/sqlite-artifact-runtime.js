@@ -1,9 +1,8 @@
 import {
-  MAX_PREBUILT_SEARCH_ARTIFACT_BYTES,
-  PREBUILT_SEARCH_ARTIFACT_VERSION,
-  PREBUILT_SQLITE_ARTIFACT_KIND,
-} from '../helpers/prebuilt-search-artifacts.js';
-import { SQLITE_FTS_RUNTIME_VERSION } from '../helpers/sqlite-fts.js';
+  MAX_SEARCH_ARTIFACT_BYTES,
+  SEARCH_ARTIFACT_SCHEMA_VERSION,
+  SQLITE_FTS_ARTIFACT_PROFILE,
+} from '../helpers/search-artifacts.js';
 
 const DATABASE_NAME = 'l-note-search.db';
 
@@ -42,14 +41,14 @@ async function artifactBuffer(artifact, onProgress) {
   if (!artifact?.blob || typeof artifact.blob.arrayBuffer !== 'function') {
     throw new Error('Prebuilt search file is not stored on this device.');
   }
-  if (artifact.bytes > MAX_PREBUILT_SEARCH_ARTIFACT_BYTES) {
+  if (artifact.bytes > MAX_SEARCH_ARTIFACT_BYTES || artifact.blob.size > MAX_SEARCH_ARTIFACT_BYTES) {
     throw new Error('Prebuilt search file exceeds the supported size limit.');
+  }
+  if (artifact.blob.size !== artifact.bytes) {
+    throw new Error('Prebuilt search file size does not match its manifest.');
   }
   onProgress({ stage: 'artifact-read', completed: 0, total: artifact.bytes });
   const buffer = await artifact.blob.arrayBuffer();
-  if (buffer.byteLength !== artifact.bytes) {
-    throw new Error('Prebuilt search file size does not match its manifest.');
-  }
   onProgress({ stage: 'artifact-checksum', completed: buffer.byteLength, total: buffer.byteLength });
   const actual = await sha256Hex(buffer);
   if (actual !== artifact.sha256) {
@@ -70,22 +69,18 @@ async function validateImportedDatabase(runtime, artifact) {
   for (const required of ['records_fts', 'records_vocab', 'search_meta']) {
     if (!names.has(required)) throw new Error(`Imported database is missing ${required}.`);
   }
-  const formatVersion = Number(await runtime.meta('artifactFormatVersion'));
-  const kind = await runtime.meta('artifactKind');
-  const runtimeVersion = await runtime.meta('artifactRuntime');
+  const artifactSchema = Number(await runtime.meta('artifactSchemaVersion'));
+  const profile = await runtime.meta('artifactProfile');
   const fingerprint = await runtime.meta('fingerprint');
   const recordCount = Number(await runtime.meta('recordCount'));
-  if (formatVersion !== PREBUILT_SEARCH_ARTIFACT_VERSION) {
-    throw new Error('Imported search format is unsupported.');
+  if (artifactSchema !== SEARCH_ARTIFACT_SCHEMA_VERSION) {
+    throw new Error('Imported artifact schema is unsupported.');
   }
-  if (kind !== PREBUILT_SQLITE_ARTIFACT_KIND) {
-    throw new Error('Imported search kind is unsupported.');
+  if (profile !== SQLITE_FTS_ARTIFACT_PROFILE) {
+    throw new Error('Imported artifact profile is unsupported.');
   }
-  if (runtimeVersion !== SQLITE_FTS_RUNTIME_VERSION || artifact.runtime !== runtimeVersion) {
-    throw new Error('Imported search runtime is incompatible.');
-  }
-  if (fingerprint !== artifact.corpusFingerprint || recordCount !== artifact.recordCount) {
-    throw new Error('Imported search file does not match the active corpus.');
+  if (fingerprint !== artifact.fingerprint || recordCount !== artifact.recordCount) {
+    throw new Error('Imported artifact does not match the active corpus.');
   }
 }
 
@@ -102,7 +97,6 @@ export async function importSqliteSearchArtifact(runtime, artifact, {
     ...(await runtime.stats()),
     reused: true,
     imported: true,
-    artifactId: artifact.id,
     artifactBytes: buffer.byteLength,
   };
 }
