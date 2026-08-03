@@ -10,7 +10,7 @@ async function loadRuntime() {
   const entry = require.resolve('@firecrawl/pdf-inspector-wasm');
   const module = await import(pathToFileURL(entry).href);
   const wasmPath = path.join(path.dirname(entry), 'pdf_inspector_wasm_bg.wasm');
-  await module.default(await readFile(wasmPath));
+  await module.default({ module_or_path: await readFile(wasmPath) });
   return module;
 }
 
