@@ -1,13 +1,13 @@
 import { createHash } from 'node:crypto';
 
 import { qualifyStatementId } from '../../src/helpers/statement-conflicts.js';
+import { comparableQuantityDifferences } from './quantities.mjs';
 
 const NEGATIONS = new Set(['не', 'нет', 'нельзя', 'запрещен', 'запрещено', 'without', 'not', 'no', 'never', 'contraindicated']);
 const STOPWORDS = new Set([
   'для', 'при', 'или', 'как', 'что', 'это', 'его', 'ее', 'их', 'the', 'and', 'for', 'with', 'that', 'this',
   'из', 'на', 'по', 'в', 'во', 'к', 'до', 'от', 'с', 'со', 'a', 'an', 'of', 'to', 'in', 'is', 'are',
 ]);
-const NUMBER_UNIT = /(-?\d+(?:[.,]\d+)?)\s*(%|мг|г|кг|мкг|мл|л|мм|см|м|°c|ч|час(?:а|ов)?|дн(?:я|ей)?|недел(?:я|и|ь)|месяц(?:а|ев)?|лет|год(?:а|ов)?|mg|g|kg|mcg|ml|mm|cm|hours?|days?|weeks?|months?|years?)?/giu;
 const SCOPE_PATTERNS = [
   /(?<![\p{L}\p{N}_])(?:дети|детей|детям|детьми|детск\p{L}*|ребен\p{L}*|взросл\p{L}*|беременн\p{L}*|новорожденн\p{L}*|младенц\p{L}*)(?![\p{L}\p{N}_])/giu,
   /\b(?:children|child|adult\p{L}*|pregnan\p{L}*|newborn\p{L}*|infant\p{L}*)\b/giu,
@@ -47,31 +47,6 @@ function tokenSimilarity(left, right) {
   const shared = intersectionSize(leftTokens, rightTokens);
   const denominator = Math.max(1, Math.min(leftTokens.size, rightTokens.size));
   return { shared, overlap: shared / denominator };
-}
-
-function numericValues(value) {
-  const byUnit = new Map();
-  for (const match of normalized(value).matchAll(NUMBER_UNIT)) {
-    const number = match[1].replace(',', '.');
-    const unit = normalized(match[2] || 'number');
-    const values = byUnit.get(unit) ?? new Set();
-    values.add(number);
-    byUnit.set(unit, values);
-  }
-  return byUnit;
-}
-
-function numericDifferences(left, right) {
-  const leftValues = numericValues(left);
-  const rightValues = numericValues(right);
-  const output = [];
-  for (const [unit, leftSet] of leftValues) {
-    const rightSet = rightValues.get(unit);
-    if (!rightSet) continue;
-    const same = leftSet.size === rightSet.size && [...leftSet].every((value) => rightSet.has(value));
-    if (!same) output.push({ unit, left: [...leftSet], right: [...rightSet] });
-  }
-  return output;
 }
 
 function hasNegation(value) {
@@ -148,7 +123,7 @@ function candidateFor(left, right) {
   const subjectMatches = left.subject && right.subject && normalized(left.subject) === normalized(right.subject);
   if (!subjectMatches && (similarity.shared < 3 || similarity.overlap < .45)) return null;
 
-  const numbers = numericDifferences(`${left.text} ${left.quote}`, `${right.text} ${right.quote}`);
+  const numbers = comparableQuantityDifferences(`${left.text} ${left.quote}`, `${right.text} ${right.quote}`);
   const negationMismatch = hasNegation(left.text) !== hasNegation(right.text);
   const leftScope = scopeCues(`${left.text} ${left.quote}`);
   const rightScope = scopeCues(`${right.text} ${right.quote}`);
@@ -168,7 +143,7 @@ function candidateFor(left, right) {
     : 'contradicts';
   const confidence = Math.min(.98, .5 + (subjectMatches ? .18 : 0) + similarity.overlap * .2 + signals.length * .07);
   const reasons = [];
-  if (numbers.length) reasons.push(`различаются значения: ${numbers.map((item) => `${item.left.join('/')} ↔ ${item.right.join('/')} ${item.unit === 'number' ? '' : item.unit}`.trim()).join(', ')}`);
+  if (numbers.length) reasons.push(`различаются значения: ${numbers.map((item) => `${item.left.join('/')} ↔ ${item.right.join('/')} ${item.unit}`.trim()).join(', ')}`);
   if (negationMismatch) reasons.push('отрицание присутствует только в одном утверждении');
   if (scopeDifference) reasons.push(`различается область применения: ${leftScope.join(', ')} ↔ ${rightScope.join(', ')}`);
   if (objectMismatch) reasons.push(`различаются связанные значения: ${left.object} ↔ ${right.object}`);
