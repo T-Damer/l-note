@@ -23,6 +23,7 @@ The released site is built from `main` after the complete validation gate passes
 - confirmed discrepancies included as two ordinary citable answer sources;
 - preparation-time comparison against existing pack files;
 - strong-device PDF/DOCX extraction with page or paragraph provenance;
+- mandatory accept/edit/dismiss review for scanned-PDF OCR pages;
 - SQLite table/view import into the standard authoring layout;
 - relational SQLite pack export, FTS5 access and exact restoration;
 - mandatory human review for LLM-proposed concepts, aliases, statements and relations;
@@ -239,7 +240,7 @@ Required local tools:
 
 - PDF text: `pdftotext` from Poppler;
 - DOCX: `unzip`;
-- optional scanned-PDF OCR: `pdftoppm` from Poppler and `tesseract` with the selected language data.
+- scanned-PDF OCR: `pdftoppm` from Poppler and `tesseract` with the selected language data.
 
 Prepare ordinary PDF and DOCX files:
 
@@ -250,22 +251,36 @@ npm run prepare:documents -- ./documents \
   --title "My documents"
 ```
 
-For scanned PDF pages that have no text layer:
+For scanned PDF pages without a text layer, run the first pass:
 
 ```bash
 npm run prepare:documents -- ./documents \
-  --output ./prepared/my-documents \
+  --output ./prepared/pending \
   --id com.example.documents \
   --title "My documents" \
   --ocr \
   --ocr-language rus+eng
 ```
 
-Then compile the prepared directory:
+Open `./prepared/pending/ocr-review.html`. The page shows the source PDF and editable OCR text side by side, plus confidence and coordinates for low-confidence words. Accept, edit or dismiss every OCR page and download the reviewed JSON.
+
+Run the reviewed pass into a new output directory:
+
+```bash
+npm run prepare:documents -- ./documents \
+  --output ./prepared/reviewed \
+  --id com.example.documents \
+  --title "My documents" \
+  --ocr \
+  --ocr-language rus+eng \
+  --ocr-review-in ./downloads/com.example.documents.ocr-review.json
+```
+
+Then compile the reviewed directory:
 
 ```bash
 node tools/build-pack.mjs \
-  --input ./prepared/my-documents \
+  --input ./prepared/reviewed \
   --output ./dist/my-documents.pack.json
 ```
 
@@ -273,12 +288,15 @@ The preparer preserves:
 
 - one-based PDF page numbers through `assetAnchor.page`;
 - the original PDF for the internal reader;
-- DOCX heading groups;
-- DOCX paragraph start/end ranges;
+- Tesseract TSV confidence and bounding-box diagnostics in the review artifact;
+- source PDF SHA-256 and reviewer provenance for accepted OCR sections;
+- DOCX heading groups and paragraph start/end ranges;
 - extractor name, preparation time and source path;
 - warnings for pages with no usable text.
 
-OCR runs only for PDF pages whose text layer is empty. OCR output remains ordinary extracted source text and should be reviewed before publication; the CLI does not silently certify its accuracy.
+OCR runs only for PDF pages whose text layer is empty. OCR text remains outside searchable sections until explicitly accepted. `build-pack.mjs` rejects any authoring directory with unresolved `preparationReviews`, and a changed PDF hash invalidates an older review.
+
+See `docs/OCR_REVIEW.md` for the review contract and external hOCR/PAGE/Label Studio adapter boundary.
 
 ### Compare with existing prepared packs
 
@@ -382,12 +400,12 @@ Future MiniMed integration requires separate approval and MiniMed-owned retrieva
 
 ## Remaining work
 
-- review workflow for OCR output;
 - optional DuckDB bridge for Parquet/CSV and remote database scanners;
 - optional LLM classification of deterministic source-discrepancy candidates;
+- explicit chronology signals for source editions without automatic precedence;
 - representative mobile benchmarks;
 - optional OPFS and vector-search adapters;
 - signed catalogs, delta updates, encrypted notes and synchronization;
 - native Android/iOS packaging after the web core is stable.
 
-See `docs/PACK_FORMAT.md` for the portable format, `docs/DATABASE_ADAPTERS.md` for database interchange, `docs/RETRIEVAL_ARCHITECTURE_RESEARCH.md` for external-system research and `docs/ARCHITECTURE.md` for runtime invariants.
+See `docs/PACK_FORMAT.md` for the portable format, `docs/OCR_REVIEW.md` for scanned-document review, `docs/DATABASE_ADAPTERS.md` for database interchange, `docs/RETRIEVAL_ARCHITECTURE_RESEARCH.md` for external-system research and `docs/ARCHITECTURE.md` for runtime invariants.
