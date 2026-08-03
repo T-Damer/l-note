@@ -1,5 +1,4 @@
 import { defineAsyncSearchPort } from '../core/ports.js';
-import { resolveSearchArtifactUrl } from '../helpers/search-artifacts.js';
 
 const SQLITE_SEARCH_WORKER_URL = new URL('../workers/sqlite-search-worker.js', import.meta.url);
 
@@ -9,9 +8,16 @@ function defaultWorkerFactory() {
 }
 
 function preparedArtifact(artifact) {
-  if (!artifact) return null;
-  const url = resolveSearchArtifactUrl(artifact);
-  return url ? { ...artifact, url } : null;
+  if (!artifact?.blob) return null;
+  return {
+    schemaVersion: artifact.schemaVersion,
+    profile: artifact.profile,
+    sha256: artifact.sha256,
+    bytes: artifact.bytes,
+    fingerprint: artifact.fingerprint,
+    recordCount: artifact.recordCount,
+    blob: artifact.blob,
+  };
 }
 
 export class SqliteFtsSearchPort {
