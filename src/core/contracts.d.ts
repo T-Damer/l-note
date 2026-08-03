@@ -103,6 +103,22 @@ export interface KnowledgeRelation {
   [key: string]: unknown;
 }
 
+export interface PrebuiltSearchArtifact {
+  id: string;
+  kind: 'sqlite-fts5';
+  formatVersion: 1;
+  runtime: string;
+  url: string;
+  sha256: string;
+  bytes: number;
+  corpusFingerprint: string;
+  recordCount: number;
+}
+
+export interface StoredSearchArtifactFile extends PrebuiltSearchArtifact {
+  blob: Blob;
+}
+
 export interface KnowledgePack {
   schemaVersion: 1;
   id: string;
@@ -116,6 +132,7 @@ export interface KnowledgePack {
   claims: KnowledgeStatement[];
   relations: KnowledgeRelation[];
   statementRelations?: StatementRelation[];
+  searchArtifacts?: PrebuiltSearchArtifact[];
   [key: string]: unknown;
 }
 
@@ -126,6 +143,7 @@ export interface InstalledPackRecord {
   sizeBytes?: number;
   sourceUrl?: string | null;
   sha256?: string | null;
+  searchArtifactFiles?: StoredSearchArtifactFile[];
   pack: KnowledgePack;
 }
 
