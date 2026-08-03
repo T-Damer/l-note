@@ -79,6 +79,16 @@ Use `effectiveFrom` for the date on which the document or edition became applica
 
 Aliases power abbreviations, alternative spellings, transliteration, and query expansion. An abbreviation may be a normal alias or a separate entity connected by an `abbreviation-of` relation when the distinction matters.
 
+Accepted LLM-proposed entities may additionally carry preparation provenance:
+
+```json
+{
+  "proposedBy": "openai-compatible:qwen3:8b",
+  "reviewedBy": "Reviewer",
+  "reviewedAt": "2026-08-03T13:00:00Z"
+}
+```
+
 ## Claims and evidence
 
 ```json
@@ -88,12 +98,16 @@ Aliases power abbreviations, alternative spellings, transliteration, and query e
   "predicate": "helps-with",
   "text": "Fuzzy matching helps retrieve terms containing typographical errors.",
   "status": "reviewed",
+  "authority": "reviewed",
   "confidence": 1,
   "source": {
     "documentId": "guide.search",
     "sectionId": "fuzzy",
     "quote": "Fuzzy matching helps retrieve terms containing typographical errors."
-  }
+  },
+  "proposedBy": "openai-compatible:qwen3:8b",
+  "reviewedBy": "Reviewer",
+  "reviewedAt": "2026-08-03T13:00:00Z"
 }
 ```
 
@@ -129,6 +143,8 @@ This prevents two packages with the same local claim ID from overwriting one ano
 ```
 
 Both entity endpoints must exist in the same pack in schema version 1. Cross-pack entity linking is achieved by reusing stable entity IDs; the runtime merges matching IDs and aliases while retaining each pack's provenance.
+
+Accepted proposed relations may carry the same `proposedBy`, `reviewedBy`, and `reviewedAt` fields as accepted entities and claims.
 
 ## Relations between statements and source discrepancies
 
@@ -239,6 +255,62 @@ Compatible values are canonicalized before comparison. For example, `500 мг` a
 
 Dates are context only. A newer date does not automatically create `supersedes` or select a winning source.
 
+## Preparation-only semantic proposal review artifact
+
+LLM-proposed concepts, aliases, claims, and entity relations use a second non-installable review object:
+
+```json
+{
+  "schemaVersion": 1,
+  "kind": "lnote.semantic-proposal-review",
+  "generatedAt": "2026-08-03T12:00:00Z",
+  "targetPackId": "example.enriched",
+  "provider": "openai-compatible:qwen3:8b",
+  "candidates": [
+    {
+      "id": "semantic-review.0123456789abcdef",
+      "kind": "claim",
+      "decision": "pending",
+      "eligible": true,
+      "validationError": null,
+      "provider": "openai-compatible:qwen3:8b",
+      "documentId": "guide.search",
+      "documentTitle": "Hybrid search",
+      "sectionId": "fuzzy",
+      "sectionTitle": "Fuzzy matching",
+      "sourceQuote": "Fuzzy matching helps retrieve terms containing typographical errors.",
+      "sourceContext": "...",
+      "data": {
+        "text": "Fuzzy matching helps retrieve terms containing typographical errors.",
+        "subject": "Fuzzy search",
+        "object": "Typing error",
+        "quote": "Fuzzy matching helps retrieve terms containing typographical errors."
+      }
+    }
+  ]
+}
+```
+
+Allowed candidate kinds are:
+
+- `entity` — a concept plus aliases and description;
+- `claim` — a source-linked statement;
+- `relation` — a relation between proposed or existing concepts.
+
+The proposal collector builds the deterministic source-preserving pack first and does not mutate it. Every candidate starts as `pending`, except structurally invalid candidates, which start as `dismiss` and `eligible: false`.
+
+A proposed claim is eligible only when:
+
+- `text` is non-empty;
+- `quote` is non-empty;
+- `quote` is an exact contiguous substring of the referenced source section.
+
+The standalone HTML review page allows a reviewer to edit candidate data and set `decision` to `accept`, `dismiss`, or `pending`. Ineligible candidates cannot be accepted. Only eligible accepted candidates are applied during a later deterministic build.
+
+Pending and dismissed semantic proposals never enter the final pack. Accepted records keep provider and reviewer provenance; accepted claims use `authority: reviewed`. Source section text remains unchanged.
+
+The review artifact is temporary preparation state, is never installed by the web runtime, and may safely be deleted after the final reviewed pack has been built and archived.
+
 ## Personal notes
 
 Personal notes are not stored inside reference packs. The device-local note record has a relation such as:
@@ -292,7 +364,34 @@ node tools/build-pack.mjs ./source-directory \
   --output dist/example.pack.json
 ```
 
-The preparer preserves filenames and section headings, splits very long sections, and discovers common abbreviation patterns. Optional `--ai-provider openai` and `--ai-provider replicate` modes can propose entities, claims, and relations. Proposed claims survive only when their evidence quote is an exact source substring.
+The preparer preserves filenames and section headings, splits very long sections, and discovers common abbreviation patterns.
+
+### Review LLM semantic proposals
+
+Generate the deterministic pack plus separate JSON and optional HTML review artifacts:
+
+```bash
+OPENAI_BASE_URL=http://127.0.0.1:11434/v1 \
+node tools/build-pack.mjs ./source-directory \
+  --id com.example.pack \
+  --title "Example pack" \
+  --output dist/example.base.pack.json \
+  --ai-provider openai \
+  --ai-model qwen3:8b \
+  --semantic-review-out dist/example.semantic-review.json \
+  --semantic-review-html dist/example.semantic-review.html
+```
+
+The deterministic pack remains unchanged by the proposal collection step. Review the JSON or HTML artifact, then apply only accepted proposals:
+
+```bash
+node tools/build-pack.mjs ./source-directory \
+  --id com.example.pack \
+  --title "Example pack" \
+  --output dist/example.reviewed.pack.json \
+  --semantic-review-in downloads/com.example.pack.semantic-review.json \
+  --reviewed-by "Reviewer name"
+```
 
 ### Review possible differences against existing packs
 
@@ -320,18 +419,20 @@ node tools/build-pack.mjs ./source-directory \
   --reviewed-by "Reviewer name"
 ```
 
-The comparison step never mutates the pack by itself.
+Neither comparison nor proposal collection mutates the pack by itself.
 
-A larger production pipeline may place Docling, Marker, OCR, database exporters, or domain-specific transformations before either contract:
+A larger production pipeline may place Docling, Marker, OCR, database exporters, or domain-specific transformations before either review contract:
 
 ```text
 source extraction
 → deterministic segmentation and provenance
-→ proposed entities/claims/relations
+→ source-preserving base pack
+→ optional semantic proposals
+→ exact-quote validation
+→ human review of concepts, aliases, claims, and relations
 → candidate retrieval against existing claims
 → quantity, negation, date, and scope checks
-→ optional LLM classification
-→ exact-quote and reference validation
+→ optional discrepancy classification
 → human/domain review of every discrepancy
 → build-pack.mjs
 → signed/checksummed catalog publication
