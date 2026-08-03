@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v41';
-const RUNTIME_CACHE = 'l-note-runtime-v41';
+const SHELL_CACHE = 'l-note-shell-v42';
+const RUNTIME_CACHE = 'l-note-runtime-v42';
 const SHELL = [
   './',
   './index.html',
@@ -64,6 +64,7 @@ const SHELL = [
   './src/services/ask-workflow.js',
   './src/services/audio-recorder.js',
   './src/services/browser-pack-builder.js',
+  './src/services/evidence-discrepancies.js',
   './src/services/evidence-query.js',
   './src/services/evidence-support-verifier.js',
   './src/services/installed-pack-record.js',
