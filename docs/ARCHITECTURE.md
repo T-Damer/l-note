@@ -2,27 +2,22 @@
 
 ## Current state
 
-L-Note is a hosted, offline-first knowledge workspace with:
+L-Note is a hosted offline-first knowledge workspace with:
 
-- checksummed installable packs stored in IndexedDB;
-- adaptive local search through MiniSearch, SQLite/FTS5 or IndexedDB postings;
-- optional domain query planners outside the generic search engine;
+- independently installable knowledge packs in IndexedDB;
+- adaptive MiniSearch / SQLite-FTS5 / IndexedDB-postings retrieval;
 - hash-routed packages, documents, concepts, statements, notes and package creation;
-- source-linked statements, relations, backlinks and personal-note overlays;
-- reviewed cross-document discrepancies with inline Phosphor markers and source diffs;
 - list and graph views over the same resources;
-- internal PDF viewing with document/section page anchors;
-- a browser-local creator for Markdown/TXT/JSON sources and pasted text;
-- browser-local RU/EN voice search;
-- optional browser-local WebLLM over a bounded evidence envelope;
-- deterministic statement-to-evidence support verification;
-- one active language model in a Dedicated Worker;
-- persistent language/speech model weights in browser caches;
-- a persisted transfer-queue foundation;
-- a persisted collapsible desktop sidebar;
-- SCSS partials and a deterministic static-PWA build.
+- internal PDF viewing with exact page anchors;
+- reviewed cross-document discrepancies with source dates and deterministic diffs;
+- browser-local Markdown/TXT/JSON package creation;
+- local RU/EN voice search;
+- optional local WebLLM answers over bounded evidence;
+- deterministic citation and statement-support verification;
+- a persisted transfer queue shared by packages, language models and speech models;
+- a collapsible desktop sidebar and a static PWA build.
 
-A routed dialog has one vertical scroll container: `.dialog-body`. The page root and body remain locked behind it, and the header reserves Back, title and Close columns.
+A routed dialog has exactly one vertical scroll container: `.dialog-body`.
 
 ## Code organization
 
@@ -41,23 +36,21 @@ adapters / domain plugins
 Directory ownership:
 
 ```text
-src/core/          domain-neutral contracts, ports and headless runtime
-src/adapters/      concrete search, storage and model/speech implementations
-src/services/      use-case workflows and pure state transitions
-src/pages/         page and routed-resource construction/rendering
-src/ui/            reusable typography, controls, dialogs, graph and safe DOM helpers
-src/helpers/       stateless parsing, formatting, matching and mapping
-src/workers/       isolated SQLite, fallback search, speech and WebLLM runtimes
-src/integrations/  isolated product boundaries such as MiniMed compatibility
+src/core/          serializable domain-neutral contracts and ports
+src/adapters/      browser storage, search, model and speech implementations
+src/services/      workflows, queues and state transitions
+src/pages/         page and routed-resource rendering/controllers
+src/ui/            reusable controls, typography, dialogs and graphs
+src/helpers/       deterministic parsing, matching and formatting
+src/workers/       SQLite, fallback search, speech and WebLLM runtimes
+src/integrations/  isolated external-product boundaries
 ```
 
-`src/app-parts/` is temporary composition and wiring. New business logic does not belong there. Refactoring is performed only where required to deliver a feature safely.
-
-`npm run check:structure` enforces modular file limits, selected dependency boundaries, safe DOM insertion and decreasing budgets for touched transitional files. Detailed rules live in `AGENTS.md`.
+`src/app-parts/` is composition-only transitional code. New behavior belongs in the layers above and is wired from a small app-part.
 
 ## Public application boundary
 
-The core exposes replaceable ports rather than browser implementations:
+The web shell is composed through replaceable ports:
 
 ```text
 StoragePort
@@ -68,105 +61,53 @@ SpeechRecognitionPort
 EvidenceVerifierPort
 ```
 
-`KnowledgeApplicationAdapter` composes the hosted application without putting DOM, IndexedDB, SQLite, WebLLM or speech runtime assumptions into `src/core/`.
+The generic core contains no DOM, IndexedDB, SQL, WebGPU, speech-runtime or medical-policy assumptions.
 
-## Adaptive storage and retrieval
-
-The current decision tree is:
+## Adaptive search
 
 ```text
 small corpus
-  → MiniSearch
-  → full index in JavaScript memory
+  → MiniSearch in JavaScript memory
 
 large corpus
   → SQLite + FTS5
   → Dedicated Worker
   → IndexedDB virtual filesystem
 
-SQLite initialization/build failure
-  → custom IndexedDB postings Worker
+SQLite unavailable
+  → IndexedDB postings Worker
 
 all disk adapters unavailable
   → deterministic in-memory fallback
 ```
 
-A corpus is currently considered large when it has at least 5,000 search records or approximately 8 MiB of indexable text. These values are configuration defaults, not permanent device limits.
+The initial large-corpus threshold is 5,000 search records or approximately 8 MiB of indexable text. It remains a benchmark target rather than a permanent device limit.
 
-### SQLite/FTS5 path
+FTS5 stores weighted title, document, alias, entity, tag and body fields. It supplies BM25 candidates and a vocabulary for bounded typo correction. The application then converts results into the common `SearchResult` contract and integer `0–100%` relative relevance.
 
-The production large-corpus path consists of:
+A corpus fingerprint allows an unchanged database to reopen without rebuilding. When disk search is active, the page drops the large flattened record array and retains only knowledge metadata and bounded result/evidence working sets.
 
-```text
-createAdaptiveSearchPort
-  → SqliteFtsSearchPort
-  → sqlite-search-worker.js
-  → SqliteFtsRuntime
-  → SQLite 3.53.x / FTS5
-  → IDBBatchAtomicVFS
-  → IndexedDB
-```
+The SQLite connection belongs to one Dedicated Worker. Commands are serialized, and close is awaited before a fallback backend or replacement Worker is opened.
 
-The FTS table stores the complete serialized search record as an unindexed payload plus weighted searchable fields:
+## Retrieval and evidence
 
 ```text
-title            4.5
-document title   3.5
-body             1.0
-aliases           5.0
-entity names      4.5
-tags              1.4
+query
+  → Unicode and ё/е normalization
+  → aliases and optional domain planning
+  → memory or disk candidate retrieval
+  → exact/prefix/fuzzy ranking
+  → source, statement, concept and note resolution
+  → bounded evidence envelope
+  → optional local generation
+  → citation-ID and statement-support verification
 ```
 
-FTS5 provides BM25 candidate retrieval and prefix indexes. The `fts5vocab` table supplies bounded typo candidates, which are filtered with the existing Damerau-Levenshtein logic before a second query. Results are converted back into the common `SearchResult` shape and normalized to `0–100%` relative relevance.
+The verifier checks citation existence, meaningful term support, numbers and negation mismatches. It is conservative and replaceable; it is not a clinical inference model.
 
-A corpus fingerprint is stored with the index. If the enabled pack versions and note state are unchanged, the next Worker reuses the existing database instead of rebuilding it. When the disk adapter is active, the headless runtime drops its large flattened record array after the Worker build; the page retains only the knowledge metadata and active result/evidence working set.
+## Source discrepancies
 
-All SQL commands on a connection are serialized. Statistics queries are sequential, and adapter cleanup waits for SQLite to close before terminating the Worker or trying a fallback backend. This is required by an asynchronous IndexedDB VFS.
-
-The real browser smoke test verifies:
-
-1. FTS5 schema creation;
-2. exact Russian retrieval;
-3. typo correction;
-4. suggestions;
-5. graceful Worker/connection close;
-6. opening a second Worker;
-7. reusing and querying the persisted FTS index.
-
-The hosted GitHub Pages build uses IndexedDB VFS because the official SQLite OPFS path requires response isolation headers unavailable on that host. A future controlled host or native shell may provide an OPFS adapter without changing the search contract.
-
-### Retrieval pipeline
-
-1. Normalize Unicode, Russian `ё/е`, punctuation and whitespace.
-2. Expand declared names and aliases.
-3. Apply optional domain planners.
-4. Select memory or disk search from corpus size/capabilities.
-5. Retrieve exact, weighted prefix and fuzzy candidates.
-6. Normalize displayed relevance to `0–100%`; it is not diagnostic probability.
-7. Resolve results to sources, statements, concepts and notes.
-8. Build a bounded, versioned evidence envelope.
-9. Optionally synthesize through a local model.
-10. Verify citation IDs and statement support against cited fragments.
-
-Every reported ranking failure becomes a regression test. Domain vocabulary belongs in a plugin or pack.
-
-## Reviewed source discrepancies
-
-A discrepancy is not inferred from raw document text at display time. A strong-device preparation workflow creates a reviewed relation between two source statements and stores it in optional package-level `statementRelations`.
-
-```text
-statement relation
-  sourceClaimId
-  targetClaimId
-  type
-  status
-  reason
-  detectedBy
-  confidence
-```
-
-Supported relation types are:
+Prepared packs may contain reviewed `statementRelations`:
 
 ```text
 supports
@@ -177,97 +118,72 @@ equivalent
 different_scope
 ```
 
-`different_scope` is deliberately separate from `contradicts`: different populations, jurisdictions, formulations, dates or other conditions may explain an apparent mismatch. `supersedes` is accepted only as an explicit preparation/review decision; the client does not infer obsolescence from publication dates.
-
-Claim IDs and document IDs are local to a pack. Cross-pack routes and relations use qualified runtime IDs:
+Cross-pack references use qualified runtime IDs:
 
 ```text
 pack-id::claim-id
 pack-id::document-id
 ```
 
-This prevents equal local IDs from different packages from overwriting one another and ensures that a comparison opens the exact document version.
+The browser builds a symmetric discrepancy index, places one Phosphor marker after the exact disputed passage and groups all linked comparisons under it. Each comparison retains both quotes, document and pack titles, dates, relation type, review provenance and a deterministic token diff.
 
-At runtime:
-
-```text
-enabled packs
-  → symmetric statement-discrepancy index
-  → exact source-quote position in each section
-  → one Phosphor warning marker per disputed passage
-  → one disclosure containing all comparisons attached to that passage
-```
-
-The disclosure shows:
-
-- every linked source statement rather than one selected answer;
-- document and pack titles;
-- `effectiveFrom`, source publication date or pack publication date;
-- the exact evidence quote from each side;
-- a deterministic token-level diff;
-- relation status, reason and preparation provenance;
-- routed actions for opening either complete document.
-
-The browser client is neutral. It never selects a winning source, rewrites a source statement, hides a newer or older version, or converts a conflict into a scope difference. It displays only reviewed relations and silently leaves unresolved external references unavailable until their packages are installed.
-
-A future strong-device preparation stage will retrieve similar existing claims, compare numbers, units, negation, dates and shared entities, optionally ask a local/server LLM to classify the candidate, and require a user/domain reviewer to accept, edit or dismiss it. Selecting a preferred/current statement is also a preparation decision, not a browser-side inference.
+The client never chooses a winning source, infers obsolescence from date or removes another version. Candidate detection, classification and any preferred/current designation belong to a stronger preparation workflow with human review.
 
 ## Worker roles
 
 ```text
 service-worker.js
-  application shell, local assets and runtime-cache delivery only
+  offline shell and runtime-asset delivery only
 
 sqlite-search-worker.js
-  one serialized SQLite/FTS5 connection over IndexedDB VFS
+  serialized SQLite/FTS5 connection
 
 search-worker.js
-  custom IndexedDB-postings fallback
+  IndexedDB-postings fallback
 
 speech-worker.js
-  local multilingual ASR
+  local multilingual speech recognition
 
 webllm-worker.js
   one active local language model
 ```
 
-The Service Worker does not own a database connection or search state. Browsers may terminate it at any time; persistent search belongs in a Dedicated Worker and IndexedDB/SQLite.
+The Service Worker does not own database connections, mutable search state or the transfer queue.
 
-## Local speech boundary
+## Models and speech
 
-`SpeechRecognitionPort` is domain-neutral. The hosted adapter records microphone audio, mixes channels, resamples to 16 kHz and sends a `Float32Array` to a Dedicated Worker. The current profiles are multilingual Whisper Tiny and Base with Russian, English or automatic RU/EN selection.
+The local language-model profiles target devices with approximately 8–12 GB shared memory. Only one language model may be active. Selecting another profile unloads the previous engine; cached weights remain on disk.
 
-Downloaded artifacts stay in the Transformers.js browser cache. The active speech model can be cancelled/unloaded independently from the language model. A transcript is only another input to the normal query pipeline; speech recognition does not implement its own search rules.
+`SpeechRecognitionPort` is independent from the language model. Browser audio is mixed to mono, resampled to 16 kHz and processed by multilingual Whisper Tiny/Base. The transcript enters the ordinary text-search path.
 
-## Local language-model and evidence boundary
+## Persisted transfers
 
-The target class is a mid-range device with approximately 8–12 GB shared memory and no assumption of a strong discrete GPU.
-
-```text
-Qwen3 1.7B q4f16_1   default for 8 GB
-Qwen3 4B q4f16_1     quality profile for 12 GB
-Phi-4 Mini q4f16_1   mathematics/formal-reasoning comparison
-```
-
-Lifecycle:
+All long browser downloads now use one `TransferQueue` persisted through `StoragePort`:
 
 ```text
-browser-cache inspection
-  → not downloaded / downloaded-off / loaded-on
-  → optional persistent-origin request
-  → one Dedicated Worker loads one model
-  → retrieval builds bounded evidence
-  → generation uses evidence only
-  → citation IDs and statement support are checked
+package download
+language-model load
+speech-model load
+        ↓
+TransferQueue
+        ↓
+queued / active / interrupted / completed / failed / cancelled
 ```
 
-Selecting another model or pressing manual unload calls `engine.unload()` and terminates the Worker. Cached weights remain on disk. There is deliberately no inactivity timer.
+The queue provides:
 
-The deterministic evidence verifier splits output into statements and checks citations, content-term overlap, numeric values and negation mismatches. It is conservative and replaceable through `EvidenceVerifierPort`; it is not a clinical NLI model.
+- up to four ordinary active operations;
+- priority ordering and active-resource deduplication;
+- serializable progress, bytes, attempts and messages;
+- cancellation through `AbortSignal` or Worker termination;
+- retry/removal controls;
+- automatic package-download restart after reload;
+- explicit manual continuation for interrupted model loads;
+- a compact global panel shown only while attention is needed.
 
-Confirmed source discrepancies are currently rendered in readers but are not yet injected into every generated-answer evidence envelope. That is a separate TODO so model prompts do not silently gain unresolved or irrelevant comparisons.
+Model handlers still enforce the separate invariant that only one inference model is active, even when ordinary package files download in parallel. Low-level failures are logged for diagnostics, while the panel stores short user-facing messages.
 
-## Routing, readers and graph
+## Routing, readers and graphs
 
 Stable routes:
 
@@ -283,87 +199,53 @@ Stable routes:
 #/note/:id
 ```
 
-The package creator uses `#/package/new?from=library&depth=1`. Browser history owns nested card traversal. Back moves through the chain; full Close returns to the recorded base page and removes forward card routes. Direct links and reload restore the route. Graph nodes use the same registry and route contract.
+The package creator uses `#/package/new`. Browser history owns nested card traversal. Back moves through the chain; full Close returns to the recorded base page. Graph nodes use the same route registry.
 
-A document may reference a local asset and section page anchors. The routed document reader displays the PDF in the same modal and changes the page fragment when a source-linked section is opened. Cross-pack comparison links use qualified document IDs but otherwise follow the same hash-routing contract.
+A document may reference an internal asset plus document/section page anchors. Cross-pack comparison links use qualified document IDs but otherwise follow the same reader contract.
 
 ## Preparation and distribution
 
-Lightweight on-device path:
+Light browser path:
 
 ```text
 Markdown / TXT / JSON / pasted text
-  → local parsing and deterministic sectioning
+  → deterministic parsing and sectioning
   → abbreviation discovery
-  → schema and reference validation
-  → preview
-  → download JSON or install through StoragePort
+  → validation and preview
+  → JSON download or immediate installation
 ```
 
-Heavy desktop/server path:
+Strong-device path:
 
 ```text
-raw files / PDF / DOCX / database export / notes
+PDF / DOCX / databases / notes
   → deterministic extraction and provenance
-  → OCR only where a text layer is absent
+  → OCR only where text is absent
   → chunks, aliases, concepts and source-linked statements
-  → retrieve candidate statements from existing prepared packs
+  → compare against existing prepared claims
   → numeric, unit, negation, date and scope checks
-  → optional strong local/server LLM proposals and discrepancy classification
-  → exact-quote and referential validation
-  → human review of concepts, statements, relations and discrepancies
-  → optional preferred/current statement designation
-  → optional prebuilt SQLite/search artifacts
-  → installable L-Note pack
+  → optional LLM proposals
+  → mandatory human review
+  → optional prebuilt SQLite/FTS artifacts
+  → installable pack
 ```
 
-Model output may propose structure but never silently replace source text or resolve a source disagreement without review.
+Model output may propose structure but never silently replace source text or resolve a source disagreement.
 
-## Transfers
+## L-Note and MiniMed
 
-`TransferQueue` persists task state through `StoragePort`, limits active operations to four, supports priorities, progress, deduplication, `AbortSignal` cancellation and retry. The package streaming handler validates SHA-256 before installation.
+L-Note remains domain-neutral. It owns portable contracts, pack composition, generic storage/search/model/speech ports, graph projection, personal overlays, routing and evidence orchestration.
 
-The remaining product work is to route every package/model/speech download through this queue and finish the visible restore/resume controls. Exactly one inference model remains active even when several files download concurrently.
-
-## L-Note Core and MiniMed
-
-L-Note remains the domain-neutral runtime. The compatibility boundary exists, but the active core is not connected to the MiniMed application in this PR.
-
-L-Note owns:
-
-```text
-portable contracts and stable IDs
-pack preparation, installation and composition
-storage/search/model/speech ports
-generic concepts, statements, entity relations and reviewed source discrepancies
-personal overlay
-versioned evidence collection and verification boundary
-hash routing and knowledge-graph projection
-shared UI primitives
-```
-
-MiniMed retains ownership of:
-
-```text
-medical query parsing and negation
-clinical intent and section ranking
-medical aliases and taxonomy
-dose/regimen validation
-clinical abstention and safety gates
-medical benchmark suites and source policy
-```
-
-Any future connection requires separate approval and MiniMed-owned retrieval, dose and safety benchmarks. The compatibility adapter is not a completed product integration.
+MiniMed retains medical query parsing, clinical ranking, source policy, dose/regimen validation, abstention and safety benchmarks. The compatibility surface exists, but the active L-Note core is not connected to the MiniMed application.
 
 ## Next ordered work
 
-1. Add strong-device candidate detection and human review for source discrepancies.
-2. Add reviewed, optional LLM-assisted enrichment to the package creator/preparer.
-3. Add PDF/DOCX extraction, OCR and database exporters on a stronger device/server.
-4. Package optional prebuilt SQLite/FTS artifacts for large distributable packs.
-5. Complete transfer-queue wiring and restore/resume UI.
-6. Benchmark search, speech and models on Snapdragon 7-class 8 GB and 12 GB devices.
-7. Consider OPFS and vector adapters after the IndexedDB/FTS baseline is measured.
-8. Refactor transitional shell only when one of these features requires it.
+1. Add deterministic strong-device discrepancy candidate detection against an existing prepared corpus.
+2. Add review UI for accepting, editing or dismissing proposed concepts, statements and relations.
+3. Add optional local/server LLM classification after deterministic candidate retrieval.
+4. Add PDF/DOCX extraction, OCR and database exporters.
+5. Package optional prebuilt SQLite/FTS artifacts for large packs.
+6. Benchmark search, speech and models on representative Snapdragon 7-class devices.
+7. Consider OPFS and vector adapters after the current baseline is measured.
 
-Live MiniMed integration is excluded from this sequence. Android and iOS remain deferred until the hosted web core is stable.
+Live MiniMed integration and native Android/iOS packaging remain deferred.
