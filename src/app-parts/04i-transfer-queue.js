@@ -1,8 +1,8 @@
-import { createTransferQueue, TRANSFER_PRIORITY } from '../services/transfer-queue.js';
-import { createPackageTransferHandler } from '../services/package-transfer.js';
-import { createQueuedRuntimeLoader } from '../services/queued-runtime-loader.js';
-import { createTransferQueueView } from '../pages/transfer-queue-view.js';
-import { speechModelProfile } from '../speech.js';
+import { createTransferQueue, TRANSFER_PRIORITY } from './services/transfer-queue.js';
+import { createPackageTransferHandler } from './services/package-transfer.js';
+import { createQueuedRuntimeLoader } from './services/queued-runtime-loader.js';
+import { createTransferQueueView } from './pages/transfer-queue-view.js';
+import { speechModelProfile } from './speech.js';
 
 const transferQueue = createTransferQueue({ storagePort });
 const transferQueueHost = create('div', {
