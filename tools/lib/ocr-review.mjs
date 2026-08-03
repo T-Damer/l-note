@@ -173,8 +173,8 @@ function mergeCandidate(candidate, review) {
     decision: validationError && decision === 'accept' ? 'pending' : decision,
     text: text || candidate.originalText,
     validationError,
-    reviewedBy: prior.reviewedBy ?? null,
-    reviewedAt: prior.reviewedAt ?? null,
+    reviewedBy: prior.reviewedBy ?? review.reviewedBy ?? null,
+    reviewedAt: prior.reviewedAt ?? review.reviewedAt ?? null,
   };
 }
 
@@ -195,6 +195,8 @@ export function createOcrReview({
     generatedAt,
     targetPackId,
     instructions: 'Review every OCR page. Accepted edited text enters the pack; dismissed pages do not.',
+    ...(previousReview?.reviewedAt ? { reviewedAt: previousReview.reviewedAt } : {}),
+    ...(previousReview?.reviewedBy ? { reviewedBy: previousReview.reviewedBy } : {}),
     candidates: normalized.sort((left, right) => (
       left.sourcePath.localeCompare(right.sourcePath)
       || left.page - right.page
@@ -220,7 +222,7 @@ export function acceptedOcrText(review, candidateId) {
   if (!text) throw new Error(`Accepted OCR candidate ${candidateId} has empty text.`);
   return {
     text,
-    reviewedBy: candidate.reviewedBy ?? 'local-reviewer',
+    reviewedBy: candidate.reviewedBy ?? review.reviewedBy ?? 'local-reviewer',
     reviewedAt: candidate.reviewedAt ?? review.reviewedAt ?? null,
   };
 }
