@@ -80,6 +80,7 @@ export class SqliteFtsRuntime {
     this.wasmUrl = wasmUrl;
     this.connection = null;
     this.initializing = null;
+    this.existingDatabase = null;
   }
 
   async init() {
@@ -105,8 +106,11 @@ export class SqliteFtsRuntime {
     }
 
     try {
+      const storageOptions = this.existingDatabase
+        ? sqliteModule.withExistDB(this.existingDatabase, { url: this.wasmUrl })
+        : { url: this.wasmUrl };
       this.connection = await sqliteModule.initSQLite(
-        idbModule.useIdbStorage(DATABASE_NAME, { url: this.wasmUrl }),
+        idbModule.useIdbStorage(DATABASE_NAME, storageOptions),
       );
     } catch (error) {
       throw errorAt('database open failed', error);
@@ -124,6 +128,17 @@ export class SqliteFtsRuntime {
       throw errorAt('FTS5 schema initialization failed', error);
     }
     return this;
+  }
+
+  async reopenFromFile(file) {
+    await this.close();
+    this.existingDatabase = file;
+    try {
+      await this.init();
+      return this;
+    } finally {
+      this.existingDatabase = null;
+    }
   }
 
   async rows(sql, bindings = []) {
