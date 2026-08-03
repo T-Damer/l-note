@@ -63,6 +63,21 @@ async function closeServer(server) {
   ]);
 }
 
+async function removeTemporaryPath(pathname) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    try {
+      await rm(pathname, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      return;
+    } catch (error) {
+      if (!['ENOTEMPTY', 'EBUSY', 'EPERM'].includes(error?.code) || attempt === 29) {
+        console.warn(`Temporary smoke path could not be removed: ${pathname}`, error);
+        return;
+      }
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 100 + attempt * 25));
+    }
+  }
+}
+
 function createStaticServer() {
   const types = new Map([
     ['.html', 'text/html; charset=utf-8'],
@@ -239,15 +254,25 @@ try {
   assert.match(result.fallbackResultId, /^section:lnote\.guide:/u, `Fallback search failed: ${diagnostics}`);
   console.log('Prebuilt SQLite browser smoke passed: verified import, search and corrupt-artifact fallback.');
 } finally {
+  try {
+    await client?.send('Browser.close');
+  } catch {
+    // Closing the browser also closes the CDP socket.
+  }
   client?.close();
-  browser.kill('SIGTERM');
-  await waitForProcessExit(browser);
+  await waitForProcessExit(browser, 5_000);
+  if (browser.exitCode === null && browser.signalCode === null) {
+    browser.kill('SIGTERM');
+    await waitForProcessExit(browser, 3_000);
+  }
   if (browser.exitCode === null && browser.signalCode === null) {
     browser.kill('SIGKILL');
     await waitForProcessExit(browser, 1_000);
   }
   await closeServer(server);
-  await rm(profileDir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
-  await rm(databasePath, { force: true });
-  await rm(packPath, { force: true });
+  await Promise.all([
+    removeTemporaryPath(profileDir),
+    removeTemporaryPath(databasePath),
+    removeTemporaryPath(packPath),
+  ]);
 }
