@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, local voice search, the persisted transfer queue and deterministic preparation-time discrepancy review are implemented; next are optional LLM-assisted classification, review of other proposed semantic records, PDF/DOCX preparation and distributable prebuilt database artifacts. Android/iOS and live MiniMed integration remain deferred.
+**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, local voice search, the persisted transfer queue, deterministic discrepancy review and PDF/DOCX extraction are implemented; next are review of OCR and other proposed semantic records, optional LLM-assisted classification, database exporters and distributable prebuilt search artifacts. Android/iOS and live MiniMed integration remain deferred.
 
 ## Universal core and MiniMed
 
@@ -141,7 +141,13 @@ Single source of future work. Completed items describe the active branch.
 - [x] Preview package statistics, download the JSON or install it immediately through the existing pack storage path.
 - [x] Validate ready-made pack JSON and enforce 32 MiB per file / 64 MiB total browser limits.
 - [x] Compare prepared statements with existing pack files and review proposed source discrepancies before export.
-- [ ] Add PDF/DOCX parsing, reviewed OCR and database exporters on a stronger device/server.
+- [x] Extract PDF text page-by-page and preserve exact `assetAnchor.page` references.
+- [x] OCR only PDF pages without a usable text layer through an optional Tesseract hook.
+- [x] Extract DOCX headings and paragraph groups with paragraph start/end provenance.
+- [x] Copy original PDF/DOCX files into the prepared assets directory and compile the result through the existing pack builder.
+- [x] Bound external-tool runtime and output size and report extraction warnings instead of inventing missing text.
+- [ ] Add a review workflow for OCR output before publication.
+- [ ] Add database import/export adapters.
 - [ ] Add optional prebuilt SQLite/FTS artifacts to large packs.
 - [ ] Let the user choose deterministic-only or LLM-assisted enrichment in the creator/preparer.
 - [ ] Review, accept, edit or remove proposed concepts, statements, aliases and entity relations before export.
