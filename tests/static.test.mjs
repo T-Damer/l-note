@@ -51,6 +51,7 @@ const offlineModules = [
   'src/services/evidence-query.js',
   'src/services/evidence-support-verifier.js',
   'src/services/package-transfer.js',
+  'src/services/queued-runtime-loader.js',
   'src/services/transfer-queue.js',
   'src/workers/search-worker.js',
   'src/workers/sqlite-fts-runtime.js',
@@ -99,6 +100,8 @@ test('static build contains the complete local-first shell', async () => {
     /\.statement-conflict-diff/u,
     /\.sidebar-activity-progress/u,
     /\.relation-view-toolbar/u,
+    /\.transfer-queue-host/u,
+    /\.transfer-queue-panel/u,
     /scrollbar-width:\s*none/u,
   ]);
   const html = await assertContains('index.html', [
@@ -125,6 +128,10 @@ test('static build contains the complete local-first shell', async () => {
     /renderDocumentResource/u,
     /renderStatementResource/u,
     /setActivityProgress/u,
+    /createTransferQueue/u,
+    /createQueuedRuntimeLoader/u,
+    /createTransferQueueView/u,
+    /downloadAndInstallThroughQueue/u,
   ]);
   await assertContains('src/adapters/adaptive-search.js', [
     /createSqliteFtsSearchPort/u,
@@ -176,6 +183,16 @@ test('static build contains the complete local-first shell', async () => {
     /Первая загрузка распознавания речи требует сети/u,
     /голосовые запросы распознаются офлайн/u,
   ]);
+  await assertContains('src/pages/transfer-queue-view.js', [
+    /Нужно продолжить/u,
+    /task\.status !== TRANSFER_STATUS\.COMPLETED/u,
+    /Продолжить/u,
+  ]);
+  await assertContains('src/services/queued-runtime-loader.js', [
+    /createQueuedRuntimeLoader/u,
+    /resumeOnRestore/u,
+    /transferAbortError/u,
+  ]);
   await assertContains('src/services/evidence-support-verifier.js', [
     /verifyStatementSupport/u,
     /unsupportedStatements/u,
@@ -205,12 +222,13 @@ test('static build contains the complete local-first shell', async () => {
     /"type":"contradicts"/u,
   ]);
   await assertContains('service-worker.js', [
-    /l-note-shell-v39/u,
+    /l-note-shell-v40/u,
     /cdn\.jsdelivr\.net/u,
     /sqlite-fts-search\.js/u,
     /sqlite-search-worker\.js/u,
     /statement-conflicts\.js/u,
     /statement-conflict-view\.js/u,
+    /queued-runtime-loader\.js/u,
     /transfer-queue\.js/u,
     /assets\/lnote-source-demo\.pdf/u,
   ]);
