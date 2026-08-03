@@ -17,9 +17,9 @@ export async function inspectBrowserPdf(file, {
   if (!file || typeof file.arrayBuffer !== 'function') {
     throw new TypeError('Для разбора PDF нужен локальный файл.');
   }
+  const buffer = await file.arrayBuffer();
   const worker = workerFactory();
   const id = `pdf-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  const buffer = await file.arrayBuffer();
 
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
