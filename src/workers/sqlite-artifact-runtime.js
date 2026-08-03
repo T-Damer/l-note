@@ -89,6 +89,5 @@ export async function importSqliteSearchArtifact(runtime, artifact, {
 }
 
 export async function resetSqliteSearchStorage(runtime) {
-  await runtime.init();
-  await runtime.clear();
+  await runtime.reset();
 }
