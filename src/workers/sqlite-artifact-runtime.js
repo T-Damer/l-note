@@ -76,7 +76,12 @@ export async function importSqliteSearchArtifact(runtime, artifact, {
   const buffer = await artifactBuffer(artifact, onProgress);
   await runtime.init();
   onProgress({ stage: 'artifact-import', completed: 0, total: buffer.byteLength });
-  await runtime.connection.sync(new Blob([buffer]).stream());
+  const databaseFile = new File(
+    [new Uint8Array(buffer)],
+    `${artifact.id || 'l-note-search'}.sqlite`,
+    { type: 'application/vnd.sqlite3' },
+  );
+  await runtime.connection.sync(databaseFile);
   onProgress({ stage: 'artifact-validate', completed: buffer.byteLength, total: buffer.byteLength });
   await validateImportedDatabase(runtime, artifact);
   return {
