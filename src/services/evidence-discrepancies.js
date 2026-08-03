@@ -73,11 +73,16 @@ function evidenceSide(side, evidenceId) {
   });
 }
 
+function boundedLimit(value) {
+  return Math.max(0, Math.floor(Number(value) || 0));
+}
+
 export function addConfirmedDiscrepancyEvidence({
   sources = [],
   packs = [],
   limit = 2,
 } = {}) {
+  const budget = boundedLimit(limit);
   const conflictIndex = buildStatementConflictIndex(packs);
   const candidates = [];
   const seen = new Set();
@@ -94,10 +99,10 @@ export function addConfirmedDiscrepancyEvidence({
   const supplementalAfter = new Map();
   let supplementalCount = 0;
   for (const conflict of candidates) {
-    if (selected.length >= Math.max(0, Math.floor(limit))) break;
+    if (selected.length >= budget) break;
     const missingSides = [conflict.source, conflict.target]
       .filter((side) => !sourceBySection.has(sideSectionKey(side)));
-    if (supplementalCount + missingSides.length > limit) continue;
+    if (supplementalCount + missingSides.length > budget) continue;
     const created = [];
     for (const side of missingSides) {
       const source = sideSource(side);
@@ -122,9 +127,10 @@ export function addConfirmedDiscrepancyEvidence({
     orderedSources.push(source, ...(supplementalAfter.get(source) ?? []));
   }
   const evidenceIdBySection = new Map();
-  orderedSources.forEach((source, index) => {
-    source.id = `S${index + 1}`;
-    evidenceIdBySection.set(sourceSectionKey(source), source.id);
+  const numberedSources = orderedSources.map((source, index) => {
+    const numbered = Object.freeze({ ...source, id: `S${index + 1}` });
+    evidenceIdBySection.set(sourceSectionKey(numbered), numbered.id);
+    return numbered;
   });
 
   const discrepancies = selected.map((conflict) => Object.freeze({
@@ -144,5 +150,5 @@ export function addConfirmedDiscrepancyEvidence({
     ),
   }));
 
-  return Object.freeze({ sources: orderedSources, discrepancies });
+  return Object.freeze({ sources: numberedSources, discrepancies });
 }
