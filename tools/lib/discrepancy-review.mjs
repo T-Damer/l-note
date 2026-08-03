@@ -9,10 +9,10 @@ const STOPWORDS = new Set([
 ]);
 const NUMBER_UNIT = /(-?\d+(?:[.,]\d+)?)\s*(%|мг|г|кг|мкг|мл|л|мм|см|м|°c|ч|час(?:а|ов)?|дн(?:я|ей)?|недел(?:я|и|ь)|месяц(?:а|ев)?|лет|год(?:а|ов)?|mg|g|kg|mcg|ml|mm|cm|hours?|days?|weeks?|months?|years?)?/giu;
 const SCOPE_PATTERNS = [
-  /\b(?:дет\p{L}*|взросл\p{L}*|беременн\p{L}*|новорожденн\p{L}*|младенц\p{L}*)\b/giu,
+  /(?<![\p{L}\p{N}_])(?:дети|детей|детям|детьми|детск\p{L}*|ребен\p{L}*|взросл\p{L}*|беременн\p{L}*|новорожденн\p{L}*|младенц\p{L}*)(?![\p{L}\p{N}_])/giu,
   /\b(?:children|child|adult\p{L}*|pregnan\p{L}*|newborn\p{L}*|infant\p{L}*)\b/giu,
-  /\b(?:до|старше|младше|не менее|не более)\s+\d+(?:[.,]\d+)?\s*(?:лет|год\p{L}*|месяц\p{L}*|недел\p{L}*)/giu,
-  /\b(?:under|over|younger than|older than|at least|at most)\s+\d+(?:[.,]\d+)?\s*(?:years?|months?|weeks?)/giu,
+  /(?<![\p{L}\p{N}_])(?:до|старше|младше|не менее|не более)\s+\d+(?:[.,]\d+)?\s*(?:лет|год\p{L}*|месяц\p{L}*|недел\p{L}*)(?![\p{L}\p{N}_])/giu,
+  /\b(?:under|over|younger than|older than|at least|at most)\s+\d+(?:[.,]\d+)?\s*(?:years?|months?|weeks?)\b/giu,
 ];
 
 function text(value) {
