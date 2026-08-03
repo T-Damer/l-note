@@ -48,12 +48,14 @@ function markdownDestination(value) {
 }
 
 function decodedBasename(value) {
+  const source = String(value ?? '').trim();
+  if (!source) return '';
   try {
-    const url = new URL(value, 'https://lnote.invalid/');
+    const url = new URL(source, 'https://lnote.invalid/');
     const encoded = url.pathname.split('/').filter(Boolean).at(-1) ?? '';
     return decodeURIComponent(encoded).toLocaleLowerCase('en-US');
   } catch {
-    const path = String(value ?? '').split(/[?#]/u, 1)[0].replaceAll('\\', '/');
+    const path = source.split(/[?#]/u, 1)[0].replaceAll('\\', '/');
     const encoded = path.split('/').filter(Boolean).at(-1) ?? '';
     try {
       return decodeURIComponent(encoded).toLocaleLowerCase('en-US');
