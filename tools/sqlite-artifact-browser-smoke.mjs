@@ -218,15 +218,13 @@ try {
     };
   })()`);
 
-  assert.equal(result.imported.imported, true);
-  assert.equal(result.imported.reused, true);
-  assert.match(result.importedResultId, /^section:lnote\.guide:/u);
-  assert.equal(
-    result.fallback.artifactFallback,
-    true,
-    `Unexpected corrupt-artifact fallback result: ${JSON.stringify(result.fallback)}`,
-  );
-  assert.match(result.fallbackResultId, /^section:lnote\.guide:/u);
+  const diagnostics = JSON.stringify(result);
+  console.log(`Prebuilt SQLite browser smoke result: ${diagnostics}`);
+  assert.equal(result.imported.imported, true, `Expected verified artifact import: ${diagnostics}`);
+  assert.equal(result.imported.reused, true, `Expected imported artifact reuse: ${diagnostics}`);
+  assert.match(result.importedResultId, /^section:lnote\.guide:/u, `Imported artifact search failed: ${diagnostics}`);
+  assert.equal(result.fallback.artifactFallback, true, `Expected corrupt-artifact fallback: ${diagnostics}`);
+  assert.match(result.fallbackResultId, /^section:lnote\.guide:/u, `Fallback search failed: ${diagnostics}`);
   console.log('Prebuilt SQLite browser smoke passed: verified import, search and corrupt-artifact fallback.');
 } finally {
   client?.close();
