@@ -4,7 +4,21 @@
 
 OCR output is a proposal, not evidence. A scanned PDF page enters an L-Note pack only after a reviewer explicitly accepts its text. The reviewer may edit the text before acceptance or dismiss the page entirely.
 
-The workflow is local and dependency-light:
+`pdf-inspector` is the default browser-side PDF parser and OCR router. It classifies the document, converts reliable text-layer pages into structured Markdown, preserves tables and reading order, and identifies pages that still need OCR. It does not perform OCR and therefore cannot bypass the review gate described below.
+
+The browser path is local:
+
+```text
+PDF bytes
+  → pdf-inspector WASM in a Dedicated Worker
+  → structured Markdown, tables and one-based page markers
+  → reliable text-layer pages become pack sections
+  → pagesNeedingOcr remain outside searchable evidence
+```
+
+A mixed PDF can therefore be prepared from its reliable pages in the browser while retaining a warning about omitted scan pages. A scanned-only PDF is rejected by the browser creator and must use the strong-device OCR workflow. The current WASM result exposes image placeholders inside Markdown, not extracted binary image assets; original-image extraction may be added later as a separate reviewed asset adapter.
+
+The strong-device OCR workflow is local and dependency-light:
 
 ```text
 PDF without a usable text layer
@@ -21,7 +35,21 @@ PDF without a usable text layer
 
 `build-pack.mjs` rejects an authoring directory while any `preparationReviews` entry is not `completed`.
 
-## First pass
+## Browser preparation
+
+Open **Пакеты → Создать свой пакет** and select one or more PDF, Markdown, TXT or JSON files. PDF parsing runs inside a module Worker through the pinned `@firecrawl/pdf-inspector-wasm` package; file bytes are not uploaded.
+
+For each PDF, L-Note preserves:
+
+- structured Markdown generated from the text layer;
+- Markdown tables, headings, lists and reading order;
+- one-based `assetAnchor.page` values;
+- parser version, PDF classification, confidence and layout diagnostics;
+- the exact page list and reasons reported by `pagesNeedingOcr`.
+
+Pages marked as needing OCR are not converted into searchable sections. This is conservative by design: a broken or empty text layer must not become evidence merely because neighboring pages parsed successfully.
+
+## First OCR pass
 
 ```bash
 npm run prepare:documents -- ./documents \
