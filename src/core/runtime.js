@@ -1,4 +1,4 @@
-import { selectPrebuiltSearchArtifact } from '../helpers/prebuilt-search-artifacts.js';
+import { selectSearchArtifact } from '../helpers/search-artifacts.js';
 import { buildKnowledgeState, flattenKnowledge } from '../packs.js';
 import { activeDomainQueryExpanders, defineSearchPort } from './ports.js';
 
@@ -46,11 +46,11 @@ export function composeKnowledgeRuntime({
   const flattenedRecords = flattenKnowledge(enabledPacks, notes);
   const queryExpanders = activeDomainQueryExpanders(domainQueryPlanners, enabledPacks);
   const corpusFingerprint = knowledgeCorpusFingerprint(enabledPacks, notes);
-  const prebuiltSearchArtifact = selectPrebuiltSearchArtifact({
-    packRecords: enabledPackRecords,
+  const prebuiltSearchArtifact = selectSearchArtifact(
+    enabledPackRecords,
     notes,
     corpusFingerprint,
-  });
+  );
   const search = defineSearchPort(
     searchFactory(flattenedRecords, [...knowledge.entities.values()], {
       queryExpanders,
