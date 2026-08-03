@@ -221,7 +221,11 @@ try {
   assert.equal(result.imported.imported, true);
   assert.equal(result.imported.reused, true);
   assert.match(result.importedResultId, /^section:lnote\.guide:/u);
-  assert.equal(result.fallback.artifactFallback, true);
+  assert.equal(
+    result.fallback.artifactFallback,
+    true,
+    `Unexpected corrupt-artifact fallback result: ${JSON.stringify(result.fallback)}`,
+  );
   assert.match(result.fallbackResultId, /^section:lnote\.guide:/u);
   console.log('Prebuilt SQLite browser smoke passed: verified import, search and corrupt-artifact fallback.');
 } finally {
@@ -233,6 +237,7 @@ try {
     await waitForProcessExit(browser, 1_000);
   }
   await new Promise((resolvePromise) => server.close(resolvePromise));
-  await rm(profileDir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
-  await Promise.all([rm(databasePath, { force: true }), rm(packPath, { force: true })]);
+  await rm(profileDir, { recursive: true, force: true });
+  await rm(databasePath, { force: true });
+  await rm(packPath, { force: true });
 }
