@@ -31,6 +31,7 @@ const offlineModules = [
   'src/adapters/runtime-adapters.js',
   'src/helpers/sqlite-fts.js',
   'src/helpers/disk-search.js',
+  'src/helpers/prebuilt-search-artifacts.js',
   'src/helpers/document-assets.js',
   'src/helpers/statement-conflicts.js',
   'src/helpers/text-diff.js',
@@ -50,10 +51,12 @@ const offlineModules = [
   'src/services/ask-workflow.js',
   'src/services/evidence-query.js',
   'src/services/evidence-support-verifier.js',
+  'src/services/installed-pack-record.js',
   'src/services/package-transfer.js',
   'src/services/queued-runtime-loader.js',
   'src/services/transfer-queue.js',
   'src/workers/search-worker.js',
+  'src/workers/sqlite-artifact-runtime.js',
   'src/workers/sqlite-fts-runtime.js',
   'src/workers/sqlite-search-worker.js',
   'src/workers/speech-worker.js',
@@ -132,16 +135,19 @@ test('static build contains the complete local-first shell', async () => {
     /createQueuedRuntimeLoader/u,
     /createTransferQueueView/u,
     /downloadAndInstallThroughQueue/u,
+    /createInstalledPackRecord/u,
   ]);
   await assertContains('src/adapters/adaptive-search.js', [
     /createSqliteFtsSearchPort/u,
     /createIndexedDbSearchPort/u,
+    /prebuiltSearchArtifact/u,
     /memoryFallback/u,
     /await port\.close/u,
   ]);
   await assertContains('src/adapters/sqlite-fts-search.js', [
     /SqliteFtsSearchPort/u,
     /sqlite-search-worker\.js/u,
+    /preparedArtifact/u,
     /defineAsyncSearchPort/u,
     /await this\.request\('close'\)/u,
   ]);
@@ -152,11 +158,27 @@ test('static build contains the complete local-first shell', async () => {
     /CREATE VIRTUAL TABLE IF NOT EXISTS records_fts USING fts5/u,
     /bm25\(records_fts/u,
   ]);
+  await assertContains('src/workers/sqlite-artifact-runtime.js', [
+    /quick_check/u,
+    /artifactFormatVersion/u,
+    /connection\.sync/u,
+    /resetSqliteSearchStorage/u,
+  ]);
   await assertContains('src/workers/sqlite-search-worker.js', [
+    /importSqliteSearchArtifact/u,
+    /artifact-fallback/u,
     /SqliteFtsRuntime/u,
     /commandQueue/u,
-    /command === 'search'/u,
-    /command === 'suggest'/u,
+  ]);
+  await assertContains('src/helpers/prebuilt-search-artifacts.js', [
+    /validatePrebuiltSearchArtifacts/u,
+    /selectPrebuiltSearchArtifact/u,
+    /searchArtifactFiles/u,
+  ]);
+  await assertContains('src/services/package-transfer.js', [
+    /downloadSearchArtifacts/u,
+    /searchArtifactFiles/u,
+    /Optional prebuilt search artifact was skipped/u,
   ]);
   await assertContains('src/helpers/statement-conflicts.js', [
     /qualifyStatementId/u,
@@ -222,8 +244,11 @@ test('static build contains the complete local-first shell', async () => {
     /"type":"contradicts"/u,
   ]);
   await assertContains('service-worker.js', [
-    /l-note-shell-v40/u,
+    /l-note-shell-v41/u,
     /cdn\.jsdelivr\.net/u,
+    /prebuilt-search-artifacts\.js/u,
+    /installed-pack-record\.js/u,
+    /sqlite-artifact-runtime\.js/u,
     /sqlite-fts-search\.js/u,
     /sqlite-search-worker\.js/u,
     /statement-conflicts\.js/u,
