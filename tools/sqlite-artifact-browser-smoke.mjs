@@ -11,6 +11,7 @@ import { buildPrebuiltSearchArtifact } from './build-search-artifact.mjs';
 
 const root = process.cwd();
 const dist = resolve(root, 'dist');
+const smokePath = '/__sqlite-artifact-smoke__.html';
 const required = process.env.CI === 'true' || process.env.LNOTE_REQUIRE_SQLITE_E2E === '1';
 const candidates = [
   process.env.CHROME_BIN,
@@ -88,6 +89,13 @@ function createStaticServer() {
   return createServer(async (request, response) => {
     try {
       const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
+      if (url.pathname === smokePath) {
+        response.statusCode = 200;
+        response.setHeader('Content-Type', 'text/html; charset=utf-8');
+        response.setHeader('Cache-Control', 'no-store');
+        response.end('<!doctype html><meta charset="utf-8"><title>SQLite artifact smoke</title>');
+        return;
+      }
       let pathname = decodeURIComponent(url.pathname);
       if (pathname.endsWith('/')) pathname += 'index.html';
       const filePath = resolve(dist, `.${pathname}`);
@@ -188,6 +196,7 @@ const address = server.address();
 const appPort = typeof address === 'object' && address ? address.port : 4173;
 const debugPort = 9_900 + Math.floor(Math.random() * 80);
 const profileDir = await mkdtemp(join(tmpdir(), 'l-note-prebuilt-search-'));
+const appUrl = `http://127.0.0.1:${appPort}${smokePath}`;
 const browser = spawn(executable, [
   '--headless=new',
   '--no-sandbox',
@@ -196,7 +205,7 @@ const browser = spawn(executable, [
   '--no-first-run',
   `--remote-debugging-port=${debugPort}`,
   `--user-data-dir=${profileDir}`,
-  `http://127.0.0.1:${appPort}/#/search`,
+  appUrl,
 ], { stdio: ['ignore', 'pipe', 'pipe'] });
 browser.stdout?.resume();
 browser.stderr?.resume();
@@ -207,7 +216,7 @@ try {
     const response = await fetch(`http://127.0.0.1:${debugPort}/json/list`);
     if (!response.ok) return null;
     const targets = await response.json();
-    return targets.find((item) => item.type === 'page' && item.url.startsWith(`http://127.0.0.1:${appPort}/`));
+    return targets.find((item) => item.type === 'page' && item.url === appUrl);
   }, 'Prebuilt SQLite smoke browser target did not become available');
   client = await CdpClient.connect(target.webSocketDebuggerUrl);
   await client.send('Runtime.enable');
