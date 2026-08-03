@@ -13,7 +13,11 @@ import {
   buildPackFromPath,
   createOpenAiCompatibleProvider,
   createReplicateProvider,
+  mergeAiSection,
 } from './lib/pack-builder.mjs';
+import { collectSemanticReview } from './lib/semantic-proposal-collector.mjs';
+import { renderSemanticReviewHtml } from './lib/semantic-review-html.mjs';
+import { applySemanticReview } from './lib/semantic-review.mjs';
 
 const REPEATABLE_OPTIONS = new Set(['comparePack']);
 
@@ -118,10 +122,15 @@ Direct preparation options:
   --description "..."
   --language ru
   --source-url https://example.test/source
+
+Optional LLM proposal collection:
   --ai-provider none|openai|replicate
   --ai-model <model id>
   --openai-base-url http://127.0.0.1:11434/v1
   --replicate-input path/to/input-overrides.json
+  --semantic-review-out review.json         defaults to <output>.semantic-review.json
+  --semantic-review-html review.html        interactive offline review page
+  --semantic-review-in reviewed.json        apply only eligible entries marked decision=accept
 
 Reviewed discrepancy workflow:
   --compare-pack path/to/existing.pack.json   repeat for several packs
@@ -130,21 +139,30 @@ Reviewed discrepancy workflow:
   --discrepancy-review-in reviewed.json       apply only entries marked decision=accept
   --reviewed-by "Reviewer name"
 
-The comparison step never changes the pack by itself. Review candidates in JSON or the generated HTML page, download the result, then run the builder again with --discrepancy-review-in.`;
+LLM output is never merged during proposal collection. Review the generated file and run the builder again with --semantic-review-in. Source discrepancies follow the same two-step rule.`;
+}
+
+function createProvider(args) {
+  if (args.aiProvider === 'none') return null;
+  if (args.aiProvider === 'openai') {
+    return createOpenAiCompatibleProvider({
+      baseUrl: args.openaiBaseUrl,
+      apiKey: process.env.OPENAI_API_KEY,
+      model: args.aiModel,
+    });
+  }
+  if (args.aiProvider === 'replicate') {
+    return readJson(args.replicateInput, {}).then((input) => createReplicateProvider({
+      model: args.aiModel,
+      input,
+    }));
+  }
+  throw new Error(`Unknown AI provider: ${args.aiProvider}`);
 }
 
 async function buildFromRawSources(args) {
-  let provider = null;
-  if (args.aiProvider === 'openai') {
-    provider = createOpenAiCompatibleProvider({ baseUrl: args.openaiBaseUrl, apiKey: process.env.OPENAI_API_KEY, model: args.aiModel });
-  } else if (args.aiProvider === 'replicate') {
-    const input = args.replicateInput ? JSON.parse(await readFile(args.replicateInput, 'utf8')) : {};
-    provider = createReplicateProvider({ model: args.aiModel, input });
-  } else if (args.aiProvider !== 'none') {
-    throw new Error(`Unknown AI provider: ${args.aiProvider}`);
-  }
-
-  return buildPackFromPath({
+  const provider = await createProvider(args);
+  const pack = await buildPackFromPath({
     inputPath: args.input,
     id: args.id,
     version: args.version ?? '1.0.0',
@@ -152,18 +170,31 @@ async function buildFromRawSources(args) {
     description: args.description ?? 'Пользовательский пакет знаний',
     language: args.language ?? 'ru',
     sourceUrl: args.sourceUrl ?? null,
-    aiProvider: provider,
-    onProgress: (progress) => {
-      if (progress.stage !== 'ai') return;
-      process.stderr.write(`\rAI enrichment: ${progress.completed}/${progress.total} · ${progress.document ?? ''} ${progress.section ?? ''}`.trimEnd());
-    },
-  }).finally(() => {
-    if (provider) process.stderr.write('\n');
   });
+  if (!provider) return { pack, semanticReview: null };
+  try {
+    const semanticReview = await collectSemanticReview({
+      pack,
+      provider,
+      onProgress(progress) {
+        process.stderr.write(`\rПредложения ${progress.completed}/${progress.total} · ${progress.document ?? ''} ${progress.section ?? ''}`.trimEnd());
+      },
+    });
+    return { pack, semanticReview };
+  } finally {
+    process.stderr.write('\n');
+  }
 }
 
 export async function applyReviewOptions(pack, args) {
   let output = pack;
+  if (args.semanticReviewIn) {
+    const review = await readJson(resolve(args.semanticReviewIn));
+    output = applySemanticReview(output, review, {
+      mergeSection: mergeAiSection,
+      reviewedBy: args.reviewedBy ?? 'local-reviewer',
+    });
+  }
   if (args.discrepancyReviewIn) {
     const review = await readJson(resolve(args.discrepancyReviewIn));
     output = applyDiscrepancyReview(output, review, {
@@ -171,6 +202,16 @@ export async function applyReviewOptions(pack, args) {
     });
   }
   return assertValidPack(output, 'Reviewed pack');
+}
+
+async function writeSemanticReview(review, args) {
+  if (!review) return null;
+  const jsonTarget = args.semanticReviewOut ?? `${args.output}.semantic-review.json`;
+  const jsonFilename = await writeJson(jsonTarget, review);
+  const htmlFilename = args.semanticReviewHtml
+    ? await writeText(args.semanticReviewHtml, renderSemanticReviewHtml(review))
+    : null;
+  return { jsonFilename, htmlFilename, review };
 }
 
 async function writeDiscrepancyReview(pack, args) {
@@ -193,17 +234,25 @@ async function main() {
     return;
   }
   if (!args.input || !args.output) throw new Error(`${usage()}\n\n--input and --output are required.`);
-  const built = args.id ? await buildFromRawSources(args) : await buildPack(args.input);
-  const pack = await applyReviewOptions(built, args);
+  const prepared = args.id
+    ? await buildFromRawSources(args)
+    : { pack: await buildPack(args.input), semanticReview: null };
+  const pack = await applyReviewOptions(prepared.pack, args);
   const output = await writeJson(args.output, pack);
-  const reviewResult = await writeDiscrepancyReview(pack, args);
+  const semanticResult = await writeSemanticReview(prepared.semanticReview, args);
+  const discrepancyResult = await writeDiscrepancyReview(pack, args);
   const serializedBytes = Buffer.byteLength(`${JSON.stringify(pack, null, 2)}\n`);
   console.log(`Built ${output}`);
   console.log(`${pack.documents.length} documents, ${pack.entities.length} entities, ${pack.claims.length} claims, ${serializedBytes} bytes`);
-  if (reviewResult) {
-    console.log(`Possible differences: ${reviewResult.review.candidates.length}`);
-    if (reviewResult.jsonFilename) console.log(`Review JSON: ${reviewResult.jsonFilename}`);
-    if (reviewResult.htmlFilename) console.log(`Review page: ${reviewResult.htmlFilename}`);
+  if (semanticResult) {
+    console.log(`Semantic proposals: ${semanticResult.review.candidates.length}`);
+    console.log(`Semantic review JSON: ${semanticResult.jsonFilename}`);
+    if (semanticResult.htmlFilename) console.log(`Semantic review page: ${semanticResult.htmlFilename}`);
+  }
+  if (discrepancyResult) {
+    console.log(`Possible differences: ${discrepancyResult.review.candidates.length}`);
+    if (discrepancyResult.jsonFilename) console.log(`Review JSON: ${discrepancyResult.jsonFilename}`);
+    if (discrepancyResult.htmlFilename) console.log(`Review page: ${discrepancyResult.htmlFilename}`);
   }
 }
 

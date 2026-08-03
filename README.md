@@ -21,6 +21,7 @@ The released site is built from `main` after the complete validation gate passes
 - reviewed source discrepancies with document dates and text diffs;
 - preparation-time comparison against existing pack files;
 - strong-device PDF/DOCX extraction with page or paragraph provenance;
+- mandatory human review for LLM-proposed concepts, aliases, statements and relations;
 - browser-local pack creation from Markdown, TXT, JSON or pasted text;
 - local Russian/English voice search;
 - optional local WebLLM answers over bounded evidence;
@@ -249,19 +250,44 @@ The deterministic check currently proposes candidates for:
 
 No candidate is added to a pack before explicit acceptance. A newer date is shown for context but does not automatically make one source preferred or obsolete.
 
-### Optional local OpenAI-compatible enrichment
+### Optional LLM-assisted semantic proposals
+
+LLM enrichment is also a two-step workflow. The first command builds the deterministic pack unchanged and writes proposals into separate JSON/HTML review files:
 
 ```bash
 OPENAI_BASE_URL=http://127.0.0.1:11434/v1 \
 node tools/build-pack.mjs ./my-knowledge \
   --id com.example.enriched \
   --title "Enriched pack" \
-  --output ./dist/enriched.pack.json \
+  --output ./dist/enriched.base.pack.json \
   --ai-provider openai \
-  --ai-model qwen3:8b
+  --ai-model qwen3:8b \
+  --semantic-review-out ./dist/enriched.semantic-review.json \
+  --semantic-review-html ./dist/enriched.semantic-review.html
 ```
 
-Preparation may run on a stronger computer or server. Proposed statements require exact source quotes, and proposed source discrepancies must be reviewed before export.
+The same review workflow works with `--ai-provider replicate` and its provider options.
+
+Open the generated HTML page and inspect each proposed:
+
+- concept and aliases;
+- source-linked statement;
+- relation between concepts.
+
+Every candidate starts unresolved. It can be edited, accepted or dismissed. A statement cannot be accepted when its quote is absent from the original source section.
+
+Apply the downloaded review file in a second deterministic build:
+
+```bash
+node tools/build-pack.mjs ./my-knowledge \
+  --id com.example.enriched \
+  --title "Enriched pack" \
+  --output ./dist/enriched.reviewed.pack.json \
+  --semantic-review-in ./downloads/com.example.enriched.semantic-review.json \
+  --reviewed-by "Reviewer name"
+```
+
+Only eligible records marked `decision: accept` enter the final pack. Pending and dismissed candidates stay outside it. Accepted records preserve proposal-provider, reviewer and review-time provenance. The source text is never replaced by model output.
 
 ## Product boundary
 
@@ -282,9 +308,10 @@ Future MiniMed integration requires separate approval and MiniMed-owned retrieva
 
 ## Remaining work
 
-- review UI for OCR output and other proposed concepts, statements, aliases and entity relations;
-- optional local/server LLM classification after deterministic discrepancy retrieval;
+- review workflow for OCR output;
 - database import/export adapters and optional prebuilt SQLite/FTS artifacts;
+- optional LLM classification of deterministic source-discrepancy candidates;
+- confirmed source discrepancies in the answer evidence envelope;
 - representative mobile benchmarks;
 - optional OPFS and vector-search adapters;
 - signed catalogs, delta updates, encrypted notes and synchronization;
