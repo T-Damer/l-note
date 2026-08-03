@@ -82,6 +82,7 @@ A mapping keeps SQL identifiers separate from SQL text. It cannot inject a custo
       "documentTitle": "Articles",
       "documentSummary": "Reviewed article archive",
       "idColumns": ["id"],
+      "orderColumns": ["id"],
       "titleColumn": "title",
       "textColumns": ["title", "body", "author"],
       "tagColumns": ["category", "status"]
@@ -100,14 +101,14 @@ npm run database:pack -- import \
   --mapping ./sqlite-mapping.json
 ```
 
-When no identity columns are configured, primary-key columns are used. Tables without a primary key receive deterministic row-number identities for that export run.
+When no identity columns are configured, primary-key columns are used. `orderColumns` defaults to the selected identity columns. Ordinary tables without either use `rowid`; views without a stable identity/order emit a warning and should configure `orderColumns` explicitly. Duplicate mapped identities are retained with a row-number suffix and a warning rather than silently overwriting a section.
 
 ### Provenance and limits
 
 Every imported section records:
 
 - database filename, table/view and visible column schema;
-- row number and selected identity columns;
+- row number, selected identity columns and ordering columns;
 - exact columns included in the searchable text;
 - preparation timestamp and `node:sqlite` adapter name.
 
@@ -131,10 +132,10 @@ npm run database:pack -- export \
 
 The output contains:
 
-- `lnote_metadata` with the source-preserving pack manifest;
+- `lnote_metadata` with the source-preserving pack manifest and relational schema version;
 - ordered document and section tables;
 - entities, claims, entity relations and reviewed statement relations;
-- JSON payload columns that preserve fields outside the normalized columns;
+- JSON payload columns that preserve fields outside the normalized columns, including an explicitly empty `statementRelations` array;
 - `lnote_sections_fts`, a standalone FTS5 index for external inspection and SQL queries.
 
 Example query:
@@ -155,7 +156,7 @@ npm run database:pack -- restore \
   --output ./dist/reference.restored.pack.json
 ```
 
-Restore accepts only the versioned L-Note relational schema. It rebuilds document nesting and record order from stored payload rows, then validates the result through the ordinary pack validator.
+Restore accepts only the versioned L-Note relational schema. It rebuilds document nesting and record order from stored payload rows, preserves optional-array presence, then validates the result through the ordinary pack validator.
 
 ## DuckDB and remote databases
 
