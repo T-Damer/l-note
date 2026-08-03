@@ -5,11 +5,17 @@ import {
   proposedBrowserPackId,
   slugifyPackValue,
 } from '../helpers/pack-source-parser.js';
+import {
+  pdfInspectorMetadata,
+  pdfInspectorSections,
+  pdfInspectorWarnings,
+} from '../helpers/pdf-inspector-result.js';
 import { validatePack } from '../packs.js';
+import { inspectBrowserPdf } from './browser-pdf-inspector.js';
 
 export const BROWSER_PACK_FILE_LIMIT = 32 * 1024 * 1024;
 export const BROWSER_PACK_TOTAL_LIMIT = 64 * 1024 * 1024;
-export const BROWSER_PACK_EXTENSIONS = Object.freeze(['.md', '.markdown', '.txt', '.json']);
+export const BROWSER_PACK_EXTENSIONS = Object.freeze(['.md', '.markdown', '.txt', '.json', '.pdf']);
 
 const SUPPORTED_EXTENSIONS = new Set(BROWSER_PACK_EXTENSIONS);
 
@@ -77,7 +83,7 @@ function discoverEntities(documents) {
 
 function validateSourceFiles(files) {
   const list = [...(files ?? [])];
-  if (!list.length) throw new TypeError('Выберите хотя бы один .md, .txt или .json файл.');
+  if (!list.length) throw new TypeError('Выберите хотя бы один PDF, Markdown, TXT или JSON файл.');
   let total = 0;
   for (const file of list) {
     const extension = packSourceExtension(file?.name);
@@ -94,10 +100,13 @@ function validateSourceFiles(files) {
   return list;
 }
 
-function createDocument(file, parsed, usedDocumentIds) {
-  const documentId = uniqueId(`doc.${slugifyPackValue(file.name)}`, usedDocumentIds);
+function documentId(file, usedDocumentIds) {
+  return uniqueId(`doc.${slugifyPackValue(file.name)}`, usedDocumentIds);
+}
+
+function createTextDocument(file, parsed, usedDocumentIds) {
   return {
-    id: documentId,
+    id: documentId(file, usedDocumentIds),
     title: parsed.title,
     summary: `Локально импортировано из ${file.name}`,
     authority: 'reference',
@@ -108,6 +117,31 @@ function createDocument(file, parsed, usedDocumentIds) {
       ...section,
       id: `${slugifyPackValue(section.id || section.title, `section-${index + 1}`)}-${index + 1}`,
     })),
+  };
+}
+
+function createPdfDocument(file, result, usedDocumentIds) {
+  const sections = pdfInspectorSections(result);
+  if (!sections.length) {
+    throw new TypeError(`PDF «${file.name}» не содержит надёжного текстового слоя. Подготовьте его через CLI с OCR-проверкой.`);
+  }
+  const warnings = pdfInspectorWarnings(result);
+  return {
+    id: documentId(file, usedDocumentIds),
+    title: cleanPackText(result.title) || file.name.replace(/\.pdf$/iu, ''),
+    summary: `Локально разобрано из ${file.name}`,
+    authority: 'reference',
+    effectiveFrom: null,
+    source: {
+      title: file.name,
+      mimeType: 'application/pdf',
+      extractor: '@firecrawl/pdf-inspector-wasm',
+      extractorVersion: result.parserVersion ?? null,
+      inspection: pdfInspectorMetadata(result),
+    },
+    tags: ['pdf'],
+    sections,
+    ...(warnings.length ? { extractionWarnings: warnings } : {}),
   };
 }
 
@@ -122,8 +156,23 @@ export function browserPackStats(pack) {
     entities: pack.entities?.length ?? 0,
     claims: pack.claims?.length ?? 0,
     relations: pack.relations?.length ?? 0,
+    warnings: (pack.documents ?? []).reduce((sum, document) => sum + (document.extractionWarnings?.length ?? 0), 0),
     bytes: new TextEncoder().encode(JSON.stringify(pack)).byteLength,
   });
+}
+
+async function sourceDocument(file, usedDocumentIds, pdfInspector) {
+  if (packSourceExtension(file.name) === '.pdf') {
+    return createPdfDocument(file, await pdfInspector(file), usedDocumentIds);
+  }
+  const text = await file.text();
+  if (new TextEncoder().encode(text).byteLength > BROWSER_PACK_FILE_LIMIT) {
+    throw new RangeError(`Файл «${file.name}» превышает лимит 32 МБ после чтения.`);
+  }
+  const parsed = parseBrowserSource(file.name, text);
+  return parsed.existingPack
+    ? { existingPack: parsed.existingPack }
+    : createTextDocument(file, parsed, usedDocumentIds);
 }
 
 export async function buildPackFromBrowserFiles({
@@ -134,6 +183,7 @@ export async function buildPackFromBrowserFiles({
   description = 'Пользовательский пакет знаний',
   language = 'ru',
   onProgress = () => {},
+  pdfInspector = inspectBrowserPdf,
 } = {}) {
   const sourceFiles = validateSourceFiles(files);
   const packTitle = cleanPackText(title);
@@ -142,22 +192,24 @@ export async function buildPackFromBrowserFiles({
   const usedDocumentIds = new Set();
 
   for (const [index, file] of sourceFiles.entries()) {
-    onProgress({ stage: 'reading', completed: index, total: sourceFiles.length, filename: file.name });
-    const text = await file.text();
-    if (new TextEncoder().encode(text).byteLength > BROWSER_PACK_FILE_LIMIT) {
-      throw new RangeError(`Файл «${file.name}» превышает лимит 32 МБ после чтения.`);
-    }
-    const parsed = parseBrowserSource(file.name, text);
-    if (parsed.existingPack) {
+    const pdf = packSourceExtension(file.name) === '.pdf';
+    onProgress({
+      stage: pdf ? 'pdf' : 'reading',
+      completed: index,
+      total: sourceFiles.length,
+      filename: file.name,
+    });
+    const prepared = await sourceDocument(file, usedDocumentIds, pdfInspector);
+    if (prepared.existingPack) {
       if (sourceFiles.length !== 1) {
         throw new TypeError('Готовый пакет JSON нужно выбирать отдельно от исходных документов.');
       }
-      const validation = validatePack(parsed.existingPack);
+      const validation = validatePack(prepared.existingPack);
       if (!validation.valid) throw new TypeError(`Готовый пакет повреждён: ${validation.errors.join('; ')}`);
       onProgress({ stage: 'ready', completed: 1, total: 1, filename: file.name });
-      return parsed.existingPack;
+      return prepared.existingPack;
     }
-    documents.push(createDocument(file, parsed, usedDocumentIds));
+    documents.push(prepared);
   }
 
   onProgress({ stage: 'indexing', completed: sourceFiles.length, total: sourceFiles.length });
