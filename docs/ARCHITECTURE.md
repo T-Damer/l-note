@@ -11,9 +11,11 @@ L-Note is a hosted offline-first knowledge workspace with:
 - list and graph views over the same resources;
 - internal PDF viewing with exact page anchors;
 - reviewed cross-document discrepancies with source dates and deterministic diffs;
+- confirmed discrepancy counterparts in bounded local-answer evidence;
 - deterministic preparation-time comparison against existing pack files;
 - standalone JSON/HTML review artifacts for proposed statement relations;
 - strong-device PDF/DOCX extraction with page/paragraph provenance and optional OCR;
+- strong-device SQLite table/view import and relational pack export/restore;
 - mandatory JSON/HTML review for LLM-proposed concepts, aliases, statements and relations;
 - browser-local Markdown/TXT/JSON package creation;
 - local RU/EN voice search;
@@ -49,7 +51,7 @@ src/ui/            reusable controls, typography, dialogs and graphs
 src/helpers/       deterministic parsing, matching and formatting
 src/workers/       SQLite, fallback search, speech and WebLLM runtimes
 src/integrations/  isolated external-product boundaries
-tools/lib/         strong-device extraction, preparation and review helpers
+tools/lib/         strong-device extraction, preparation, review and interchange helpers
 ```
 
 `src/app-parts/` is composition-only transitional code. New behavior belongs in the layers above and is wired from a small app-part.
@@ -68,6 +70,8 @@ EvidenceVerifierPort
 ```
 
 The generic core contains no DOM, IndexedDB, SQL, WebGPU, speech-runtime or medical-policy assumptions. The optional prebuilt search descriptor is serializable pack metadata; Blob storage, SQLite import and compatibility checks remain adapter/Worker concerns.
+
+Strong-device database adapters operate outside the browser runtime. They consume or emit existing pack and authoring contracts rather than adding a database-specific resource type to the core.
 
 ## Adaptive search
 
@@ -111,10 +115,14 @@ query
   → memory or disk candidate retrieval
   → exact/prefix/fuzzy ranking
   → source, statement, concept and note resolution
+  → bounded confirmed-discrepancy expansion
+  → missing counterpart sections become ordinary [S...] sources
   → bounded evidence envelope
   → optional local generation
   → citation-ID and statement-support verification
 ```
+
+Only confirmed reviewed divergences are expanded. Proposed and dismissed relations stay outside answer evidence. The relation contributes exact quotes, dates and review reason, but both underlying sections remain the only citable evidence sources.
 
 The verifier checks citation existence, meaningful term support, numbers and negation mismatches. It is conservative and replaceable; it is not a clinical inference model.
 
@@ -139,6 +147,8 @@ pack-id::document-id
 ```
 
 The browser builds a symmetric discrepancy index, places one Phosphor marker after the exact disputed passage and groups all linked comparisons under it. Each comparison retains both quotes, document and pack titles, dates, relation type, review provenance and a deterministic token diff.
+
+The local-answer collector uses the same index. When one side is retrieved, it may add the missing side as a bounded supplemental source and numbers both through the ordinary `[S…]` citation contract.
 
 The client never chooses a winning source, infers obsolescence from date or removes another version.
 
@@ -218,6 +228,37 @@ DOCX processing:
 - the original DOCX is retained as a source asset even though the hosted reader currently embeds PDF only.
 
 External commands have execution time and output-size limits. Extraction output is not automatically considered reviewed: OCR text still requires a review workflow before trusted publication.
+
+## Database preparation and interchange
+
+SQLite preparation uses Node.js 22 `node:sqlite` and no third-party runtime dependency:
+
+```text
+arbitrary SQLite file
+  → read-only schema inspection
+  → safe table/view and column selection
+  → bounded row iteration
+  → row identity, columns and BLOB digest provenance
+  → ordinary authoring directory
+  → existing build/review/validation pipeline
+```
+
+Mappings accept only names already present in the inspected schema. They do not accept raw SQL expressions, predicates or remote credentials.
+
+Pack export follows a separate path:
+
+```text
+validated pack JSON
+  → versioned relational SQLite schema
+  → normalized documents/sections/entities/claims/relations
+  → exact JSON payload columns
+  → standalone FTS5 table
+  → optional exact pack restoration
+```
+
+The relational export is not the browser prebuilt-search artifact. It is intended for SQL inspection, interchange and future external adapters.
+
+DuckDB remains optional. For large CSV/JSON/Parquet or PostgreSQL/MySQL/ODBC sources, it can perform bulk scanning and produce a smaller SQLite staging file before L-Note preparation. This avoids adding a large database engine and remote credential handling to the repository.
 
 ## Worker roles
 
@@ -313,8 +354,9 @@ Markdown / TXT / JSON / pasted text
 Strong-device path:
 
 ```text
-PDF / DOCX / databases / notes
+PDF / DOCX / SQLite / databases / notes
   → deterministic extraction and provenance
+  → optional DuckDB staging for bulk/remote sources
   → OCR only where text is absent
   → source-preserving base pack
   → optional semantic proposals
@@ -322,13 +364,14 @@ PDF / DOCX / databases / notes
   → compare against existing prepared claims
   → quantity, negation and scope checks
   → mandatory discrepancy review
+  → optional relational SQLite export
   → optional build-search-artifact.mjs
-  → pack JSON + SQLite/FTS file publication
+  → pack JSON + derived artifacts
 ```
 
-PDF/DOCX deterministic extraction, statement-discrepancy review, semantic-proposal review and prebuilt SQLite/FTS artifact generation/import are implemented. OCR review, database import/export adapters and discrepancy LLM classification remain pending.
+PDF/DOCX deterministic extraction, SQLite import/export, statement-discrepancy review, confirmed-discrepancy answer evidence, semantic-proposal review and prebuilt SQLite/FTS artifact generation/import are implemented. OCR review, an optional DuckDB bridge and discrepancy LLM classification remain pending.
 
-Model output may propose structure but never silently replace source text or resolve a source disagreement. A generated search database is derived acceleration data and never becomes an evidence source.
+Model output may propose structure but never silently replace source text or resolve a source disagreement. Generated search and relational databases are derived/interchange data and never become evidence without the source-preserving pack.
 
 ## L-Note and MiniMed
 
@@ -338,12 +381,11 @@ MiniMed retains medical query parsing, clinical ranking, source policy, dose/reg
 
 ## Next ordered work
 
-1. Include confirmed source discrepancies in the local-answer evidence envelope.
-2. Add review for OCR output.
-3. Add database import/export adapters.
-4. Add optional local/server LLM classification for deterministic discrepancy candidates.
-5. Add explicit date/edition chronology signals without automatic source precedence.
-6. Benchmark search, speech and models on representative Snapdragon 7-class devices.
-7. Consider OPFS and vector adapters after the current baseline is measured.
+1. Add review for OCR output.
+2. Add an optional DuckDB bridge for Parquet/CSV and remote database scanners.
+3. Add optional local/server LLM classification for deterministic discrepancy candidates.
+4. Add explicit date/edition chronology signals without automatic source precedence.
+5. Benchmark search, speech and models on representative Snapdragon 7-class devices.
+6. Consider OPFS and vector adapters after the current baseline is measured.
 
 Live MiniMed integration and native Android/iOS packaging remain deferred.
