@@ -4,24 +4,25 @@
 
 OCR output is a proposal, not evidence. A scanned PDF page enters an L-Note pack only after a reviewer explicitly accepts its text. The reviewer may edit the text before acceptance or dismiss the page entirely.
 
-`pdf-inspector` is the default browser-side PDF parser and OCR router. It classifies the document, converts reliable text-layer pages into structured Markdown, preserves tables and reading order, and identifies pages that still need OCR. It does not perform OCR and therefore cannot bypass the review gate described below.
+`pdf-inspector` is the default PDF parser and OCR router in both the browser creator and the strong-device CLI. It classifies the document, converts reliable text-layer pages into structured Markdown, preserves tables and reading order, and identifies pages that still need OCR. It does not perform OCR and therefore cannot bypass the review gate described below.
 
-The browser path is local:
+The shared routing model is:
 
 ```text
 PDF bytes
-  → pdf-inspector WASM in a Dedicated Worker
+  → pdf-inspector WASM
   → structured Markdown, tables and one-based page markers
   → reliable text-layer pages become pack sections
   → pagesNeedingOcr remain outside searchable evidence
+  → optional Tesseract TSV and mandatory human review
 ```
 
-A mixed PDF can therefore be prepared from its reliable pages in the browser while retaining a warning about omitted scan pages. A scanned-only PDF is rejected by the browser creator and must use the strong-device OCR workflow. The current WASM result exposes image placeholders inside Markdown, not extracted binary image assets; original-image extraction may be added later as a separate reviewed asset adapter.
+A mixed PDF can be prepared from its reliable pages in the browser while retaining a warning about omitted scan pages. A scanned-only PDF is rejected by the browser creator and must use the strong-device OCR workflow. The current WASM result exposes image placeholders inside Markdown, not extracted binary image assets; original-image extraction may be added later as a separate reviewed asset adapter.
 
-The strong-device OCR workflow is local and dependency-light:
+The strong-device OCR continuation is local and dependency-light:
 
 ```text
-PDF without a usable text layer
+page flagged by pdf-inspector
   → pdftoppm page image
   → Tesseract TSV
   → text + word confidence + coordinates
@@ -48,6 +49,12 @@ For each PDF, L-Note preserves:
 - the exact page list and reasons reported by `pagesNeedingOcr`.
 
 Pages marked as needing OCR are not converted into searchable sections. This is conservative by design: a broken or empty text layer must not become evidence merely because neighboring pages parsed successfully.
+
+## Strong-device preparation
+
+`npm run prepare:documents` uses the same WASM parser and page routing. Poppler `pdftotext` is no longer required. The CLI retains the original PDF asset and can continue flagged pages through `pdftoppm`, Tesseract TSV and the mandatory review file.
+
+For ordinary text-layer PDFs no external PDF executable is required. DOCX preparation still requires `unzip`; OCR requires `pdftoppm` and `tesseract` with the selected language data.
 
 ## First OCR pass
 
