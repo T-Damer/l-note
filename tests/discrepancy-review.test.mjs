@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { validatePack } from '../src/packs.js';
 import { argumentsFrom } from '../tools/build-pack.mjs';
+import { renderDiscrepancyReviewHtml } from '../tools/lib/discrepancy-review-html.mjs';
 import {
   applyDiscrepancyReview,
   createDiscrepancyReview,
@@ -180,14 +181,38 @@ test('creates a deterministic review and applies only accepted decisions', () =>
   assert.equal(reviewed.statementRelations[0].reviewedBy, 'Reviewer');
 });
 
-test('CLI accepts several comparison packs without overwriting earlier paths', () => {
+test('renders an offline review page without interpolating source HTML', () => {
+  const target = fixturePack({
+    id: 'target.html',
+    statement: 'Значение составляет 5 мг. </script><img src=x onerror=alert(1)>',
+  });
+  const reference = fixturePack({
+    id: 'reference.html',
+    statement: 'Значение составляет 10 мг.',
+  });
+  const review = createDiscrepancyReview({ pack: target, referencePacks: [reference] });
+  const html = renderDiscrepancyReviewHtml(review);
+  assert.match(html, /Проверка разных сведений/u);
+  assert.match(html, /Скачать результат/u);
+  assert.match(html, /application\/octet-stream/u);
+  assert.doesNotMatch(html, /<img src=x/u);
+  assert.doesNotMatch(html, /<\/script><img/u);
+  const encoded = html.match(/<script id="review-data"[^>]*>([^<]+)<\/script>/u)?.[1];
+  const decoded = JSON.parse(Buffer.from(encoded, 'base64').toString('utf8'));
+  assert.equal(decoded.targetPackId, 'target.html');
+  assert.equal(decoded.candidates.length, 1);
+});
+
+test('CLI accepts several comparison packs and review outputs', () => {
   const args = argumentsFrom([
     '--input', 'input',
     '--output', 'output.json',
     '--compare-pack', 'first.json',
     '--compare-pack', 'second.json',
     '--discrepancy-review-out', 'review.json',
+    '--discrepancy-review-html', 'review.html',
   ]);
   assert.deepEqual(args.comparePack, ['first.json', 'second.json']);
   assert.equal(args.discrepancyReviewOut, 'review.json');
+  assert.equal(args.discrepancyReviewHtml, 'review.html');
 });
