@@ -4,6 +4,10 @@ import { dirname, join, resolve } from 'node:path';
 
 import { prepareDocumentDirectory } from './lib/document-extraction.mjs';
 import { renderOcrReviewHtml } from './lib/ocr-review-html.mjs';
+import {
+  createPdfInspectorPreparationRunner,
+  decoratePreparedPdfDocuments,
+} from './lib/pdf-inspector-preparation.mjs';
 
 export function argumentsFrom(argv) {
   const output = { ocr: false };
@@ -53,7 +57,7 @@ Options:
   --version 1.0.0
   --description "..."
   --language ru
-  --ocr                         OCR PDF pages without a text layer
+  --ocr                         OCR pages flagged by pdf-inspector
   --ocr-language rus+eng        Tesseract language set
   --ocr-review-in review.json   apply accept/dismiss decisions
   --ocr-review-out review.json  default: <output>/ocr-review.json
@@ -61,7 +65,7 @@ Options:
   --max-section-chars 5000
 
 Required local tools:
-  PDF text: pdftotext
+  PDF text/layout: bundled pdf-inspector WASM
   DOCX text: unzip
   PDF OCR: pdftoppm and tesseract
 
@@ -92,10 +96,20 @@ async function writeOcrReviewArtifacts(result, args) {
   return { jsonTarget, htmlTarget };
 }
 
+async function preparationRunner(args, dependencies) {
+  if (dependencies.runner) return { runner: dependencies.runner, inspections: null };
+  return createPdfInspectorPreparationRunner({
+    inputPath: args.input,
+    baseRunner: dependencies.baseRunner,
+    inspector: dependencies.pdfInspector,
+  });
+}
+
 export async function prepareFromArguments(args, dependencies = {}) {
   if (!args.input || !args.output || !args.id) {
     throw new Error(`${usage()}\n\ninput, --output and --id are required.`);
   }
+  const pdfPreparation = await preparationRunner(args, dependencies);
   const result = await prepareDocumentDirectory({
     inputPath: args.input,
     outputPath: args.output,
@@ -108,7 +122,7 @@ export async function prepareFromArguments(args, dependencies = {}) {
     ocrLanguage: args.ocrLanguage ?? 'rus+eng',
     ocrReview: await readOcrReview(args.ocrReviewIn),
     maxSectionChars: Number(args.maxSectionChars ?? 5000),
-    runner: dependencies.runner,
+    runner: pdfPreparation.runner,
     generatedAt: dependencies.generatedAt,
     onProgress: dependencies.onProgress ?? ((progress) => {
       if (progress.stage === 'extract') {
@@ -116,6 +130,7 @@ export async function prepareFromArguments(args, dependencies = {}) {
       }
     }),
   });
+  await decoratePreparedPdfDocuments(result.outputPath, pdfPreparation.inspections);
   return {
     ...result,
     ocrReviewArtifacts: await writeOcrReviewArtifacts(result, args),
