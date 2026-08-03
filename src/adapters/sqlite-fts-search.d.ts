@@ -1,4 +1,8 @@
-import type { SearchRecord, SearchResult } from '../core/contracts.js';
+import type {
+  SearchRecord,
+  SearchResult,
+  StoredSearchArtifactFile,
+} from '../core/contracts.js';
 import type { AsyncSearchPort, AsyncSearchStats, SearchOptions } from '../core/ports.js';
 
 export interface SqliteFtsSearchOptions {
@@ -12,7 +16,11 @@ export class SqliteFtsSearchPort implements AsyncSearchPort {
   constructor(options?: SqliteFtsSearchOptions);
   build(
     records: SearchRecord[],
-    options?: { fingerprint?: string; onProgress?: (progress: unknown) => void },
+    options?: {
+      fingerprint?: string;
+      artifact?: StoredSearchArtifactFile | null;
+      onProgress?: (progress: unknown) => void;
+    },
   ): Promise<AsyncSearchStats>;
   search(query: string, options?: SearchOptions): Promise<SearchResult[]>;
   suggest(query: string, limit?: number): Promise<string[]>;
