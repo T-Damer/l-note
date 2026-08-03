@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, stat } from 'node:fs/promises';
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 
@@ -8,10 +8,12 @@ import {
   stringifyJson,
 } from './sqlite-adapter-common.mjs';
 
+const STATEMENT_RELATIONS_PRESENT = '__lnoteStatementRelationsPresent';
 const SCHEMA_SQL = `
   PRAGMA journal_mode=DELETE;
   PRAGMA synchronous=NORMAL;
   PRAGMA foreign_keys=ON;
+  PRAGMA user_version=${SQLITE_ADAPTER_SCHEMA_VERSION};
   CREATE TABLE lnote_metadata(
     schema_version INTEGER PRIMARY KEY,
     exported_at TEXT NOT NULL,
@@ -98,7 +100,10 @@ function assertPack(pack, label = 'Pack') {
 }
 
 function manifestFor(pack) {
-  const manifest = { ...pack };
+  const manifest = {
+    ...pack,
+    [STATEMENT_RELATIONS_PRESENT]: Object.hasOwn(pack, 'statementRelations'),
+  };
   for (const field of ['documents', 'entities', 'claims', 'relations', 'statementRelations']) {
     delete manifest[field];
   }
@@ -261,9 +266,10 @@ export async function exportPackToSqlite({
   };
 }
 
-function parsePayloadRows(database, table) {
-  return database.prepare(`SELECT payload_json FROM ${table} ORDER BY rowid`).all()
-    .map((row) => JSON.parse(row.payload_json));
+function parsePayloadRows(database, table, orderColumn) {
+  return database.prepare(`
+    SELECT payload_json FROM ${table} ORDER BY ${orderColumn}
+  `).all().map((row) => JSON.parse(row.payload_json));
 }
 
 function hasExportSchema(database) {
@@ -288,6 +294,8 @@ export function restorePackFromSqlite(inputPath) {
       throw new Error(`Unsupported L-Note SQLite schema version: ${metadata?.schema_version}`);
     }
     const manifest = JSON.parse(metadata.manifest_json);
+    const statementRelationsPresent = Boolean(manifest[STATEMENT_RELATIONS_PRESENT]);
+    delete manifest[STATEMENT_RELATIONS_PRESENT];
     const sectionRows = database.prepare(`
       SELECT document_id, payload_json
       FROM lnote_sections
@@ -310,12 +318,16 @@ export function restorePackFromSqlite(inputPath) {
     const pack = {
       ...manifest,
       documents,
-      entities: parsePayloadRows(database, 'lnote_entities'),
-      claims: parsePayloadRows(database, 'lnote_claims'),
-      relations: parsePayloadRows(database, 'lnote_relations'),
+      entities: parsePayloadRows(database, 'lnote_entities', 'entity_order'),
+      claims: parsePayloadRows(database, 'lnote_claims', 'claim_order'),
+      relations: parsePayloadRows(database, 'lnote_relations', 'relation_order'),
     };
-    const statementRelations = parsePayloadRows(database, 'lnote_statement_relations');
-    if (statementRelations.length) pack.statementRelations = statementRelations;
+    const statementRelations = parsePayloadRows(
+      database,
+      'lnote_statement_relations',
+      'relation_order',
+    );
+    if (statementRelationsPresent) pack.statementRelations = statementRelations;
     return assertPack(pack, 'Restored pack');
   } finally {
     database.close();
@@ -325,11 +337,10 @@ export function restorePackFromSqlite(inputPath) {
 export async function restorePackFile({ inputPath, outputPath } = {}) {
   if (!inputPath || !outputPath) throw new TypeError('inputPath and outputPath are required.');
   const pack = restorePackFromSqlite(inputPath);
-  await mkdir(dirname(resolve(outputPath)), { recursive: true });
-  await import('node:fs/promises').then(({ writeFile }) => (
-    writeFile(resolve(outputPath), `${JSON.stringify(pack, null, 2)}\n`)
-  ));
-  return { outputPath: resolve(outputPath), pack };
+  const output = resolve(outputPath);
+  await mkdir(dirname(output), { recursive: true });
+  await writeFile(output, `${JSON.stringify(pack, null, 2)}\n`);
+  return { outputPath: output, pack };
 }
 
 export async function exportPackFile({ inputPath, outputPath, exportedAt } = {}) {
