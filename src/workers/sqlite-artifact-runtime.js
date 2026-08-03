@@ -1,0 +1,108 @@
+import {
+  SEARCH_ARTIFACT_SCHEMA_VERSION,
+  SQLITE_FTS_ARTIFACT_PROFILE,
+} from '../helpers/search-artifacts.js';
+
+const DATABASE_NAME = 'l-note-search.db';
+const MAX_ARTIFACT_BYTES = 768 * 1024 * 1024;
+
+function firstValue(row) {
+  return row ? Object.values(row)[0] : null;
+}
+
+async function sha256Hex(buffer) {
+  const digest = await crypto.subtle.digest('SHA-256', buffer);
+  return [...new Uint8Array(digest)]
+    .map((value) => value.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function deleteDatabase(name, timeoutMs = 5_000) {
+  if (!globalThis.indexedDB) throw new Error('IndexedDB is unavailable.');
+  await new Promise((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(name);
+    const timer = setTimeout(() => reject(new Error('Search database reset timed out.')), timeoutMs);
+    request.onsuccess = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    request.onerror = () => {
+      clearTimeout(timer);
+      reject(request.error ?? new Error('Search database reset failed.'));
+    };
+    request.onblocked = () => {
+      clearTimeout(timer);
+      reject(new Error('Search database reset was blocked.'));
+    };
+  });
+}
+
+async function artifactBuffer(artifact, onProgress) {
+  onProgress({ stage: 'artifact-download', completed: 0, total: artifact.bytes });
+  const response = await fetch(artifact.url, { cache: 'no-cache' });
+  if (!response.ok) throw new Error(`Artifact download returned HTTP ${response.status}.`);
+  const declared = Number(response.headers.get('content-length') ?? artifact.bytes);
+  if (declared > MAX_ARTIFACT_BYTES || artifact.bytes > MAX_ARTIFACT_BYTES) {
+    throw new Error('Artifact exceeds the supported size limit.');
+  }
+  const buffer = await response.arrayBuffer();
+  if (buffer.byteLength !== artifact.bytes) {
+    throw new Error('Artifact byte size does not match its manifest.');
+  }
+  onProgress({ stage: 'artifact-checksum', completed: buffer.byteLength, total: buffer.byteLength });
+  const actual = await sha256Hex(buffer);
+  if (actual !== artifact.sha256.toLowerCase()) {
+    throw new Error('Artifact checksum does not match its manifest.');
+  }
+  return buffer;
+}
+
+async function validateImportedDatabase(runtime, artifact) {
+  const quickRows = await runtime.rows('PRAGMA quick_check;');
+  if (String(firstValue(quickRows[0]) ?? '').toLowerCase() !== 'ok') {
+    throw new Error('Imported database failed integrity checking.');
+  }
+  const names = new Set((await runtime.rows(`
+    SELECT name FROM sqlite_master
+    WHERE name IN ('records_fts', 'records_vocab', 'search_meta')
+  `)).map((row) => row.name));
+  for (const required of ['records_fts', 'records_vocab', 'search_meta']) {
+    if (!names.has(required)) throw new Error(`Imported database is missing ${required}.`);
+  }
+  const artifactSchema = Number(await runtime.meta('artifactSchemaVersion'));
+  const profile = await runtime.meta('artifactProfile');
+  const fingerprint = await runtime.meta('fingerprint');
+  const recordCount = Number(await runtime.meta('recordCount'));
+  if (artifactSchema !== SEARCH_ARTIFACT_SCHEMA_VERSION) {
+    throw new Error('Imported artifact schema is unsupported.');
+  }
+  if (profile !== SQLITE_FTS_ARTIFACT_PROFILE) {
+    throw new Error('Imported artifact profile is unsupported.');
+  }
+  if (fingerprint !== artifact.fingerprint || recordCount !== artifact.recordCount) {
+    throw new Error('Imported artifact does not match the active corpus.');
+  }
+}
+
+export async function importSqliteSearchArtifact(runtime, artifact, {
+  onProgress = () => {},
+} = {}) {
+  const buffer = await artifactBuffer(artifact, onProgress);
+  await runtime.init();
+  onProgress({ stage: 'artifact-import', completed: 0, total: buffer.byteLength });
+  await runtime.connection.sync(new Blob([buffer]).stream());
+  onProgress({ stage: 'artifact-validate', completed: buffer.byteLength, total: buffer.byteLength });
+  await validateImportedDatabase(runtime, artifact);
+  return {
+    ...(await runtime.stats()),
+    reused: true,
+    imported: true,
+    artifactBytes: buffer.byteLength,
+  };
+}
+
+export async function resetSqliteSearchStorage(runtime) {
+  await runtime.close();
+  await deleteDatabase(DATABASE_NAME);
+  await runtime.init();
+}
