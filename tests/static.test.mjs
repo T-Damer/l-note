@@ -154,6 +154,8 @@ test('static build contains the complete local-first shell', async () => {
   await assertContains('src/workers/sqlite-fts-runtime.js', [
     /@subframe7536\/sqlite-wasm/u,
     /useIdbStorage/u,
+    /withExistDB/u,
+    /reopenFromFile/u,
     /wa-sqlite-async\.wasm/u,
     /CREATE VIRTUAL TABLE IF NOT EXISTS records_fts USING fts5/u,
     /bm25\(records_fts/u,
@@ -161,7 +163,7 @@ test('static build contains the complete local-first shell', async () => {
   await assertContains('src/workers/sqlite-artifact-runtime.js', [
     /quick_check/u,
     /artifactFormatVersion/u,
-    /connection\.sync/u,
+    /reopenFromFile/u,
     /resetSqliteSearchStorage/u,
   ]);
   await assertContains('src/workers/sqlite-search-worker.js', [
