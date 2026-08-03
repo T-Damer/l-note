@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, local voice search and the persisted transfer queue are implemented; next are strong-device discrepancy detection/review, reviewed LLM-assisted pack enrichment, PDF/DOCX preparation and distributable prebuilt database artifacts. Android/iOS and live MiniMed integration remain deferred.
+**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, local voice search, the persisted transfer queue and deterministic preparation-time discrepancy review are implemented; next are optional LLM-assisted classification, review of other proposed semantic records, PDF/DOCX preparation and distributable prebuilt database artifacts. Android/iOS and live MiniMed integration remain deferred.
 
 ## Universal core and MiniMed
 
@@ -53,10 +53,14 @@ Single source of future work. Completed items describe the active branch.
 - [x] Open either compared source through the ordinary routed document reader and browser history.
 - [x] Keep the browser client neutral: never choose one source, infer obsolescence from date or remove another version.
 - [x] Add a non-medical reviewed discrepancy to `lnote.guide` for browser and regression testing.
-- [ ] During strong-device preparation, retrieve candidate claims from the existing preparation corpus and previously installed/exported packs.
-- [ ] Add deterministic candidate checks for numbers, units, negation, dates, shared concepts and apparent scope differences.
+- [x] Compare a newly prepared pack with one or more existing prepared/exported pack files.
+- [x] Detect candidate differences in normalized quantities, negation, linked values, shared subjects and apparent population/age scope.
+- [x] Preserve exact quotes, document/pack titles and effective/publication dates in every review candidate.
+- [x] Generate editable review JSON and a standalone offline HTML review page.
+- [x] Require a human to accept, edit or dismiss every proposed statement relation before it enters the pack.
+- [x] Keep unresolved and dismissed candidates outside `statementRelations`.
+- [ ] Add date/edition chronology as an explicit candidate signal without inferring that newer automatically wins.
 - [ ] Add optional local/server LLM classification into contradiction, refinement, supersession, equivalence, different scope or insufficient context.
-- [ ] Add human review to accept, edit or dismiss every proposed statement relation before export.
 - [ ] Allow a reviewed preparation workflow to designate a preferred/current statement while preserving all versions for the client.
 - [ ] Include relevant confirmed source discrepancies in the evidence envelope supplied to the local answer model.
 
@@ -136,10 +140,11 @@ Single source of future work. Completed items describe the active branch.
 - [x] Preserve document titles, headings and source text; split large sections and discover common abbreviation patterns.
 - [x] Preview package statistics, download the JSON or install it immediately through the existing pack storage path.
 - [x] Validate ready-made pack JSON and enforce 32 MiB per file / 64 MiB total browser limits.
+- [x] Compare prepared statements with existing pack files and review proposed source discrepancies before export.
 - [ ] Add PDF/DOCX parsing, reviewed OCR and database exporters on a stronger device/server.
 - [ ] Add optional prebuilt SQLite/FTS artifacts to large packs.
 - [ ] Let the user choose deterministic-only or LLM-assisted enrichment in the creator/preparer.
-- [ ] Review, accept, edit or remove proposed concepts, statements, aliases, entity relations and source discrepancies before export.
+- [ ] Review, accept, edit or remove proposed concepts, statements, aliases and entity relations before export.
 - [ ] Keep heavy preparation jobs and intermediate corpora on disk rather than in application RAM.
 
 ## Documentation
