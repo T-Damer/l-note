@@ -190,6 +190,7 @@ export interface SearchResult extends SearchRecord {
 
 export interface EvidenceSource {
   id: string;
+  supplemental?: boolean;
   result: SearchResult;
   document?: KnowledgeDocument;
   section?: KnowledgeSection;
@@ -202,12 +203,37 @@ export interface EvidenceConflict {
   statementConflict?: unknown;
 }
 
+export interface EvidenceDiscrepancySide {
+  evidenceId: string;
+  claimRef: string;
+  claim: KnowledgeStatement;
+  packId: string;
+  packTitle: string;
+  documentRef: string;
+  documentTitle: string;
+  sectionId: string | null;
+  quote: string;
+  date: string | null;
+}
+
+export interface EvidenceDiscrepancy {
+  id: string;
+  type: Extract<StatementRelationType, 'contradicts' | 'supersedes' | 'different_scope'>;
+  status: 'confirmed';
+  reason: string;
+  detectedBy: string;
+  confidence: number | null;
+  source: EvidenceDiscrepancySide;
+  target: EvidenceDiscrepancySide;
+}
+
 export interface EvidenceEnvelope {
   contractVersion: '0.1.0';
   query: string;
   sources: EvidenceSource[];
   relatedNotes: PersonalNote[];
   conflicts: EvidenceConflict[];
+  discrepancies: EvidenceDiscrepancy[];
 }
 
 export interface ContractValidation {
@@ -223,4 +249,5 @@ export function createEvidenceEnvelope(input: {
   sources?: EvidenceSource[];
   relatedNotes?: PersonalNote[];
   conflicts?: EvidenceConflict[];
+  discrepancies?: EvidenceDiscrepancy[];
 }): EvidenceEnvelope;

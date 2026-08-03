@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, local voice search, the persisted transfer queue, deterministic discrepancy review, PDF/DOCX extraction, mandatory review of LLM semantic proposals and distributable prebuilt search artifacts are implemented; next are confirmed-discrepancy evidence, OCR review and database import/export adapters. Android/iOS and live MiniMed integration remain deferred.
+**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, confirmed-discrepancy answer evidence, local voice search, the persisted transfer queue, deterministic discrepancy review, PDF/DOCX extraction, mandatory review of LLM semantic proposals and distributable prebuilt search artifacts are implemented; next are OCR review and database import/export adapters. Android/iOS and live MiniMed integration remain deferred.
 
 ## Universal core and MiniMed
 
@@ -62,7 +62,7 @@ Single source of future work. Completed items describe the active branch.
 - [ ] Add date/edition chronology as an explicit candidate signal without inferring that newer automatically wins.
 - [ ] Add optional local/server LLM classification into contradiction, refinement, supersession, equivalence, different scope or insufficient context.
 - [ ] Allow a reviewed preparation workflow to designate a preferred/current statement while preserving all versions for the client.
-- [ ] Include relevant confirmed source discrepancies in the evidence envelope supplied to the local answer model.
+- [x] Include relevant confirmed source discrepancies in the evidence envelope supplied to the local answer model.
 
 ## Voice search
 

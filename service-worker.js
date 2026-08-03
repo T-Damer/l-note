@@ -64,6 +64,7 @@ const SHELL = [
   './src/services/ask-workflow.js',
   './src/services/audio-recorder.js',
   './src/services/browser-pack-builder.js',
+  './src/services/evidence-discrepancies.js',
   './src/services/evidence-query.js',
   './src/services/evidence-support-verifier.js',
   './src/services/installed-pack-record.js',
