@@ -39,8 +39,8 @@ function createSourceDatabase(filename) {
       SELECT id, title, body, category FROM articles;
   `);
   const insert = database.prepare('INSERT INTO articles VALUES (?, ?, ?, ?, ?)');
-  insert.run(1, 'Первая статья', 'Основной текст первой статьи.', 'справка', new Uint8Array([1, 2, 3]));
   insert.run(2, 'Вторая статья', 'Основной текст второй статьи.', 'архив', null);
+  insert.run(1, 'Первая статья', 'Основной текст первой статьи.', 'справка', new Uint8Array([1, 2, 3]));
   database.close();
 }
 
@@ -63,7 +63,7 @@ test('inspects user SQLite tables and views without internal objects', async () 
   }
 });
 
-test('prepares selected SQLite rows as a valid source-preserving authoring directory', async () => {
+test('prepares selected SQLite rows in deterministic identity order', async () => {
   const directory = await temporaryDirectory();
   try {
     const filename = path.join(directory, 'source.sqlite');
@@ -94,8 +94,10 @@ test('prepares selected SQLite rows as a valid source-preserving authoring direc
     assert.equal(pack.id, 'example.sqlite');
     assert.equal(pack.documents[0].title, 'Статьи');
     assert.equal(pack.documents[0].sections[0].title, 'Первая статья');
+    assert.equal(pack.documents[0].sections[1].title, 'Вторая статья');
     assert.match(pack.documents[0].sections[0].text, /attachment: <BLOB 3 bytes sha256:/u);
     assert.deepEqual(pack.documents[0].sections[0].provenance.identity, { id: '1' });
+    assert.deepEqual(pack.documents[0].sections[0].provenance.orderColumns, ['id']);
     assert.ok(pack.documents[0].sections[0].tags.includes('справка'));
   } finally {
     await rm(directory, { recursive: true, force: true });
@@ -143,6 +145,7 @@ test('exports a relational SQLite database with FTS and restores the exact pack'
       `).all().map((row) => row.name);
       assert.ok(tables.includes('lnote_documents'));
       assert.ok(tables.includes('lnote_sections_fts'));
+      assert.equal(database.prepare('PRAGMA user_version').get().user_version, 1);
       const matches = database.prepare(`
         SELECT document_id, section_id
         FROM lnote_sections_fts
@@ -153,6 +156,21 @@ test('exports a relational SQLite database with FTS and restores the exact pack'
       database.close();
     }
     assert.deepEqual(restorePackFromSqlite(filename), guidePack);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('preserves an explicitly empty statementRelations array', async () => {
+  const directory = await temporaryDirectory();
+  try {
+    const filename = path.join(directory, 'empty-relations.sqlite');
+    const pack = structuredClone(guidePack);
+    pack.statementRelations = [];
+    await exportPackToSqlite({ pack, outputPath: filename });
+    const restored = restorePackFromSqlite(filename);
+    assert.ok(Object.hasOwn(restored, 'statementRelations'));
+    assert.deepEqual(restored, pack);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
