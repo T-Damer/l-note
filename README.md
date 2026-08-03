@@ -20,8 +20,11 @@ The released site is built from `main` after the complete validation gate passes
 - list and graph representations of knowledge;
 - internal PDF viewing with exact page anchors;
 - reviewed source discrepancies with document dates and text diffs;
+- confirmed discrepancies included as two ordinary citable answer sources;
 - preparation-time comparison against existing pack files;
 - strong-device PDF/DOCX extraction with page or paragraph provenance;
+- SQLite table/view import into the standard authoring layout;
+- relational SQLite pack export, FTS5 access and exact restoration;
 - mandatory human review for LLM-proposed concepts, aliases, statements and relations;
 - browser-local pack creation from Markdown, TXT, JSON or pasted text;
 - local Russian/English voice search;
@@ -33,7 +36,7 @@ The released site is built from `main` after the complete validation gate passes
 
 ## Run locally
 
-Requires Node.js 20 or newer. Building a prebuilt SQLite search artifact additionally requires Node.js 22 or newer because it uses the built-in `node:sqlite` module.
+Requires Node.js 20 or newer. Building prebuilt SQLite search artifacts and using database adapters require Node.js 22 or newer because they use the built-in `node:sqlite` module.
 
 ```bash
 npm ci
@@ -118,6 +121,8 @@ A Phosphor warning marker appears after the disputed passage. Opening it shows:
 - the reviewed relation type and reason;
 - actions for opening either full document.
 
+Relevant confirmed discrepancies are also added to local-answer evidence. The counterpart becomes an ordinary `[S…]` source, and the model receives both exact quotes and a neutral reviewed relation. Proposed and dismissed relations are excluded.
+
 Detection and review belong to the strong-device preparation workflow. The hosted browser only displays confirmed relations and never chooses a winning document.
 
 ## Local voice search
@@ -165,6 +170,50 @@ node tools/build-pack.mjs ./my-knowledge \
   --description "Private reference data" \
   --output ./dist/my-pack.json
 ```
+
+### SQLite tables and views
+
+Inspect a source database:
+
+```bash
+npm run database:pack -- inspect --input ./reference.sqlite
+```
+
+Prepare selected tables as ordinary source documents:
+
+```bash
+npm run database:pack -- import \
+  --input ./reference.sqlite \
+  --output ./prepared/reference \
+  --id com.example.reference \
+  --title "Reference database" \
+  --table articles \
+  --table glossary
+```
+
+Rows retain table, identity-column, column and row-number provenance. BLOBs are represented by size and SHA-256 rather than copied into searchable text. Optional mappings choose identity, title, text and tag columns without accepting raw SQL.
+
+Compile the authoring directory through the ordinary validator and review pipeline:
+
+```bash
+npm run build:pack -- \
+  --input ./prepared/reference \
+  --output ./dist/reference.pack.json
+```
+
+Export a validated pack for SQL tools and restore it exactly:
+
+```bash
+npm run database:pack -- export \
+  --input ./dist/reference.pack.json \
+  --output ./dist/reference.pack.sqlite
+
+npm run database:pack -- restore \
+  --input ./dist/reference.pack.sqlite \
+  --output ./dist/reference.restored.pack.json
+```
+
+The relational export contains normalized tables, exact JSON payloads and an FTS5 table. It is separate from the browser prebuilt-search artifact. See `docs/DATABASE_ADAPTERS.md` for mappings, limits and schema details.
 
 ### Prebuilt SQLite/FTS5 search for a large pack
 
@@ -334,12 +383,11 @@ Future MiniMed integration requires separate approval and MiniMed-owned retrieva
 ## Remaining work
 
 - review workflow for OCR output;
-- database import/export adapters;
+- optional DuckDB bridge for Parquet/CSV and remote database scanners;
 - optional LLM classification of deterministic source-discrepancy candidates;
-- confirmed source discrepancies in the answer evidence envelope;
 - representative mobile benchmarks;
 - optional OPFS and vector-search adapters;
 - signed catalogs, delta updates, encrypted notes and synchronization;
 - native Android/iOS packaging after the web core is stable.
 
-See `docs/PACK_FORMAT.md` for the portable format and `docs/ARCHITECTURE.md` for runtime invariants.
+See `docs/PACK_FORMAT.md` for the portable format, `docs/DATABASE_ADAPTERS.md` for database interchange, `docs/RETRIEVAL_ARCHITECTURE_RESEARCH.md` for external-system research and `docs/ARCHITECTURE.md` for runtime invariants.
