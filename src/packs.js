@@ -1,3 +1,4 @@
+import { validatePrebuiltSearchArtifacts } from './helpers/prebuilt-search-artifacts.js';
 import { validateStatementRelations } from './helpers/statement-conflicts.js';
 
 const PACK_SCHEMA_VERSION = 1;
@@ -111,6 +112,7 @@ export function validatePack(pack) {
     if (relation?.targetId && !entityIds.has(relation.targetId)) errors.push(`relation references unknown target ${relation.targetId}`);
   }
 
+  errors.push(...validatePrebuiltSearchArtifacts(pack));
   errors.push(...validateStatementRelations(pack));
   return { valid: errors.length === 0, errors };
 }

@@ -23,13 +23,59 @@ The current schema version is `1`.
   "entities": [],
   "claims": [],
   "relations": [],
-  "statementRelations": []
+  "statementRelations": [],
+  "searchArtifacts": []
 }
 ```
 
-Required fields are `schemaVersion`, `id`, `version`, `title`, `description`, `language`, `documents`, `entities`, `claims`, and `relations`. `statementRelations` is optional.
+Required fields are `schemaVersion`, `id`, `version`, `title`, `description`, `language`, `documents`, `entities`, `claims`, and `relations`. `statementRelations` and `searchArtifacts` are optional.
 
 IDs should be stable across rebuilds. Pack versions should change whenever searchable content, semantic records, or reviewed statement relations change.
+
+## Optional prebuilt search artifacts
+
+A large pack may reference one or more reproducible search databases built on a stronger device. These files accelerate installation on weaker devices but do not replace the JSON source text or semantic records.
+
+```json
+{
+  "id": "search.example.domain.ru.2026.07.30",
+  "kind": "sqlite-fts5",
+  "formatVersion": 1,
+  "runtime": "@subframe7536/sqlite-wasm@1.3.1",
+  "url": "./example.domain.search.sqlite",
+  "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "bytes": 12582912,
+  "corpusFingerprint": "lnote-corpus-v1:example.domain.ru:2026.07.30:12:80:40:20::",
+  "recordCount": 5400
+}
+```
+
+Every descriptor requires:
+
+- a stable `id`;
+- `kind: sqlite-fts5`;
+- the supported `formatVersion`;
+- the exact browser SQLite runtime profile;
+- a URL resolved relative to the downloaded pack URL;
+- a lowercase SHA-256 digest;
+- the exact byte size and record count;
+- the corpus fingerprint produced from the pack content.
+
+The package transfer queue downloads optional search files together with the pack and stores verified blobs beside the installed pack record. A descriptor is selected only when exactly one matching pack is enabled, the corpus fingerprint is exact, the runtime is compatible, and personal notes have not changed the searchable corpus.
+
+Before use, the SQLite Worker checks byte size, SHA-256, `PRAGMA quick_check`, required tables, format/runtime metadata, record count, and fingerprint. Any mismatch discards the optimization and triggers ordinary local index construction. The JSON pack remains authoritative in every case.
+
+Build an artifact on Node.js 22 or newer:
+
+```bash
+npm run build:search-artifact -- \
+  --input ./dist/example.pack.json \
+  --database ./dist/example.search.sqlite \
+  --pack-output ./dist/example.with-search.pack.json \
+  --url ./example.search.sqlite
+```
+
+The original input pack is not modified. Publish the output pack and SQLite file together.
 
 ## Documents and sections
 
@@ -325,7 +371,7 @@ This separation allows reference packs to update without losing user knowledge a
 
 ## Catalog
 
-`packs/catalog.json` contains metadata, a relative or absolute download URL, a byte size, and a SHA-256 checksum for each artifact. The application verifies the checksum before installation when Web Crypto is available.
+`packs/catalog.json` contains metadata, a relative or absolute download URL, a byte size, and a SHA-256 checksum for each pack. The application verifies the checksum before installation when Web Crypto is available. Optional `searchArtifacts` are resolved relative to that pack URL and are verified separately before storage.
 
 A catalog entry may expose `stats.statementRelations`. The repository validator checks the count when present.
 
@@ -435,6 +481,7 @@ source extraction
 → optional discrepancy classification
 → human/domain review of every discrepancy
 → build-pack.mjs
+→ optional build-search-artifact.mjs
 → signed/checksummed catalog publication
 ```
 

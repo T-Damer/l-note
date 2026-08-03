@@ -9,11 +9,11 @@ import {
   sqliteVocabularyRange,
 } from '../helpers/sqlite-fts.js';
 import { tokenize } from '../search.js';
+import {
+  SQLITE_WASM_URL,
+  loadSqliteRuntimeModules,
+} from './sqlite-runtime-modules.js';
 
-const SQLITE_WASM_VERSION = '1.3.1';
-const SQLITE_WASM_MODULE = `https://esm.run/@subframe7536/sqlite-wasm@${SQLITE_WASM_VERSION}`;
-const SQLITE_WASM_IDB_MODULE = `${SQLITE_WASM_MODULE}/idb`;
-const SQLITE_WASM_URL = `https://cdn.jsdelivr.net/npm/@subframe7536/sqlite-wasm@${SQLITE_WASM_VERSION}/dist/wa-sqlite-async.wasm`;
 const DATABASE_NAME = 'l-note-search.db';
 const INSERT_SQL = `
   INSERT INTO records_fts(
@@ -52,6 +52,11 @@ const SCHEMA_SQL = `
     value TEXT NOT NULL
   );
 `;
+const RESET_SCHEMA_SQL = `
+  DROP TABLE IF EXISTS records_vocab;
+  DROP TABLE IF EXISTS records_fts;
+  DROP TABLE IF EXISTS search_meta;
+`;
 
 function errorAt(stage, error) {
   const message = error instanceof Error ? error.message : String(error);
@@ -65,16 +70,13 @@ function compileOption(row) {
 }
 
 export class SqliteFtsRuntime {
-  constructor({
-    moduleUrl = SQLITE_WASM_MODULE,
-    idbModuleUrl = SQLITE_WASM_IDB_MODULE,
-    wasmUrl = SQLITE_WASM_URL,
-  } = {}) {
+  constructor({ moduleUrl, idbModuleUrl, wasmUrl = SQLITE_WASM_URL } = {}) {
     this.moduleUrl = moduleUrl;
     this.idbModuleUrl = idbModuleUrl;
     this.wasmUrl = wasmUrl;
     this.connection = null;
     this.initializing = null;
+    this.existingDatabase = null;
   }
 
   async init() {
@@ -88,20 +90,22 @@ export class SqliteFtsRuntime {
   }
 
   async initialize() {
-    let sqliteModule;
-    let idbModule;
+    let modules;
     try {
-      [sqliteModule, idbModule] = await Promise.all([
-        import(this.moduleUrl),
-        import(this.idbModuleUrl),
-      ]);
+      modules = await loadSqliteRuntimeModules({
+        moduleUrl: this.moduleUrl,
+        idbModuleUrl: this.idbModuleUrl,
+      });
     } catch (error) {
       throw errorAt('module load failed', error);
     }
 
     try {
-      this.connection = await sqliteModule.initSQLite(
-        idbModule.useIdbStorage(DATABASE_NAME, { url: this.wasmUrl }),
+      const storageOptions = this.existingDatabase
+        ? modules.withExistDB(this.existingDatabase, { url: this.wasmUrl })
+        : { url: this.wasmUrl };
+      this.connection = await modules.initSQLite(
+        modules.useIdbStorage(DATABASE_NAME, storageOptions),
       );
     } catch (error) {
       throw errorAt('database open failed', error);
@@ -119,6 +123,17 @@ export class SqliteFtsRuntime {
       throw errorAt('FTS5 schema initialization failed', error);
     }
     return this;
+  }
+
+  async reopenFromFile(file) {
+    await this.close();
+    this.existingDatabase = file;
+    try {
+      await this.init();
+      return this;
+    } finally {
+      this.existingDatabase = null;
+    }
   }
 
   async rows(sql, bindings = []) {
@@ -242,6 +257,17 @@ export class SqliteFtsRuntime {
       builtAt,
       fingerprint,
     };
+  }
+
+  async reset() {
+    await this.init();
+    try {
+      await this.connection.run(RESET_SCHEMA_SQL);
+      await this.connection.run(SCHEMA_SQL);
+    } catch (error) {
+      throw errorAt('schema reset failed', error);
+    }
+    return this.stats();
   }
 
   async clear() {

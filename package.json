@@ -26,14 +26,16 @@
     "build:icons": "node tools/build-icons.mjs",
     "build:styles": "node tools/build-styles.mjs",
     "build:pack": "node tools/build-pack.mjs",
+    "build:search-artifact": "node tools/build-search-artifact.mjs",
     "prepare:documents": "node tools/prepare-documents.mjs",
     "build:static": "node tools/build-static.mjs",
     "validate": "node tools/validate-packs.mjs",
     "check:structure": "node tools/check-code-structure.mjs",
     "test": "node --test",
     "test:sqlite-e2e": "node tools/sqlite-browser-smoke.mjs",
+    "test:sqlite-artifact-e2e": "node tools/sqlite-artifact-browser-smoke.mjs",
     "test:e2e": "node tools/browser-e2e.mjs",
-    "check": "npm run validate && npm run check:structure && npm test && npm run build:static && npm run test:sqlite-e2e && npm run test:e2e",
+    "check": "npm run validate && npm run check:structure && npm test && npm run build:static && npm run test:sqlite-e2e && npm run test:sqlite-artifact-e2e && npm run test:e2e",
     "build:example": "node tools/build-pack.mjs --input examples/custom-pack --output dist/example.pack.json"
   },
   "engines": {

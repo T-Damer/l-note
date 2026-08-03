@@ -14,6 +14,7 @@ The released site is built from `main` after the complete validation gate passes
 
 - checksummed knowledge packs installed independently;
 - adaptive MiniSearch / SQLite-FTS5 / IndexedDB-postings search;
+- optional distributable SQLite/FTS5 indexes for large packs;
 - exact, prefix, alias and bounded fuzzy matching;
 - routed packages, documents, concepts, statements and notes;
 - list and graph representations of knowledge;
@@ -32,7 +33,7 @@ The released site is built from `main` after the complete validation gate passes
 
 ## Run locally
 
-Requires Node.js 20 or newer.
+Requires Node.js 20 or newer. Building a prebuilt SQLite search artifact additionally requires Node.js 22 or newer because it uses the built-in `node:sqlite` module.
 
 ```bash
 npm ci
@@ -50,8 +51,13 @@ Open `http://127.0.0.1:4173/`.
 small corpus
   → MiniSearch in JavaScript memory
 
-large corpus
-  → SQLite + FTS5
+large pack with a matching installed artifact
+  → verified prebuilt SQLite/FTS5 database
+  → Dedicated Worker
+  → IndexedDB virtual filesystem
+
+large corpus without a matching artifact
+  → SQLite + FTS5 built locally
   → Dedicated Worker
   → IndexedDB virtual filesystem
 
@@ -64,11 +70,11 @@ all disk adapters unavailable
 
 The current large-corpus threshold is 5,000 search records or approximately 8 MiB of indexable text. These are initial defaults that still require representative mobile benchmarks.
 
-The disk index stores weighted fields and a corpus fingerprint. An unchanged corpus reopens without rebuilding, and the page keeps only bounded result/evidence working sets.
+The disk index stores weighted fields and a corpus fingerprint. An unchanged corpus reopens without rebuilding. A packaged artifact is used only when its format, runtime, checksum, record count and corpus fingerprint match the enabled pack exactly and there are no personal notes changing the corpus. Otherwise the client builds the index normally. The page keeps only bounded result/evidence working sets.
 
 ## Downloads and recovery
 
-Package files, local language models and speech-recognition models use one persisted transfer queue.
+Package files, their optional prebuilt search indexes, local language models and speech-recognition models use one persisted transfer queue.
 
 The global operations panel appears only while work is active or needs attention. It supports:
 
@@ -80,6 +86,8 @@ The global operations panel appears only while work is active or needs attention
 - deduplication of repeated clicks.
 
 Package downloads restart automatically after a reload. Model loads require explicit **Продолжить**, so the app does not unexpectedly reserve memory after reopening. Up to four ordinary file operations may run concurrently, while the model runtime still permits only one active inference model.
+
+An invalid or unavailable optional search artifact does not prevent the pack itself from being installed. The client records the warning and falls back to local index construction.
 
 ## Create a pack in the browser
 
@@ -135,6 +143,7 @@ Only one language model may be active. Selecting another model unloads the previ
 ```text
 application shell and local assets  Service Worker caches
 installed packs and notes           IndexedDB
+verified packaged search files      IndexedDB with installed pack records
 transfer state                      StoragePort / IndexedDB
 small search index                  JavaScript memory
 large FTS database                  SQLite over IndexedDB VFS
@@ -156,6 +165,22 @@ node tools/build-pack.mjs ./my-knowledge \
   --description "Private reference data" \
   --output ./dist/my-pack.json
 ```
+
+### Prebuilt SQLite/FTS5 search for a large pack
+
+After producing a validated pack, create a portable search database and a copy of the pack containing its manifest entry:
+
+```bash
+npm run build:search-artifact -- \
+  --input ./dist/my-pack.json \
+  --database ./dist/my-pack.search.sqlite \
+  --pack-output ./dist/my-pack.with-search.json \
+  --url ./my-pack.search.sqlite
+```
+
+Publish the updated pack and the `.sqlite` file at the relative URL recorded by `--url`. The builder writes an optimized FTS5 database, its SHA-256 digest, byte size, runtime profile, record count and corpus fingerprint. It does not modify the original pack.
+
+The packaged database is an optimization rather than a second source of truth. Source documents, statements and relations remain in the JSON pack. The client verifies the downloaded database before importing it, and discards it in favor of ordinary local indexing whenever compatibility or integrity checks fail.
 
 ### PDF and DOCX
 
@@ -309,7 +334,7 @@ Future MiniMed integration requires separate approval and MiniMed-owned retrieva
 ## Remaining work
 
 - review workflow for OCR output;
-- database import/export adapters and optional prebuilt SQLite/FTS artifacts;
+- database import/export adapters;
 - optional LLM classification of deterministic source-discrepancy candidates;
 - confirmed source discrepancies in the answer evidence envelope;
 - representative mobile benchmarks;

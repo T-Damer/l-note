@@ -7,6 +7,21 @@ function defaultWorkerFactory() {
   return new Worker(SQLITE_SEARCH_WORKER_URL, { type: 'module', name: 'l-note-sqlite-fts' });
 }
 
+function preparedArtifact(artifact) {
+  if (!artifact?.blob) return null;
+  return {
+    id: artifact.id,
+    kind: artifact.kind,
+    formatVersion: artifact.formatVersion,
+    runtime: artifact.runtime,
+    sha256: artifact.sha256,
+    bytes: artifact.bytes,
+    corpusFingerprint: artifact.corpusFingerprint,
+    recordCount: artifact.recordCount,
+    blob: artifact.blob,
+  };
+}
+
 export class SqliteFtsSearchPort {
   constructor({ workerFactory = defaultWorkerFactory } = {}) {
     this.kind = 'SQLite/FTS5';
@@ -68,8 +83,12 @@ export class SqliteFtsSearchPort {
     });
   }
 
-  async build(records, { fingerprint = '', onProgress } = {}) {
-    const result = await this.request('build', { records, fingerprint }, { onProgress });
+  async build(records, { fingerprint = '', onProgress, artifact = null } = {}) {
+    const result = await this.request('build', {
+      records,
+      fingerprint,
+      artifact: preparedArtifact(artifact),
+    }, { onProgress });
     this.count = Number(result?.recordCount ?? records?.length ?? 0);
     return result;
   }

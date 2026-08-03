@@ -1,4 +1,8 @@
-import type { KnowledgeConcept, SearchRecord } from '../core/contracts.js';
+import type {
+  KnowledgeConcept,
+  SearchRecord,
+  StoredSearchArtifactFile,
+} from '../core/contracts.js';
 import type { AsyncSearchPort, SearchPort } from '../core/ports.js';
 
 export const DISK_SEARCH_RECORD_THRESHOLD: number;
@@ -7,6 +11,7 @@ export const DISK_SEARCH_BYTE_THRESHOLD: number;
 export interface AdaptiveSearchOptions {
   queryExpanders?: Array<(query: string) => string[]>;
   corpusFingerprint?: string;
+  prebuiltSearchArtifact?: StoredSearchArtifactFile | null;
   forceDisk?: boolean;
   recordThreshold?: number;
   byteThreshold?: number;

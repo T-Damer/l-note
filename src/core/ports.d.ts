@@ -6,6 +6,7 @@ import type {
   PersonalNote,
   SearchRecord,
   SearchResult,
+  StoredSearchArtifactFile,
 } from './contracts.js';
 
 export interface SearchOptions {
@@ -42,6 +43,7 @@ export interface AsyncSearchPort {
     records: SearchRecord[],
     options?: {
       fingerprint?: string;
+      artifact?: StoredSearchArtifactFile | null;
       onProgress?: (progress: unknown) => void;
     },
   ): Promise<AsyncSearchStats>;
@@ -180,6 +182,7 @@ export type SearchPortFactory = (
   options?: {
     queryExpanders?: Array<(query: string) => string[]>;
     corpusFingerprint?: string;
+    prebuiltSearchArtifact?: StoredSearchArtifactFile | null;
   },
 ) => SearchPort;
 

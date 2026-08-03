@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, local voice search, the persisted transfer queue, deterministic discrepancy review, PDF/DOCX extraction and mandatory review of LLM semantic proposals are implemented; next are OCR review, database exporters, distributable prebuilt search artifacts and confirmed-discrepancy evidence. Android/iOS and live MiniMed integration remain deferred.
+**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, local voice search, the persisted transfer queue, deterministic discrepancy review, PDF/DOCX extraction, mandatory review of LLM semantic proposals and distributable prebuilt search artifacts are implemented; next are confirmed-discrepancy evidence, OCR review and database import/export adapters. Android/iOS and live MiniMed integration remain deferred.
 
 ## Universal core and MiniMed
 
@@ -37,7 +37,7 @@ Single source of future work. Completed items describe the active branch.
 - [x] Cover real FTS5 build, exact search, fuzzy Russian search, close and persisted reopen in headless Chromium.
 - [x] Place search suggestions directly below the input as a horizontal touch-scroll rail without a visible scrollbar.
 - [ ] Tune the current 5,000-record / approximately 8 MiB threshold on representative mobile devices.
-- [ ] Import optional prebuilt SQLite search artifacts from large distributable packs.
+- [x] Import optional prebuilt SQLite search artifacts from large distributable packs.
 - [ ] Add broader non-demo and large-corpus ranking regressions.
 - [ ] Add an optional OPFS adapter for controlled hosting/native shells with suitable isolation headers.
 
@@ -154,7 +154,7 @@ Single source of future work. Completed items describe the active branch.
 - [x] Bound external-tool runtime and output size and report extraction warnings instead of inventing missing text.
 - [ ] Add a review workflow for OCR output before publication.
 - [ ] Add database import/export adapters.
-- [ ] Add optional prebuilt SQLite/FTS artifacts to large packs.
+- [x] Add optional prebuilt SQLite/FTS artifacts to large packs.
 - [ ] Keep heavy preparation jobs and intermediate corpora on disk rather than in application RAM.
 
 ## Documentation

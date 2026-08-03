@@ -7,6 +7,8 @@ import { tmpdir } from 'node:os';
 import { extname, join, resolve, sep } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 
+import { buildPrebuiltSearchArtifact } from './build-search-artifact.mjs';
+
 const root = process.cwd();
 const dist = resolve(root, 'dist');
 const required = process.env.CI === 'true' || process.env.LNOTE_REQUIRE_SQLITE_E2E === '1';
@@ -42,20 +44,6 @@ async function waitFor(check, message, timeoutMs = 90_000) {
   throw new Error(`${message}${lastError ? `: ${lastError.message}` : ''}`);
 }
 
-async function withTimeout(promise, message, timeoutMs = 90_000) {
-  let timeoutId;
-  try {
-    return await Promise.race([
-      promise,
-      new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error(message)), timeoutMs);
-      }),
-    ]);
-  } finally {
-    clearTimeout(timeoutId);
-  }
-}
-
 async function waitForProcessExit(child, timeoutMs = 2_000) {
   if (child.exitCode !== null || child.signalCode !== null) return;
   await Promise.race([
@@ -75,16 +63,27 @@ async function closeServer(server) {
   ]);
 }
 
+async function removeTemporaryPath(pathname) {
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    try {
+      await rm(pathname, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      return;
+    } catch (error) {
+      if (!['ENOTEMPTY', 'EBUSY', 'EPERM'].includes(error?.code) || attempt === 29) {
+        console.warn(`Temporary smoke path could not be removed: ${pathname}`, error);
+        return;
+      }
+      await new Promise((resolvePromise) => setTimeout(resolvePromise, 100 + attempt * 25));
+    }
+  }
+}
+
 function createStaticServer() {
   const types = new Map([
-    ['.css', 'text/css; charset=utf-8'],
     ['.html', 'text/html; charset=utf-8'],
     ['.js', 'text/javascript; charset=utf-8'],
     ['.json', 'application/json; charset=utf-8'],
-    ['.svg', 'image/svg+xml'],
     ['.wasm', 'application/wasm'],
-    ['.woff2', 'font/woff2'],
-    ['.webmanifest', 'application/manifest+json; charset=utf-8'],
   ]);
   return createServer(async (request, response) => {
     try {
@@ -112,7 +111,7 @@ class CdpClient {
     this.nextId = 1;
     this.pending = new Map();
     socket.addEventListener('message', async (event) => {
-      const raw = typeof event.data === 'string' ? event.data : await event.data.text?.() ?? String(event.data);
+      const raw = typeof event.data === 'string' ? event.data : await event.data.text();
       const message = JSON.parse(raw);
       if (!message.id) return;
       const pending = this.pending.get(message.id);
@@ -120,10 +119,6 @@ class CdpClient {
       this.pending.delete(message.id);
       if (message.error) pending.reject(new Error(message.error.message));
       else pending.resolve(message.result);
-    });
-    socket.addEventListener('close', () => {
-      for (const pending of this.pending.values()) pending.reject(new Error('CDP socket closed'));
-      this.pending.clear();
     });
   }
 
@@ -152,7 +147,7 @@ class CdpClient {
       returnByValue: true,
     });
     if (response.exceptionDetails) {
-      throw new Error(response.exceptionDetails.exception?.description ?? response.exceptionDetails.text ?? 'Evaluation failed');
+      throw new Error(response.exceptionDetails.exception?.description ?? response.exceptionDetails.text);
     }
     return response.result?.value;
   }
@@ -164,13 +159,25 @@ class CdpClient {
 
 const executable = browserExecutable();
 if (!executable) {
-  const message = 'Chrome/Chromium was not found; SQLite browser smoke was skipped.';
+  const message = 'Chrome/Chromium was not found; prebuilt SQLite artifact smoke was skipped.';
   if (required) throw new Error(message);
   console.log(message);
   process.exit(0);
 }
 if (typeof WebSocket !== 'function') throw new Error('Node WebSocket support is required.');
 await access(join(dist, 'index.html'));
+
+const databaseName = 'prebuilt-search-smoke.sqlite';
+const packName = 'prebuilt-search-smoke.pack.json';
+const databasePath = join(dist, databaseName);
+const packPath = join(dist, packName);
+await buildPrebuiltSearchArtifact({
+  inputPath: join(root, 'packs', 'lnote-guide.pack.json'),
+  databasePath,
+  packOutputPath: packPath,
+  artifactUrl: `./${databaseName}`,
+  builtAt: '2026-08-03T00:00:00.000Z',
+});
 
 const server = createStaticServer();
 await new Promise((resolvePromise, reject) => {
@@ -179,9 +186,8 @@ await new Promise((resolvePromise, reject) => {
 });
 const address = server.address();
 const appPort = typeof address === 'object' && address ? address.port : 4173;
-const debugPort = 9_500 + Math.floor(Math.random() * 400);
-const profileDir = await mkdtemp(join(tmpdir(), 'l-note-sqlite-smoke-'));
-const appUrl = `http://127.0.0.1:${appPort}/#/search`;
+const debugPort = 9_900 + Math.floor(Math.random() * 80);
+const profileDir = await mkdtemp(join(tmpdir(), 'l-note-prebuilt-search-'));
 const browser = spawn(executable, [
   '--headless=new',
   '--no-sandbox',
@@ -190,7 +196,7 @@ const browser = spawn(executable, [
   '--no-first-run',
   `--remote-debugging-port=${debugPort}`,
   `--user-data-dir=${profileDir}`,
-  appUrl,
+  `http://127.0.0.1:${appPort}/#/search`,
 ], { stdio: ['ignore', 'pipe', 'pipe'] });
 browser.stdout?.resume();
 browser.stderr?.resume();
@@ -202,115 +208,71 @@ try {
     if (!response.ok) return null;
     const targets = await response.json();
     return targets.find((item) => item.type === 'page' && item.url.startsWith(`http://127.0.0.1:${appPort}/`));
-  }, 'SQLite smoke browser target did not become available');
+  }, 'Prebuilt SQLite smoke browser target did not become available');
   client = await CdpClient.connect(target.webSocketDebuggerUrl);
   await client.send('Runtime.enable');
 
-  const result = await withTimeout(client.evaluate(`(async () => {
-    const bounded = async (label, promise, timeoutMs = 25_000) => {
-      let timeoutId;
-      globalThis.__sqliteSmokeStage = label;
-      try {
-        return await Promise.race([
-          promise,
-          new Promise((_, reject) => {
-            timeoutId = setTimeout(() => reject(new Error('SQLite stage timed out: ' + label)), timeoutMs);
-          }),
-        ]);
-      } finally {
-        clearTimeout(timeoutId);
-      }
-    };
-    const safeClose = async (port, label) => {
-      if (!port) return;
-      try {
-        await bounded(label, port.close(), 5_000);
-      } catch {
-        // The outer browser process is terminated after this evaluation.
-      }
-    };
-    const sqliteModuleUrl = 'http://127.0.0.1:${appPort}/src/adapters/sqlite-fts-search.js';
-    const { createSqliteFtsSearchPort } = await bounded(
-      'module-import',
-      import(sqliteModuleUrl),
-    );
-    const records = [{
-      id: 'section:smoke:bronchiolitis',
-      kind: 'section',
-      packId: 'smoke',
-      packTitle: 'SQLite smoke',
-      documentId: 'smoke.bronchiolitis',
-      documentTitle: 'Бронхиолит у детей',
-      sectionId: 'clinical',
-      title: 'Свистящее дыхание',
-      body: 'При бронхиолите возможно свистящее дыхание и затруднение выдоха.',
-      aliases: 'бронхообструкция',
-      entityNames: 'Бронхиолит',
-      tags: 'педиатрия дыхательная система',
-      authority: 'reference',
-    }];
-    let firstPort;
-    let reopenedPort;
-    try {
-      firstPort = createSqliteFtsSearchPort();
-      const firstBuild = await bounded(
-        'first-build',
-        firstPort.build(records, { fingerprint: 'browser-sqlite-smoke-v1' }),
-      );
-      const exact = await bounded('exact-search', firstPort.search('бронхиолит', { limit: 5 }));
-      const fuzzy = await bounded('fuzzy-search', firstPort.search('бронхиалит', { limit: 5 }));
-      const suggestions = await bounded('suggestions', firstPort.suggest('бронхи', 5));
-      await bounded('first-close', firstPort.close(), 10_000);
-      firstPort = null;
+  const result = await client.evaluate(`(async () => {
+    const baseUrl = 'http://127.0.0.1:${appPort}/';
+    const [{ createSqliteFtsSearchPort }, { flattenKnowledge }, { knowledgeCorpusFingerprint }] = await Promise.all([
+      import(baseUrl + 'src/adapters/sqlite-fts-search.js'),
+      import(baseUrl + 'src/packs.js'),
+      import(baseUrl + 'src/core/runtime.js'),
+    ]);
+    const pack = await fetch(baseUrl + '${packName}').then((response) => response.json());
+    const blob = await fetch(baseUrl + '${databaseName}').then((response) => response.blob());
+    const records = flattenKnowledge([pack], []);
+    const fingerprint = knowledgeCorpusFingerprint([pack], []);
+    const descriptor = { ...pack.searchArtifacts[0], blob };
 
-      reopenedPort = createSqliteFtsSearchPort();
-      const reopenedBuild = await bounded(
-        'reopened-build',
-        reopenedPort.build(records, { fingerprint: 'browser-sqlite-smoke-v1' }),
-      );
-      const reopenedExact = await bounded(
-        'reopened-search',
-        reopenedPort.search('бронхиолит', { limit: 5 }),
-      );
-      return {
-        firstBuild,
-        reopenedBuild,
-        exactId: exact[0]?.id ?? null,
-        fuzzyId: fuzzy[0]?.id ?? null,
-        reopenedExactId: reopenedExact[0]?.id ?? null,
-        suggestions,
-      };
-    } finally {
-      await safeClose(firstPort, 'first-cleanup');
-      await safeClose(reopenedPort, 'reopened-cleanup');
-    }
-  })()`), 'SQLite browser smoke timed out.');
+    const importedPort = createSqliteFtsSearchPort();
+    const imported = await importedPort.build(records, { fingerprint, artifact: descriptor });
+    const importedResults = await importedPort.search('sqlite', { limit: 5 });
+    await importedPort.close();
 
-  assert.equal(result.firstBuild.backend, 'sqlite-fts5-idb-v1');
-  assert.equal(result.firstBuild.storage, 'indexeddb-vfs');
-  assert.equal(result.firstBuild.recordCount, 1);
-  assert.equal(result.reopenedBuild.reused, true);
-  assert.equal(result.exactId, 'section:smoke:bronchiolitis');
-  assert.equal(result.fuzzyId, 'section:smoke:bronchiolitis');
-  assert.equal(result.reopenedExactId, 'section:smoke:bronchiolitis');
-  assert.ok(result.suggestions.includes('бронхиолит'));
-  console.log(`SQLite browser smoke passed: SQLite ${result.firstBuild.sqliteVersion}, persisted FTS5 index reopened from IndexedDB.`);
-} catch (error) {
-  let stage = 'unknown';
-  try {
-    stage = await client?.evaluate('globalThis.__sqliteSmokeStage ?? "unknown"') ?? 'unknown';
-  } catch {
-    // Browser diagnostics are best effort.
-  }
-  throw new Error(`${error.message} Last stage: ${stage}`);
+    const fallbackPort = createSqliteFtsSearchPort();
+    const fallback = await fallbackPort.build(records, {
+      fingerprint,
+      artifact: { ...descriptor, sha256: '0'.repeat(64) },
+    });
+    const fallbackResults = await fallbackPort.search('sqlite', { limit: 5 });
+    await fallbackPort.close();
+    return {
+      imported,
+      importedResultId: importedResults[0]?.id ?? null,
+      fallback,
+      fallbackResultId: fallbackResults[0]?.id ?? null,
+    };
+  })()`);
+
+  const diagnostics = JSON.stringify(result);
+  console.log(`Prebuilt SQLite browser smoke result: ${diagnostics}`);
+  assert.equal(result.imported.imported, true, `Expected verified artifact import: ${diagnostics}`);
+  assert.equal(result.imported.reused, true, `Expected imported artifact reuse: ${diagnostics}`);
+  assert.match(result.importedResultId, /^section:lnote\.guide:/u, `Imported artifact search failed: ${diagnostics}`);
+  assert.equal(result.fallback.artifactFallback, true, `Expected corrupt-artifact fallback: ${diagnostics}`);
+  assert.match(result.fallbackResultId, /^section:lnote\.guide:/u, `Fallback search failed: ${diagnostics}`);
+  console.log('Prebuilt SQLite browser smoke passed: verified import, search and corrupt-artifact fallback.');
 } finally {
+  try {
+    await client?.send('Browser.close');
+  } catch {
+    // Closing the browser also closes the CDP socket.
+  }
   client?.close();
-  browser.kill('SIGTERM');
-  await waitForProcessExit(browser);
+  await waitForProcessExit(browser, 5_000);
+  if (browser.exitCode === null && browser.signalCode === null) {
+    browser.kill('SIGTERM');
+    await waitForProcessExit(browser, 3_000);
+  }
   if (browser.exitCode === null && browser.signalCode === null) {
     browser.kill('SIGKILL');
     await waitForProcessExit(browser, 1_000);
   }
   await closeServer(server);
-  await rm(profileDir, { recursive: true, force: true, maxRetries: 20, retryDelay: 100 });
+  await Promise.all([
+    removeTemporaryPath(profileDir),
+    removeTemporaryPath(databasePath),
+    removeTemporaryPath(packPath),
+  ]);
 }

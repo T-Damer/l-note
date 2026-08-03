@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v40';
-const RUNTIME_CACHE = 'l-note-runtime-v40';
+const SHELL_CACHE = 'l-note-shell-v41';
+const RUNTIME_CACHE = 'l-note-runtime-v41';
 const SHELL = [
   './',
   './index.html',
@@ -32,6 +32,7 @@ const SHELL = [
   './src/integrations/minimed-adapter.js',
   './src/helpers/disk-search.js',
   './src/helpers/sqlite-fts.js',
+  './src/helpers/prebuilt-search-artifacts.js',
   './src/helpers/document-assets.js',
   './src/helpers/entity-terms.js',
   './src/helpers/model-formatters.js',
@@ -65,6 +66,7 @@ const SHELL = [
   './src/services/browser-pack-builder.js',
   './src/services/evidence-query.js',
   './src/services/evidence-support-verifier.js',
+  './src/services/installed-pack-record.js',
   './src/services/local-model-loader.js',
   './src/services/model-action.js',
   './src/services/model-lifecycle.js',
@@ -77,7 +79,9 @@ const SHELL = [
   './src/services/transfer-queue.js',
   './src/services/welcome-note.js',
   './src/workers/search-worker.js',
+  './src/workers/sqlite-artifact-runtime.js',
   './src/workers/sqlite-fts-runtime.js',
+  './src/workers/sqlite-runtime-modules.js',
   './src/workers/sqlite-search-worker.js',
   './src/workers/speech-worker.js',
   './src/workers/webllm-worker.js',
