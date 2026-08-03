@@ -22,9 +22,10 @@
     }
   },
   "scripts": {
-    "serve": "node tools/build-icons.mjs && node tools/build-styles.mjs && node tools/serve.mjs",
+    "serve": "node tools/build-icons.mjs && node tools/build-styles.mjs && node tools/build-pdf-inspector.mjs && node tools/serve.mjs",
     "build:icons": "node tools/build-icons.mjs",
     "build:styles": "node tools/build-styles.mjs",
+    "build:pdf-inspector": "node tools/build-pdf-inspector.mjs",
     "build:pack": "node tools/build-pack.mjs",
     "build:search-artifact": "node tools/build-search-artifact.mjs",
     "database:pack": "node tools/database-pack.mjs",
@@ -43,6 +44,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@firecrawl/pdf-inspector-wasm": "0.1.3",
     "@phosphor-icons/web": "2.1.2",
     "minisearch": "7.2.0"
   }
