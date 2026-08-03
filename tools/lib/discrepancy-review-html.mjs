@@ -1,17 +1,12 @@
-function escapeJsonForHtml(value) {
-  return JSON.stringify(value)
-    .replaceAll('&', '\u0026')
-    .replaceAll('<', '\u003c')
-    .replaceAll('>', '\u003e')
-    .replaceAll('\u2028', '\\u2028')
-    .replaceAll('\u2029', '\\u2029');
+function reviewDataBase64(value) {
+  return Buffer.from(JSON.stringify(value), 'utf8').toString('base64');
 }
 
 export function renderDiscrepancyReviewHtml(review) {
   if (review?.kind !== 'lnote.statement-relation-review') {
     throw new TypeError('A statement-relation review is required.');
   }
-  const data = escapeJsonForHtml(review);
+  const data = reviewDataBase64(review);
   return `<!doctype html>
 <html lang="ru">
 <head>
@@ -60,9 +55,11 @@ export function renderDiscrepancyReviewHtml(review) {
   </header>
   <div id="summary" class="summary"></div>
   <main id="candidates"></main>
-  <script id="review-data" type="application/json">${data}</script>
+  <script id="review-data" type="application/octet-stream">${data}</script>
   <script>
-    const review = JSON.parse(document.querySelector('#review-data').textContent);
+    const encoded = document.querySelector('#review-data').textContent.trim();
+    const bytes = Uint8Array.from(atob(encoded), (character) => character.charCodeAt(0));
+    const review = JSON.parse(new TextDecoder().decode(bytes));
     const allowedTypes = [
       ['contradicts', 'Противоречит'],
       ['different_scope', 'Разные условия'],
