@@ -1,10 +1,17 @@
 import { defineAsyncSearchPort } from '../core/ports.js';
+import { resolveSearchArtifactUrl } from '../helpers/search-artifacts.js';
 
 const SQLITE_SEARCH_WORKER_URL = new URL('../workers/sqlite-search-worker.js', import.meta.url);
 
 function defaultWorkerFactory() {
   if (typeof Worker !== 'function') throw new Error('Web Worker недоступен.');
   return new Worker(SQLITE_SEARCH_WORKER_URL, { type: 'module', name: 'l-note-sqlite-fts' });
+}
+
+function preparedArtifact(artifact) {
+  if (!artifact) return null;
+  const url = resolveSearchArtifactUrl(artifact);
+  return url ? { ...artifact, url } : null;
 }
 
 export class SqliteFtsSearchPort {
@@ -68,8 +75,12 @@ export class SqliteFtsSearchPort {
     });
   }
 
-  async build(records, { fingerprint = '', onProgress } = {}) {
-    const result = await this.request('build', { records, fingerprint }, { onProgress });
+  async build(records, { fingerprint = '', onProgress, artifact = null } = {}) {
+    const result = await this.request('build', {
+      records,
+      fingerprint,
+      artifact: preparedArtifact(artifact),
+    }, { onProgress });
     this.count = Number(result?.recordCount ?? records?.length ?? 0);
     return result;
   }
