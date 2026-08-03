@@ -58,6 +58,7 @@ const offlineModules = [
   'src/workers/search-worker.js',
   'src/workers/sqlite-artifact-runtime.js',
   'src/workers/sqlite-fts-runtime.js',
+  'src/workers/sqlite-runtime-modules.js',
   'src/workers/sqlite-search-worker.js',
   'src/workers/speech-worker.js',
   'src/workers/webllm-worker.js',
@@ -152,17 +153,25 @@ test('static build contains the complete local-first shell', async () => {
     /await this\.request\('close'\)/u,
   ]);
   await assertContains('src/workers/sqlite-fts-runtime.js', [
-    /@subframe7536\/sqlite-wasm/u,
-    /useIdbStorage/u,
-    /withExistDB/u,
+    /loadSqliteRuntimeModules/u,
+    /modules\.useIdbStorage/u,
+    /modules\.withExistDB/u,
     /reopenFromFile/u,
-    /wa-sqlite-async\.wasm/u,
     /CREATE VIRTUAL TABLE IF NOT EXISTS records_fts USING fts5/u,
     /bm25\(records_fts/u,
+  ]);
+  await assertContains('src/workers/sqlite-runtime-modules.js', [
+    /@subframe7536\/sqlite-wasm/u,
+    /cdn\.jsdelivr\.net/u,
+    /wa-sqlite-async\.wasm/u,
+    /initSQLite/u,
+    /useIdbStorage/u,
+    /withExistDB/u,
   ]);
   await assertContains('src/workers/sqlite-artifact-runtime.js', [
     /quick_check/u,
     /artifactFormatVersion/u,
+    /sqliteImportStream/u,
     /reopenFromFile/u,
     /resetSqliteSearchStorage/u,
   ]);
@@ -252,6 +261,7 @@ test('static build contains the complete local-first shell', async () => {
     /installed-pack-record\.js/u,
     /sqlite-artifact-runtime\.js/u,
     /sqlite-fts-search\.js/u,
+    /sqlite-runtime-modules\.js/u,
     /sqlite-search-worker\.js/u,
     /statement-conflicts\.js/u,
     /statement-conflict-view\.js/u,
