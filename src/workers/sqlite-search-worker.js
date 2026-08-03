@@ -1,3 +1,7 @@
+import {
+  importSqliteSearchArtifact,
+  resetSqliteSearchStorage,
+} from './sqlite-artifact-runtime.js';
 import { SqliteFtsRuntime } from './sqlite-fts-runtime.js';
 
 const runtime = new SqliteFtsRuntime();
@@ -7,14 +11,44 @@ function postProgress(requestId, progress) {
   self.postMessage({ requestId, type: 'progress', progress });
 }
 
+async function build(message) {
+  const records = message.records ?? [];
+  const options = {
+    fingerprint: message.fingerprint ?? '',
+    onProgress: (progress) => postProgress(message.requestId, progress),
+  };
+  if (message.artifact) {
+    try {
+      return await importSqliteSearchArtifact(runtime, message.artifact, {
+        onProgress: options.onProgress,
+      });
+    } catch (error) {
+      postProgress(message.requestId, {
+        stage: 'artifact-fallback',
+        completed: 0,
+        total: records.length,
+      });
+      try {
+        await resetSqliteSearchStorage(runtime);
+      } catch (resetError) {
+        throw new Error(`Prebuilt search import failed and storage reset failed: ${resetError.message}`, {
+          cause: error,
+        });
+      }
+      const result = await runtime.build(records, options);
+      return {
+        ...result,
+        artifactFallback: true,
+        artifactError: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+  return runtime.build(records, options);
+}
+
 async function handle(message) {
   const options = message.options ?? {};
-  if (message.command === 'build') {
-    return runtime.build(message.records ?? [], {
-      fingerprint: message.fingerprint ?? '',
-      onProgress: (progress) => postProgress(message.requestId, progress),
-    });
-  }
+  if (message.command === 'build') return build(message);
   if (message.command === 'search') return runtime.search(message.query, options);
   if (message.command === 'suggest') return runtime.suggest(message.query, message.limit);
   if (message.command === 'clear') return runtime.clear();
