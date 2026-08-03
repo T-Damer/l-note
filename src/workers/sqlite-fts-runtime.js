@@ -52,6 +52,11 @@ const SCHEMA_SQL = `
     value TEXT NOT NULL
   );
 `;
+const RESET_SCHEMA_SQL = `
+  DROP TABLE IF EXISTS records_vocab;
+  DROP TABLE IF EXISTS records_fts;
+  DROP TABLE IF EXISTS search_meta;
+`;
 
 function errorAt(stage, error) {
   const message = error instanceof Error ? error.message : String(error);
@@ -242,6 +247,17 @@ export class SqliteFtsRuntime {
       builtAt,
       fingerprint,
     };
+  }
+
+  async reset() {
+    await this.init();
+    try {
+      await this.connection.run(RESET_SCHEMA_SQL);
+      await this.connection.run(SCHEMA_SQL);
+    } catch (error) {
+      throw errorAt('schema reset failed', error);
+    }
+    return this.stats();
   }
 
   async clear() {
