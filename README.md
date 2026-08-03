@@ -20,6 +20,7 @@ The released site is built from `main` after the complete validation gate passes
 - internal PDF viewing with exact page anchors;
 - reviewed source discrepancies with document dates and text diffs;
 - preparation-time comparison against existing pack files;
+- strong-device PDF/DOCX extraction with page or paragraph provenance;
 - browser-local pack creation from Markdown, TXT, JSON or pasted text;
 - local Russian/English voice search;
 - optional local WebLLM answers over bounded evidence;
@@ -137,7 +138,7 @@ transfer state                      StoragePort / IndexedDB
 small search index                  JavaScript memory
 large FTS database                  SQLite over IndexedDB VFS
 large-search fallback               IndexedDB postings
-model data                           browser model caches
+model data                          browser model caches
 active results and evidence         bounded JavaScript working set
 ```
 
@@ -154,6 +155,55 @@ node tools/build-pack.mjs ./my-knowledge \
   --description "Private reference data" \
   --output ./dist/my-pack.json
 ```
+
+### PDF and DOCX
+
+The document preparer turns a file or directory into a normalized authoring directory. Original files are copied into `assets/`.
+
+Required local tools:
+
+- PDF text: `pdftotext` from Poppler;
+- DOCX: `unzip`;
+- optional scanned-PDF OCR: `pdftoppm` from Poppler and `tesseract` with the selected language data.
+
+Prepare ordinary PDF and DOCX files:
+
+```bash
+npm run prepare:documents -- ./documents \
+  --output ./prepared/my-documents \
+  --id com.example.documents \
+  --title "My documents"
+```
+
+For scanned PDF pages that have no text layer:
+
+```bash
+npm run prepare:documents -- ./documents \
+  --output ./prepared/my-documents \
+  --id com.example.documents \
+  --title "My documents" \
+  --ocr \
+  --ocr-language rus+eng
+```
+
+Then compile the prepared directory:
+
+```bash
+node tools/build-pack.mjs \
+  --input ./prepared/my-documents \
+  --output ./dist/my-documents.pack.json
+```
+
+The preparer preserves:
+
+- one-based PDF page numbers through `assetAnchor.page`;
+- the original PDF for the internal reader;
+- DOCX heading groups;
+- DOCX paragraph start/end ranges;
+- extractor name, preparation time and source path;
+- warnings for pages with no usable text.
+
+OCR runs only for PDF pages whose text layer is empty. OCR output remains ordinary extracted source text and should be reviewed before publication; the CLI does not silently certify its accuracy.
 
 ### Compare with existing prepared packs
 
@@ -232,10 +282,9 @@ Future MiniMed integration requires separate approval and MiniMed-owned retrieva
 
 ## Remaining work
 
+- review UI for OCR output and other proposed concepts, statements, aliases and entity relations;
 - optional local/server LLM classification after deterministic discrepancy retrieval;
-- review of proposed concepts, statements, aliases and entity relations;
-- PDF/DOCX extraction, OCR and database exporters;
-- optional prebuilt SQLite/FTS artifacts in large packs;
+- database import/export adapters and optional prebuilt SQLite/FTS artifacts;
 - representative mobile benchmarks;
 - optional OPFS and vector-search adapters;
 - signed catalogs, delta updates, encrypted notes and synchronization;

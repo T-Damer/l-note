@@ -12,6 +12,7 @@ L-Note is a hosted offline-first knowledge workspace with:
 - reviewed cross-document discrepancies with source dates and deterministic diffs;
 - deterministic preparation-time comparison against existing pack files;
 - standalone JSON/HTML review artifacts for proposed statement relations;
+- strong-device PDF/DOCX extraction with page/paragraph provenance and optional OCR;
 - browser-local Markdown/TXT/JSON package creation;
 - local RU/EN voice search;
 - optional local WebLLM answers over bounded evidence;
@@ -46,7 +47,7 @@ src/ui/            reusable controls, typography, dialogs and graphs
 src/helpers/       deterministic parsing, matching and formatting
 src/workers/       SQLite, fallback search, speech and WebLLM runtimes
 src/integrations/  isolated external-product boundaries
-tools/lib/         strong-device preparation and review helpers
+tools/lib/         strong-device extraction, preparation and review helpers
 ```
 
 `src/app-parts/` is composition-only transitional code. New behavior belongs in the layers above and is wired from a small app-part.
@@ -134,7 +135,7 @@ The client never chooses a winning source, infers obsolescence from date or remo
 
 ## Preparation-time discrepancy review
 
-The strong-device CLI now implements the deterministic portion of discrepancy preparation:
+The strong-device CLI implements the deterministic portion of discrepancy preparation:
 
 ```text
 new prepared pack + existing pack files
@@ -154,6 +155,38 @@ The review artifact is preparation state, not part of schema-v1. Its candidates 
 Compatible units are canonicalized before comparison. For example, `500 мг` and `0,5 г` are equivalent; `500 мг` and `1 г` are a numeric difference. Age and population differences remain `different_scope` candidates even when their numbers differ.
 
 Dates are retained for human context but do not imply precedence. Explicit chronology-based candidate signals, optional LLM classification and preferred/current designation remain separate future steps.
+
+## Document extraction
+
+PDF and DOCX preparation runs outside the hosted application:
+
+```text
+PDF / DOCX file or directory
+  → bounded external extractor process
+  → normalized documents and sections
+  → original files copied into assets/
+  → authoring directory
+  → existing build-pack validator/compiler
+  → installable pack
+```
+
+PDF processing:
+
+- `pdftotext -layout` supplies one-based page text;
+- each searchable section keeps `assetAnchor.page` and `provenance.kind = pdf-page`;
+- the original PDF becomes an internal reader asset;
+- when `--ocr` is enabled, only pages with an empty text layer are rasterized through `pdftoppm` and passed to Tesseract;
+- pages that remain empty generate warnings rather than invented content.
+
+DOCX processing:
+
+- `unzip -p file.docx word/document.xml` supplies the document XML;
+- title and heading styles group paragraphs into sections;
+- every section keeps its original paragraph start/end range;
+- XML entities, tabs and line breaks are decoded deterministically;
+- the original DOCX is retained as a source asset even though the hosted reader currently embeds PDF only.
+
+External commands have execution time and output-size limits. Extraction output is not automatically considered reviewed: OCR text and semantic proposals still require a review workflow before trusted publication.
 
 ## Worker roles
 
@@ -256,7 +289,7 @@ PDF / DOCX / databases / notes
   → installable pack
 ```
 
-The comparison/review stage is implemented for source statements. PDF/DOCX extraction, OCR, review of other semantic proposals, LLM classification and prebuilt database artifacts remain pending.
+PDF/DOCX deterministic extraction and statement-discrepancy review are implemented. OCR review, database adapters, review of other semantic proposals, LLM classification and prebuilt database artifacts remain pending.
 
 Model output may propose structure but never silently replace source text or resolve a source disagreement.
 
@@ -268,13 +301,12 @@ MiniMed retains medical query parsing, clinical ranking, source policy, dose/reg
 
 ## Next ordered work
 
-1. Add PDF/DOCX deterministic extraction with page/paragraph provenance and OCR hooks.
-2. Add review for proposed concepts, statements, aliases and entity relations.
+1. Add review for OCR output and proposed concepts, statements, aliases and entity relations.
+2. Add database import/export adapters and optional prebuilt SQLite/FTS artifacts.
 3. Add optional local/server LLM classification after deterministic candidate retrieval.
 4. Add explicit date/edition chronology signals without automatic source precedence.
-5. Package optional prebuilt SQLite/FTS artifacts for large packs.
-6. Include confirmed source discrepancies in the local-answer evidence envelope.
-7. Benchmark search, speech and models on representative Snapdragon 7-class devices.
-8. Consider OPFS and vector adapters after the current baseline is measured.
+5. Include confirmed source discrepancies in the local-answer evidence envelope.
+6. Benchmark search, speech and models on representative Snapdragon 7-class devices.
+7. Consider OPFS and vector adapters after the current baseline is measured.
 
 Live MiniMed integration and native Android/iOS packaging remain deferred.

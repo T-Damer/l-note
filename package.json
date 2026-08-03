@@ -26,6 +26,7 @@
     "build:icons": "node tools/build-icons.mjs",
     "build:styles": "node tools/build-styles.mjs",
     "build:pack": "node tools/build-pack.mjs",
+    "prepare:documents": "node tools/prepare-documents.mjs",
     "build:static": "node tools/build-static.mjs",
     "validate": "node tools/validate-packs.mjs",
     "check:structure": "node tools/check-code-structure.mjs",
