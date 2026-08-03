@@ -27,5 +27,9 @@ export async function inspectPdfFile(filename) {
     includePageMarkers: true,
     includeImages: true,
   });
-  return { ...result, parserVersion: module.version() };
+  return {
+    ...result,
+    parserVersion: module.version(),
+    sourceFilename: path.basename(filename),
+  };
 }

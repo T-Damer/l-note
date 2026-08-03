@@ -36,8 +36,11 @@ export async function inspectBrowserPdf(file, {
     }, { once: true });
     worker.addEventListener('message', (event) => {
       if (event.data?.id !== id) return;
-      if (event.data.ok) finish(resolve, event.data.result);
-      else finish(reject, workerError('Не удалось разобрать PDF локально.', event.data.error));
+      if (event.data.ok) {
+        finish(resolve, { ...event.data.result, sourceFilename: file.name });
+      } else {
+        finish(reject, workerError('Не удалось разобрать PDF локально.', event.data.error));
+      }
     });
     worker.postMessage({ id, buffer }, [buffer]);
   });

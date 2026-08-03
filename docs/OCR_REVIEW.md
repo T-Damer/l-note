@@ -48,6 +48,8 @@ For each PDF, L-Note preserves:
 - parser version, PDF classification, confidence and layout diagnostics;
 - the exact page list and reasons reported by `pagesNeedingOcr`.
 
+URI annotations that resolve back to the current PDF are normalized before sectioning and indexing. Fragment links, the current PDF filename and an exact known source URL lose their self-referential destination while their meaningful visible label remains. A standalone duplicate URL to the current PDF is removed. Links to other documents and Markdown image syntax are preserved.
+
 Pages marked as needing OCR are not converted into searchable sections. This is conservative by design: a broken or empty text layer must not become evidence merely because neighboring pages parsed successfully.
 
 ## Strong-device preparation
