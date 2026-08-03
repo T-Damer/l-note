@@ -8,6 +8,7 @@ import {
   applyDiscrepancyReview,
   createDiscrepancyReview,
 } from './lib/discrepancy-review.mjs';
+import { renderDiscrepancyReviewHtml } from './lib/discrepancy-review-html.mjs';
 import {
   buildPackFromPath,
   createOpenAiCompatibleProvider,
@@ -70,11 +71,15 @@ async function readPackFile(filename) {
   return assertValidPack(await readJson(resolve(filename)), `Comparison pack ${filename}`);
 }
 
-async function writeJson(filename, value) {
+async function writeText(filename, value) {
   const output = resolve(filename);
   await mkdir(dirname(output), { recursive: true });
-  await writeFile(output, `${JSON.stringify(value, null, 2)}\n`);
+  await writeFile(output, value);
   return output;
+}
+
+async function writeJson(filename, value) {
+  return writeText(filename, `${JSON.stringify(value, null, 2)}\n`);
 }
 
 export async function buildPack(inputRoot) {
@@ -121,10 +126,11 @@ Direct preparation options:
 Reviewed discrepancy workflow:
   --compare-pack path/to/existing.pack.json   repeat for several packs
   --discrepancy-review-out review.json        write possible statement differences
+  --discrepancy-review-html review.html       write an interactive offline review page
   --discrepancy-review-in reviewed.json       apply only entries marked decision=accept
   --reviewed-by "Reviewer name"
 
-The comparison step never changes the pack by itself. Edit the review file, set decisions to accept or dismiss, then run the builder again with --discrepancy-review-in.`;
+The comparison step never changes the pack by itself. Review candidates in JSON or the generated HTML page, download the result, then run the builder again with --discrepancy-review-in.`;
 }
 
 async function buildFromRawSources(args) {
@@ -168,11 +174,16 @@ export async function applyReviewOptions(pack, args) {
 }
 
 async function writeDiscrepancyReview(pack, args) {
-  if (!args.discrepancyReviewOut) return null;
+  if (!args.discrepancyReviewOut && !args.discrepancyReviewHtml) return null;
   const referencePacks = await Promise.all((args.comparePack ?? []).map(readPackFile));
   const review = createDiscrepancyReview({ pack, referencePacks });
-  const filename = await writeJson(args.discrepancyReviewOut, review);
-  return { filename, review };
+  const jsonFilename = args.discrepancyReviewOut
+    ? await writeJson(args.discrepancyReviewOut, review)
+    : null;
+  const htmlFilename = args.discrepancyReviewHtml
+    ? await writeText(args.discrepancyReviewHtml, renderDiscrepancyReviewHtml(review))
+    : null;
+  return { jsonFilename, htmlFilename, review };
 }
 
 async function main() {
@@ -190,7 +201,9 @@ async function main() {
   console.log(`Built ${output}`);
   console.log(`${pack.documents.length} documents, ${pack.entities.length} entities, ${pack.claims.length} claims, ${serializedBytes} bytes`);
   if (reviewResult) {
-    console.log(`Review ${reviewResult.filename}: ${reviewResult.review.candidates.length} possible differences`);
+    console.log(`Possible differences: ${reviewResult.review.candidates.length}`);
+    if (reviewResult.jsonFilename) console.log(`Review JSON: ${reviewResult.jsonFilename}`);
+    if (reviewResult.htmlFilename) console.log(`Review page: ${reviewResult.htmlFilename}`);
   }
 }
 
