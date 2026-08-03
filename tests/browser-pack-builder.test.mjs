@@ -6,18 +6,51 @@ import {
   parseBrowserMarkdown,
   proposedBrowserPackId,
 } from '../src/helpers/pack-source-parser.js';
+import {
+  pdfInspectorPages,
+  pdfInspectorSections,
+} from '../src/helpers/pdf-inspector-result.js';
 import { validatePack } from '../src/packs.js';
 import {
   browserPackStats,
   buildPackFromBrowserFiles,
 } from '../src/services/browser-pack-builder.js';
 
+const MIXED_PDF_RESULT = {
+  pdfType: 'Mixed',
+  pageCount: 3,
+  parserVersion: '0.1.3',
+  confidence: .94,
+  pagesNeedingOcr: [2],
+  ocrReasonsByPage: [{ page: 2, reasons: ['no_text_operators'] }],
+  hasEncodingIssues: false,
+  layout: { isComplex: true, pagesWithTables: [1], pagesWithColumns: [] },
+  markdown: [
+    '<!-- Page 1 -->',
+    '# Отчёт',
+    '',
+    '| Показатель | Значение |',
+    '| --- | ---: |',
+    '| A | 42 |',
+    '',
+    '<!-- Page 2 -->',
+    '[Image 1]',
+    '',
+    '<!-- Page 3 -->',
+    'Итоговый текст.',
+  ].join('\n'),
+};
+
 function sourceFile(name, text) {
+  const bytes = new TextEncoder().encode(text);
   return {
     name,
-    size: new TextEncoder().encode(text).byteLength,
+    size: bytes.byteLength,
     async text() {
       return text;
+    },
+    async arrayBuffer() {
+      return bytes.slice().buffer;
     },
   };
 }
@@ -59,6 +92,21 @@ test('browser JSON parser flattens ordinary data but preserves ready packs', () 
   assert.deepEqual(parseBrowserJson(JSON.stringify(ready), 'ready.json').existingPack, ready);
 });
 
+test('pdf-inspector page normalization preserves tables and excludes OCR pages', () => {
+  const pages = pdfInspectorPages(MIXED_PDF_RESULT);
+  assert.equal(pages.length, 3);
+  assert.match(pages[0].markdown, /\| Показатель \| Значение \|/u);
+  assert.equal(pages[1].needsOcr, true);
+  assert.deepEqual(pages[1].ocrReasons, ['no_text_operators']);
+  assert.equal(pages[2].markdown, 'Итоговый текст.');
+
+  const sections = pdfInspectorSections(MIXED_PDF_RESULT);
+  assert.deepEqual(sections.map((section) => section.assetAnchor.page), [1, 3]);
+  assert.match(sections[0].text, /\| A \| 42 \|/u);
+  assert.equal(sections[0].provenance.kind, 'pdf-inspector-markdown');
+  assert.equal(sections[0].provenance.parserVersion, '0.1.3');
+});
+
 test('browser builder creates a valid installable pack and discovers abbreviations', async () => {
   const pack = await buildPackFromBrowserFiles({
     files: [
@@ -85,7 +133,42 @@ test('browser builder creates a valid installable pack and discovers abbreviatio
   const stats = browserPackStats(pack);
   assert.equal(stats.documents, 2);
   assert.ok(stats.sections >= 2);
+  assert.equal(stats.warnings, 0);
   assert.ok(stats.bytes > 0);
+});
+
+test('browser builder prepares reliable pages from a mixed PDF', async () => {
+  const pack = await buildPackFromBrowserFiles({
+    files: [sourceFile('report.pdf', '%PDF fixture')],
+    title: 'Локальный PDF',
+    pdfInspector: async () => MIXED_PDF_RESULT,
+  });
+
+  const validation = validatePack(pack);
+  assert.equal(validation.valid, true, validation.errors.join('\n'));
+  assert.equal(pack.documents.length, 1);
+  assert.equal(pack.documents[0].source.extractor, '@firecrawl/pdf-inspector-wasm');
+  assert.deepEqual(pack.documents[0].sections.map((section) => section.assetAnchor.page), [1, 3]);
+  assert.equal(pack.documents[0].extractionWarnings.length, 1);
+  assert.match(pack.documents[0].extractionWarnings[0], /2/u);
+  assert.equal(browserPackStats(pack).warnings, 1);
+});
+
+test('browser builder rejects a scanned-only PDF until OCR review', async () => {
+  await assert.rejects(
+    buildPackFromBrowserFiles({
+      files: [sourceFile('scan.pdf', '%PDF fixture')],
+      title: 'Скан',
+      pdfInspector: async () => ({
+        pdfType: 'Scanned',
+        pageCount: 1,
+        markdown: null,
+        pagesNeedingOcr: [1],
+        ocrReasonsByPage: [{ page: 1, reasons: ['no_text_operators'] }],
+      }),
+    }),
+    /CLI с OCR-проверкой/u,
+  );
 });
 
 test('browser builder accepts a ready pack as a single selected JSON file', async () => {
