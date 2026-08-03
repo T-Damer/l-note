@@ -1,3 +1,4 @@
+import { selectPrebuiltSearchArtifact } from '../helpers/prebuilt-search-artifacts.js';
 import { buildKnowledgeState, flattenKnowledge } from '../packs.js';
 import { activeDomainQueryExpanders, defineSearchPort } from './ports.js';
 
@@ -38,17 +39,23 @@ export function composeKnowledgeRuntime({
     throw new TypeError('composeKnowledgeRuntime requires a searchFactory function.');
   }
 
-  const enabledPacks = packRecords
-    .filter((record) => record?.enabled !== false && record?.pack)
-    .map((record) => record.pack);
+  const enabledPackRecords = packRecords
+    .filter((record) => record?.enabled !== false && record?.pack);
+  const enabledPacks = enabledPackRecords.map((record) => record.pack);
   const knowledge = buildKnowledgeState(enabledPacks, notes);
   const flattenedRecords = flattenKnowledge(enabledPacks, notes);
   const queryExpanders = activeDomainQueryExpanders(domainQueryPlanners, enabledPacks);
   const corpusFingerprint = knowledgeCorpusFingerprint(enabledPacks, notes);
+  const prebuiltSearchArtifact = selectPrebuiltSearchArtifact({
+    packRecords: enabledPackRecords,
+    notes,
+    corpusFingerprint,
+  });
   const search = defineSearchPort(
     searchFactory(flattenedRecords, [...knowledge.entities.values()], {
       queryExpanders,
       corpusFingerprint,
+      prebuiltSearchArtifact,
     }),
   );
   const records = search.retainsRecords === false ? [] : flattenedRecords;
@@ -59,10 +66,12 @@ export function composeKnowledgeRuntime({
     records,
     search,
     corpusFingerprint,
+    prebuiltSearchArtifact,
     capabilities: Object.freeze({
       search: true,
       asynchronousSearch: Boolean(search.async),
       diskBackedSearch: search.retainsRecords === false,
+      prebuiltSearchArtifact: Boolean(prebuiltSearchArtifact),
       fuzzySearch: true,
       personalOverlay: true,
       domainQueryPlannerIds: Object.freeze(
