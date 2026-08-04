@@ -15,6 +15,7 @@ import {
   createReplicateProvider,
   mergeAiSection,
 } from './lib/pack-builder.mjs';
+import { writePackJson } from './lib/pack-json-writer.mjs';
 import { assertPreparationReviewsComplete } from './lib/preparation-review-guard.mjs';
 import { collectSemanticReview } from './lib/semantic-proposal-collector.mjs';
 import { renderSemanticReviewHtml } from './lib/semantic-review-html.mjs';
@@ -240,12 +241,11 @@ async function main() {
     ? await buildFromRawSources(args)
     : { pack: await buildPack(args.input), semanticReview: null };
   const pack = await applyReviewOptions(prepared.pack, args);
-  const output = await writeJson(args.output, pack);
+  const output = await writePackJson(args.output, pack);
   const semanticResult = await writeSemanticReview(prepared.semanticReview, args);
   const discrepancyResult = await writeDiscrepancyReview(pack, args);
-  const serializedBytes = Buffer.byteLength(`${JSON.stringify(pack, null, 2)}\n`);
-  console.log(`Built ${output}`);
-  console.log(`${pack.documents.length} documents, ${pack.entities.length} entities, ${pack.claims.length} claims, ${serializedBytes} bytes`);
+  console.log(`Built ${output.filename}`);
+  console.log(`${pack.documents.length} documents, ${pack.entities.length} entities, ${pack.claims.length} claims, ${output.bytes} bytes`);
   if (semanticResult) {
     console.log(`Semantic proposals: ${semanticResult.review.candidates.length}`);
     console.log(`Semantic review JSON: ${semanticResult.jsonFilename}`);
