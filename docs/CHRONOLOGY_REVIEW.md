@@ -134,13 +134,58 @@ When the reviewer accepts a candidate, the relation preserves the evidence:
 
 This evidence explains the preparation-time suggestion. It does not become an independent citable source; citations still resolve to the underlying source sections.
 
-## Remaining phase
+## Reviewed preferred/current overlay
 
-Chronology enrichment does not yet designate a preferred/current statement. That will be a separate reviewed cross-pack overlay so that:
+The same offline review may optionally designate which compared statements are preferred in a reviewer-defined context. The available choices are:
 
-- historical statements remain visible and citable;
-- several current statements can coexist when sources disagree;
-- preference can be scoped by date, jurisdiction, population or purpose;
-- no new package mutates an older source package.
+```text
+none
+source
+target
+both
+```
+
+The default is `none`. A preference is applied only when the discrepancy candidate itself is accepted. Dates, edition order and even an accepted `supersedes` relation do not assign a preference automatically.
+
+Confirmed choices enter the pack as `statementSelections`:
+
+```json
+{
+  "statementSelections": [
+    {
+      "id": "statement-selection.0123456789abcdef",
+      "groupKey": "hypertension:first-line:adult:jurisdiction-x",
+      "claimRefs": [
+        "guideline-2023::claim:first-line",
+        "guideline-2025::claim:first-line"
+      ],
+      "preferredClaimRefs": [
+        "guideline-2025::claim:first-line"
+      ],
+      "status": "confirmed",
+      "reason": "Current national edition for this jurisdiction and population.",
+      "scope": "Adults, jurisdiction X",
+      "validAt": "2026-08-04",
+      "reviewedAt": "2026-08-04T10:00:00.000Z",
+      "reviewedBy": "Reviewer"
+    }
+  ]
+}
+```
+
+Invariants:
+
+- `claimRefs` contains at least two unique qualified statements;
+- `preferredClaimRefs` is a non-empty subset of `claimRefs`;
+- several preferred statements are allowed when current sources disagree;
+- several selections with different contexts or dates may refer to the same statement;
+- all historical and alternative statements remain installed, searchable, visible and citable;
+- an overlay pack can refer to statements in other packs without modifying them;
+- unresolved external references remain diagnostic until the referenced packs are installed;
+- reason, reviewer and review time are mandatory.
+
+The routed statement card shows every applicable reviewed selection, whether the current statement is preferred in that selection, the context/date and links to all preserved alternatives.
+
+Relational SQLite export stores `statementSelections` inside the exact pack manifest payload, so restore returns the original overlay without loss.
 
 See `TEMPORAL_PROVENANCE_RESEARCH.md` for the broader standards and external-system analysis.
