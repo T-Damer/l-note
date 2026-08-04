@@ -23,6 +23,10 @@ function sqlLiteral(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
+function plainRows(rows) {
+  return rows.map((row) => Object.fromEntries(Object.entries(row)));
+}
+
 function createSqliteSource(filename) {
   const database = new DatabaseSync(filename);
   try {
@@ -88,28 +92,28 @@ function mapping() {
 function inspectStage(filename) {
   const database = new DatabaseSync(filename, { readOnly: true });
   try {
-    const sourceTypes = database.prepare(`
+    const sourceTypes = plainRows(database.prepare(`
       SELECT target_table, source_type
       FROM lnote_stage_sources
       ORDER BY target_table
-    `).all();
+    `).all());
     assert.deepEqual(sourceTypes, [
       { target_table: 'csv_articles', source_type: 'csv' },
       { target_table: 'parquet_metrics', source_type: 'parquet' },
       { target_table: 'source_notes', source_type: 'sqlite' },
     ]);
-    assert.deepEqual(database.prepare('SELECT * FROM csv_articles').all(), [{
+    assert.deepEqual(plainRows(database.prepare('SELECT * FROM csv_articles').all()), [{
       id: '10',
       title: 'CSV article',
       body: 'Source text from the real CSV reader.',
     }]);
-    assert.deepEqual(database.prepare('SELECT * FROM parquet_metrics').all(), [{
+    assert.deepEqual(plainRows(database.prepare('SELECT * FROM parquet_metrics').all()), [{
       id: 20,
       title: 'Parquet metric',
       body: 'Source text from the real Parquet reader.',
       value: 42.5,
     }]);
-    assert.deepEqual(database.prepare('SELECT * FROM source_notes').all(), [{
+    assert.deepEqual(plainRows(database.prepare('SELECT * FROM source_notes').all()), [{
       id: 30,
       title: 'SQLite note',
       body: 'Source text from the real SQLite scanner.',
