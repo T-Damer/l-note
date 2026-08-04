@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -187,6 +187,34 @@ test('prepares structured, text and unknown binary files in one valid pack', asy
     assert.match(attachment.sections[0].text, /SHA-256/u);
     const embeddedUrl = office.source.embeddedAssets[0].url.replace('./assets/', '');
     assert.equal(await readFile(path.join(output, 'assets', embeddedUrl), 'utf8'), 'embedded-image');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('keeps colliding paths and repeated headings as distinct pack resources', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'l-note-universal-ids-'));
+  const input = path.join(root, 'input');
+  const output = path.join(root, 'prepared');
+  await mkdir(path.join(input, 'a'), { recursive: true });
+  await writeFile(path.join(input, 'a', 'b.md'), '# Nested\n\n## Repeat\n\nOne.\n\n## Repeat\n\nTwo.');
+  await writeFile(path.join(input, 'a-b.md'), '# Flat\n\n## Content\n\nThree.');
+  try {
+    await prepareUniversalDocumentDirectory({
+      inputPath: input,
+      outputPath: output,
+      id: 'example.collision-library',
+      anydocMode: 'off',
+      generatedAt: '2026-08-04T16:30:00.000Z',
+    });
+    const pack = await buildPack(output);
+    assert.equal(validatePack(pack).valid, true);
+    assert.equal(pack.documents.length, 2);
+    assert.equal(new Set(pack.documents.map((document) => document.id)).size, 2);
+    assert.equal((await readdir(path.join(output, 'documents'))).length, 2);
+    const nested = pack.documents.find((document) => document.source.title === 'a/b.md');
+    assert.ok(nested);
+    assert.deepEqual(nested.sections.map((section) => section.id), ['repeat', 'repeat-2']);
   } finally {
     await rm(root, { recursive: true, force: true });
   }
