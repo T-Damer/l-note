@@ -4,6 +4,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { validatePack } from '../src/packs.js';
+import { compileAuthoringPackToFile } from './lib/authoring-pack-compiler.mjs';
 import {
   applyDiscrepancyReview,
   createDiscrepancyReview,
@@ -22,6 +23,14 @@ import { renderSemanticReviewHtml } from './lib/semantic-review-html.mjs';
 import { applySemanticReview } from './lib/semantic-review.mjs';
 
 const REPEATABLE_OPTIONS = new Set(['comparePack']);
+const FULL_PACK_OPTIONS = [
+  'semanticReviewIn',
+  'semanticReviewOut',
+  'semanticReviewHtml',
+  'discrepancyReviewIn',
+  'discrepancyReviewOut',
+  'discrepancyReviewHtml',
+];
 
 function toPath(value) {
   return value instanceof URL ? fileURLToPath(value) : String(value);
@@ -47,6 +56,13 @@ export function argumentsFrom(argv) {
     index += 1;
   }
   return result;
+}
+
+export function canStreamAuthoringCompile(args) {
+  return !args.id
+    && args.aiProvider === 'none'
+    && !(args.comparePack?.length)
+    && !FULL_PACK_OPTIONS.some((key) => args[key]);
 }
 
 async function readJson(filename, fallback) {
@@ -237,6 +253,12 @@ async function main() {
     return;
   }
   if (!args.input || !args.output) throw new Error(`${usage()}\n\n--input and --output are required.`);
+  if (canStreamAuthoringCompile(args)) {
+    const output = await compileAuthoringPackToFile({ inputPath: args.input, outputPath: args.output });
+    console.log(`Built ${output.filename}`);
+    console.log(`${output.documents} documents, ${output.entities} entities, ${output.claims} claims, ${output.bytes} bytes`);
+    return;
+  }
   const prepared = args.id
     ? await buildFromRawSources(args)
     : { pack: await buildPack(args.input), semanticReview: null };
