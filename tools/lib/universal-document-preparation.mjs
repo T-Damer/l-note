@@ -180,7 +180,7 @@ export async function prepareUniversalDocumentDirectory({
       })
       : [];
     candidates.push(...documentCandidates);
-    const format = extracted.detectedFormat ?? sourceExtension(filename).slice(1) || 'unknown';
+    const format = extracted.detectedFormat ?? (sourceExtension(filename).slice(1) || 'unknown');
     const mimeType = routed.mimeType ?? mimeTypeForFilename(filename);
     drafts.push({
       relative,
