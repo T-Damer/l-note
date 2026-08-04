@@ -6,6 +6,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { DatabaseSync } from 'node:sqlite';
 
+import { slugify } from '../tools/lib/pack-builder.mjs';
 import { prepareSqliteDirectory } from '../tools/lib/sqlite-source-import.mjs';
 
 function createDatabase(filename) {
@@ -22,6 +23,10 @@ function createDatabase(filename) {
   }
 }
 
+function documentFile(output, documentId) {
+  return path.join(output, 'documents', `${slugify(documentId)}.json`);
+}
+
 async function temporaryDirectory() {
   return mkdtemp(path.join(os.tmpdir(), 'lnote-sqlite-disk-'));
 }
@@ -31,8 +36,8 @@ test('writes each prepared SQLite document before importing the next object', as
   try {
     const input = path.join(directory, 'source.sqlite');
     const output = path.join(directory, 'prepared');
-    const firstDocument = path.join(output, 'documents', 'doc.first-table.json');
-    const secondDocument = path.join(output, 'documents', 'doc.second-table.json');
+    const firstDocument = documentFile(output, 'doc.first-table');
+    const secondDocument = documentFile(output, 'doc.second-table');
     createDatabase(input);
     const events = [];
 
