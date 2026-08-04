@@ -167,7 +167,7 @@ async function main() {
         SELECT 20 AS id,
           'Parquet metric' AS title,
           'Source text from the real Parquet reader.' AS body,
-          42.5 AS value
+          CAST(42.5 AS DOUBLE) AS value
       ) TO ${sqlLiteral(parquet)} (FORMAT PARQUET);`,
     });
     await writeFile(configPath, `${JSON.stringify(stageConfig(), null, 2)}\n`);
