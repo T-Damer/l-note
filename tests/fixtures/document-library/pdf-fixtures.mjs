@@ -63,6 +63,16 @@ function imageObject(width = 64, height = 64) {
   );
 }
 
+function textBlock(lines, { x, y, size = 12, leading = 18 } = {}) {
+  const output = ['BT', `/F1 ${size} Tf`, `${x} ${y} Td`];
+  for (const [index, line] of lines.entries()) {
+    if (index) output.push(`0 -${leading} Td`);
+    output.push(`(${line}) Tj`);
+  }
+  output.push('ET');
+  return output.join('\n');
+}
+
 export function imageOnlyPdf() {
   return serializePdf([
     '<< /Type /Catalog /Pages 2 0 R >>',
@@ -75,6 +85,16 @@ export function imageOnlyPdf() {
 }
 
 export function mixedTextAndImagePdf() {
+  const text = textBlock([
+    'TEXT LAYER PAGE ONE',
+    'This page contains a reliable searchable text layer.',
+    'The acceptance corpus checks page aware extraction.',
+    'Tables and images are tested in separate cases.',
+    'A scanned page follows this ordinary text page.',
+    'The parser must not route this page to OCR.',
+    'Source anchors remain attached to page number one.',
+    'Historical source text must remain unchanged.',
+  ], { x: 72, y: 720, size: 12, leading: 22 });
   return serializePdf([
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>',
@@ -83,35 +103,33 @@ export function mixedTextAndImagePdf() {
     '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
       + '/Resources << /XObject << /Im1 7 0 R >> >> /Contents 8 0 R >>',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-    pdfStream('', 'BT\n/F1 18 Tf\n72 720 Td\n(TEXT LAYER PAGE ONE) Tj\nET'),
+    pdfStream('', text),
     imageObject(),
     pdfStream('', 'q\n512 0 0 512 50 140 cm\n/Im1 Do\nQ'),
   ]);
 }
 
 export function multiColumnPdf() {
-  const content = [
-    'BT',
-    '/F1 12 Tf',
-    '72 720 Td',
-    '(LEFT COLUMN ALPHA) Tj',
-    '0 -24 Td',
-    '(LEFT COLUMN OMEGA) Tj',
-    'ET',
-    'BT',
-    '/F1 12 Tf',
-    '330 720 Td',
-    '(RIGHT COLUMN ALPHA) Tj',
-    '0 -24 Td',
-    '(RIGHT COLUMN OMEGA) Tj',
-    'ET',
-  ].join('\n');
+  const left = textBlock([
+    'LEFT COLUMN ALPHA',
+    'Left column sentence one.',
+    'Left column sentence two.',
+    'Left column sentence three.',
+    'LEFT COLUMN OMEGA',
+  ], { x: 54, y: 720, size: 11, leading: 20 });
+  const right = textBlock([
+    'RIGHT COLUMN ALPHA',
+    'Right column sentence one.',
+    'Right column sentence two.',
+    'Right column sentence three.',
+    'RIGHT COLUMN OMEGA',
+  ], { x: 326, y: 720, size: 11, leading: 20 });
   return serializePdf([
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
     '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
       + '/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-    pdfStream('', content),
+    pdfStream('', `${left}\n${right}`),
   ]);
 }
