@@ -30,6 +30,20 @@ test('creates and parses a restorable document route', () => {
   assert.equal(route.sectionId, 'diagnosis');
 });
 
+test('carries a document and section target into a new-note route', () => {
+  const hash = resourceRouteHash('note', 'new', {
+    base: 'search',
+    depth: 2,
+    documentId: 'pack.example::doc.source',
+    sectionId: 'attachment',
+  });
+  const route = parseHashRoute(hash);
+  assert.equal(route.resourceType, 'note');
+  assert.equal(route.resourceId, 'new');
+  assert.equal(route.documentId, 'pack.example::doc.source');
+  assert.equal(route.sectionId, 'attachment');
+});
+
 test('nested resources preserve the base page and increment depth', () => {
   const first = nextResourceRoute(parseHashRoute('#/search'), 'concept', 'bronchiolitis');
   const second = nextResourceRoute(first, 'statement', 'claim:1');
