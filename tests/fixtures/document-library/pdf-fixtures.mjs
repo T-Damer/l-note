@@ -45,21 +45,22 @@ function serializePdf(objects) {
   return Buffer.concat(chunks);
 }
 
-function checkerboard(width = 64, height = 64) {
+function checkerboard(width = 64, height = 64, offset = 0) {
   const output = Buffer.alloc(width * height);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      output[y * width + x] = (Math.floor(x / 8) + Math.floor(y / 8)) % 2 ? 32 : 224;
+      const cell = Math.floor((x + offset) / 8) + Math.floor((y + offset) / 8);
+      output[y * width + x] = cell % 2 ? 32 + offset * 3 : 224 - offset * 3;
     }
   }
   return output;
 }
 
-function imageObject(width = 64, height = 64) {
+function imageObject(width = 64, height = 64, offset = 0) {
   return pdfStream(
     `/Type /XObject /Subtype /Image /Width ${width} /Height ${height}`
       + ' /ColorSpace /DeviceGray /BitsPerComponent 8',
-    checkerboard(width, height),
+    checkerboard(width, height, offset),
   );
 }
 
@@ -131,5 +132,44 @@ export function multiColumnPdf() {
       + '/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
     pdfStream('', `${left}\n${right}`),
+  ]);
+}
+
+export function imageHeavyPdf() {
+  const text = textBlock([
+    'IMAGE HEAVY SEARCHABLE PAGE',
+    'This report contains four independent figures and a reliable text layer.',
+    'The introduction explains the source and purpose of each illustration.',
+    'Figure one represents a stable synthetic checkerboard measurement.',
+    'Figure two represents a second independent synthetic measurement.',
+    'Figure three represents a third independent synthetic measurement.',
+    'Figure four represents a fourth independent synthetic measurement.',
+    'All captions and explanatory paragraphs remain ordinary PDF text.',
+    'The text must remain searchable and anchored to page number one.',
+    'Embedded illustrations must not erase the surrounding source text.',
+    'The original PDF remains authoritative for visual interpretation.',
+    'The extracted Markdown is used only for textual retrieval and evidence.',
+    'Binary image extraction is outside the current portable pack contract.',
+    'Reviewers can always open the original page to inspect every figure.',
+    'Search results must preserve this explanatory context and its order.',
+    'The final paragraph confirms that the text layer is intentionally dense.',
+  ], { x: 46, y: 760, size: 9, leading: 15 });
+  const images = [0, 1, 2, 3].map((offset) => imageObject(64, 64, offset));
+  const placements = [
+    'q\n112 0 0 88 55 168 cm\n/Im1 Do\nQ',
+    'q\n112 0 0 88 185 168 cm\n/Im2 Do\nQ',
+    'q\n112 0 0 88 315 168 cm\n/Im3 Do\nQ',
+    'q\n112 0 0 88 445 168 cm\n/Im4 Do\nQ',
+  ].join('\n');
+  return serializePdf([
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
+      + '/Resources << /Font << /F1 4 0 R >> '
+      + '/XObject << /Im1 5 0 R /Im2 6 0 R /Im3 7 0 R /Im4 8 0 R >> >> '
+      + '/Contents 9 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    ...images,
+    pdfStream('', `${text}\n${placements}`),
   ]);
 }

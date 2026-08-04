@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "lnote.document-acceptance",
-  "corpusVersion": "2026.08.04.2",
+  "corpusVersion": "2026.08.04.3",
   "cases": [
     {
       "id": "markdown-structure",
@@ -94,6 +94,28 @@
           ["LEFT COLUMN OMEGA", "RIGHT COLUMN OMEGA"]
         ]
       }
+    },
+    {
+      "id": "generated-image-heavy-pdf",
+      "format": "pdf-image-heavy",
+      "source": "generated:image-heavy.pdf",
+      "status": "active",
+      "expect": {
+        "pageCount": 1,
+        "imageObjects": 4,
+        "contains": "IMAGE HEAVY SEARCHABLE PAGE"
+      }
+    },
+    {
+      "id": "generated-long-document",
+      "format": "markdown-long",
+      "source": "generated:long-document.md",
+      "status": "active",
+      "expect": {
+        "sections": 5200,
+        "endMarker": "longdoc-5200",
+        "searchMarkers": ["longdoc-0001", "longdoc-2600", "longdoc-5200"]
+      }
     }
   ],
   "coverage": [
@@ -104,8 +126,8 @@
     { "category": "mixed-pdf", "status": "active", "caseId": "generated-mixed-pdf" },
     { "category": "scanned-pdf-reviewed-ocr", "status": "active", "caseId": "generated-scanned-pdf-reviewed-ocr" },
     { "category": "multi-column-pdf", "status": "active", "caseId": "generated-multicolumn-pdf" },
-    { "category": "image-heavy-pdf", "status": "pending" },
-    { "category": "unusual-embedded-fonts", "status": "pending" },
-    { "category": "long-document", "status": "pending" }
+    { "category": "image-heavy-pdf", "status": "active", "caseId": "generated-image-heavy-pdf" },
+    { "category": "long-document", "status": "active", "caseId": "generated-long-document" },
+    { "category": "unusual-embedded-fonts", "status": "pending" }
   ]
 }

@@ -131,11 +131,16 @@ test('acceptance manifest is versioned and leaves uncovered categories explicit'
   for (const coverage of manifest.coverage.filter((item) => item.status === 'active')) {
     assert.ok(activeIds.has(coverage.caseId), `Coverage ${coverage.category} references a missing case`);
   }
-  for (const category of ['mixed-pdf', 'scanned-pdf-reviewed-ocr', 'multi-column-pdf']) {
+  for (const category of [
+    'mixed-pdf',
+    'scanned-pdf-reviewed-ocr',
+    'multi-column-pdf',
+    'image-heavy-pdf',
+    'long-document',
+  ]) {
     assert.ok(manifest.coverage.some((item) => item.category === category && item.status === 'active'));
   }
-  assert.ok(manifest.coverage.some((item) => item.category === 'image-heavy-pdf' && item.status === 'pending'));
-  assert.ok(manifest.coverage.some((item) => item.category === 'long-document' && item.status === 'pending'));
+  assert.ok(manifest.coverage.some((item) => item.category === 'unusual-embedded-fonts' && item.status === 'pending'));
 });
 
 for (const format of ['markdown', 'txt']) {
