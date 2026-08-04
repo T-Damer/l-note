@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish the data-preparation foundation, then add chronology-aware discrepancy review and validate the product on representative personal document libraries. Android/iOS and live MiniMed integration remain deferred until the generic L-Note workflow is stable and benchmarked.
+**Current focus:** finish the reviewed preferred/current statement overlay, then validate the product on representative personal document libraries and measure large-corpus/mobile behavior. Android/iOS and live MiniMed integration remain deferred until the generic L-Note workflow is stable and benchmarked.
 
 ## Ordered roadmap
 
@@ -10,10 +10,10 @@ This section defines execution order. The detailed checklists below remain the i
 
 ### Phase 1 — Complete universal data preparation
 
-- [ ] Refresh and merge the optional DuckDB staging bridge on top of the current `main`.
-- [ ] Keep the bridge declarative: no raw SQL, inline credentials or implicit extension loading.
-- [ ] Stage CSV, JSON, Parquet, SQLite and selected PostgreSQL/MySQL tables into a versioned SQLite file.
-- [ ] Preserve source locator, source type, staging time and safe configuration provenance through the ordinary SQLite importer.
+- [x] Refresh and merge the optional DuckDB staging bridge on top of the current `main`.
+- [x] Keep the bridge declarative: no raw SQL, inline credentials or implicit extension loading.
+- [x] Stage CSV, JSON, Parquet, SQLite and selected PostgreSQL/MySQL tables into a versioned SQLite file.
+- [x] Preserve source locator, source type, staging time and safe configuration provenance through the ordinary SQLite importer.
 - [ ] Add a real executable acceptance smoke for local CSV, Parquet and SQLite when DuckDB is available in CI or an explicit local environment.
 - [ ] Keep large preparation outputs and intermediate corpora on disk rather than duplicating them in application RAM.
 
@@ -21,11 +21,11 @@ This section defines execution order. The detailed checklists below remain the i
 
 ### Phase 2 — Temporal provenance and source editions
 
-- [ ] Merge the temporal-provenance decision record.
-- [ ] Separate publication/issue time, modification time, real-world validity and review/record time.
-- [ ] Add chronology as an explicit discrepancy-review signal without inferring that newer automatically wins.
-- [ ] Add explicit edition/artifact relations such as `replaces`, `amends`, `corrects`, `retracts` and their inverse forms.
-- [ ] Compare edition identifiers only when a comparison algorithm is declared.
+- [x] Merge the temporal-provenance decision record.
+- [x] Separate publication/issue time, modification time, real-world validity and review/record time.
+- [x] Add chronology as an explicit discrepancy-review signal without inferring that newer automatically wins.
+- [x] Add explicit edition/artifact relations such as `replaces`, `amends`, `corrects`, `retracts` and their inverse forms.
+- [x] Compare edition identifiers only when a comparison algorithm is declared.
 - [ ] Add a reviewed preferred/current statement overlay that preserves every historical version and permits several current statements when sources disagree.
 
 **Exit criteria:** review JSON/HTML shows dates, validity, edition and explicit replacement evidence separately; chronology alone never creates or accepts a discrepancy; accepted decisions preserve review evidence.
@@ -121,7 +121,7 @@ This section defines execution order. The detailed checklists below remain the i
 - [x] Generate editable review JSON and a standalone offline HTML review page.
 - [x] Require a human to accept, edit or dismiss every proposed statement relation before it enters the pack.
 - [x] Keep unresolved and dismissed candidates outside `statementRelations`.
-- [ ] Add date/edition chronology as an explicit candidate signal without inferring that newer automatically wins.
+- [x] Add date/edition chronology as an explicit candidate signal without inferring that newer automatically wins.
 - [ ] Add optional local/server LLM classification into contradiction, refinement, supersession, equivalence, different scope or insufficient context.
 - [ ] Allow a reviewed preparation workflow to designate a preferred/current statement while preserving all versions for the client.
 - [x] Include relevant confirmed source discrepancies in the evidence envelope supplied to the local answer model.
@@ -218,7 +218,7 @@ This section defines execution order. The detailed checklists below remain the i
 - [x] Bound external-tool runtime and output size and report extraction warnings instead of inventing missing text.
 - [x] Require accept/edit/dismiss review for OCR output before publication.
 - [x] Add direct SQLite table/view import and relational pack export/restore adapters.
-- [ ] Add an optional DuckDB bridge for Parquet/CSV and remote database scanners.
+- [x] Add an optional DuckDB bridge for Parquet/CSV and remote database scanners.
 - [x] Add optional prebuilt SQLite/FTS artifacts to large packs.
 - [ ] Keep heavy preparation jobs and intermediate corpora on disk rather than in application RAM.
 
@@ -229,6 +229,7 @@ This section defines execution order. The detailed checklists below remain the i
 - [x] Document the portable package and preparation-review formats in `docs/PACK_FORMAT.md`.
 - [x] Document database import/export and external-system boundaries.
 - [x] Document the mandatory OCR review workflow and source-change protection.
+- [x] Document chronology-aware discrepancy review and its non-authoritative boundary.
 - [x] Keep this file as the only implementation backlog.
 - [x] Keep development, decomposition and user-facing copy rules in `AGENTS.md`.
 - [x] Update docs together with behavior changes.
