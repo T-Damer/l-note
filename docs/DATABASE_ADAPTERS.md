@@ -195,6 +195,8 @@ npm run database:pack -- stage \
 
 Use `--duckdb-bin /path/to/duckdb` for a non-standard executable path. An existing target is rejected unless `--force` is supplied.
 
+Staging target table names must not begin with `sqlite_` or `lnote_`. SQLite reserves the first prefix for internal objects, while L-Note reserves the second for staging and interchange metadata. Source attachment aliases are separate and may use names such as `source_sqlite`.
+
 The bridge:
 
 - starts DuckDB with an intentionally empty init file instead of a user's `~/.duckdbrc`;
@@ -206,6 +208,8 @@ The bridge:
 - deletes partial output after failure.
 
 The staging database contains `lnote_stage_metadata` and `lnote_stage_sources`. During the next import, L-Note automatically carries the source type, locator, safe declarative config and staging timestamp into each generated document.
+
+SQLite staging uses SQLite-compatible type affinities. DuckDB types without a direct SQLite representation may be stored as text by the SQLite extension. Exact numeric SQLite affinity should therefore be normalized in the source or upstream preparation step—for example, use a floating-point or integer column instead of an unsupported decimal/domain type. The value itself remains available to the ordinary importer either way.
 
 Continue through the ordinary pipeline:
 
@@ -220,6 +224,16 @@ npm run build:pack -- \
   --input ./prepared/reference \
   --output ./dist/reference.pack.json
 ```
+
+### Real executable acceptance
+
+The repository includes an end-to-end smoke that requires an explicit DuckDB executable:
+
+```bash
+DUCKDB_BIN=/path/to/duckdb npm run test:duckdb-e2e
+```
+
+It creates real CSV, Parquet and SQLite sources, executes the production staging SQL, verifies the SQLite staging rows and provenance, imports all three targets, builds a valid pack and searches the resulting documents. CI runs this in a separate job with DuckDB CLI `1.4.5` LTS and verifies the downloaded archive checksum before execution. DuckDB remains optional for ordinary `npm run check`, browser use and npm installation.
 
 DuckDB is preparation infrastructure, not evidence and not a runtime database. The source-preserving pack remains authoritative.
 
