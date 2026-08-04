@@ -36,6 +36,26 @@ export function uniqueAssetName(relative, used, forcedExtension = null) {
   return name;
 }
 
+export function uniqueDocumentKey(relative, used) {
+  const base = slugify(relative, 'document');
+  let key = base;
+  if (used.has(key)) key = `${base}-${stableId(relative).slice(-8)}`;
+  used.add(key);
+  return key;
+}
+
+export function uniqueSectionIds(sections = []) {
+  const used = new Set();
+  return sections.map((section, index) => {
+    const base = slugify(section?.id ?? section?.title, `section-${index + 1}`);
+    let id = base;
+    let suffix = 2;
+    while (used.has(id)) id = `${base}-${suffix++}`;
+    used.add(id);
+    return id === section.id ? section : { ...section, id };
+  });
+}
+
 export async function copyPrimaryAsset(filename, relative, assetRoot, usedAssets) {
   const assetName = uniqueAssetName(relative, usedAssets);
   await mkdir(assetRoot, { recursive: true });
