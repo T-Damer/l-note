@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish the reviewed preferred/current statement overlay, then validate the product on representative personal document libraries and measure large-corpus/mobile behavior. Android/iOS and live MiniMed integration remain deferred until the generic L-Note workflow is stable and benchmarked.
+**Current focus:** build and validate a representative personal document-library acceptance corpus, then measure large-corpus and mobile behavior. Android/iOS and live MiniMed integration remain deferred until the generic L-Note workflow is stable and benchmarked.
 
 ## Ordered roadmap
 
@@ -26,9 +26,9 @@ This section defines execution order. The detailed checklists below remain the i
 - [x] Add chronology as an explicit discrepancy-review signal without inferring that newer automatically wins.
 - [x] Add explicit edition/artifact relations such as `replaces`, `amends`, `corrects`, `retracts` and their inverse forms.
 - [x] Compare edition identifiers only when a comparison algorithm is declared.
-- [ ] Add a reviewed preferred/current statement overlay that preserves every historical version and permits several current statements when sources disagree.
+- [x] Add a reviewed preferred/current statement overlay that preserves every historical version and permits several current statements when sources disagree.
 
-**Exit criteria:** review JSON/HTML shows dates, validity, edition and explicit replacement evidence separately; chronology alone never creates or accepts a discrepancy; accepted decisions preserve review evidence.
+**Exit criteria:** review JSON/HTML shows dates, validity, edition and explicit replacement evidence separately; chronology alone never creates or accepts a discrepancy; accepted decisions preserve review evidence; preferred/current designations require explicit review and preserve every alternative.
 
 ### Phase 3 — Representative document-library acceptance
 
@@ -123,7 +123,7 @@ This section defines execution order. The detailed checklists below remain the i
 - [x] Keep unresolved and dismissed candidates outside `statementRelations`.
 - [x] Add date/edition chronology as an explicit candidate signal without inferring that newer automatically wins.
 - [ ] Add optional local/server LLM classification into contradiction, refinement, supersession, equivalence, different scope or insufficient context.
-- [ ] Allow a reviewed preparation workflow to designate a preferred/current statement while preserving all versions for the client.
+- [x] Allow a reviewed preparation workflow to designate a preferred/current statement while preserving all versions for the client.
 - [x] Include relevant confirmed source discrepancies in the evidence envelope supplied to the local answer model.
 
 ## Voice search
@@ -230,6 +230,7 @@ This section defines execution order. The detailed checklists below remain the i
 - [x] Document database import/export and external-system boundaries.
 - [x] Document the mandatory OCR review workflow and source-change protection.
 - [x] Document chronology-aware discrepancy review and its non-authoritative boundary.
+- [x] Document reviewed preferred/current statement selections and historical-version preservation.
 - [x] Keep this file as the only implementation backlog.
 - [x] Keep development, decomposition and user-facing copy rules in `AGENTS.md`.
 - [x] Update docs together with behavior changes.
