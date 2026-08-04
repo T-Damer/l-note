@@ -8,20 +8,28 @@ function sectionById(documentRecord, sectionId) {
   return (documentRecord?.sections ?? []).find((section) => section.id === sectionId) ?? null;
 }
 
+function documentAsset(documentRecord) {
+  return documentRecord?.asset ?? documentRecord?.source?.asset ?? null;
+}
+
+function sectionAnchor(section) {
+  return section?.assetAnchor ?? section?.source ?? {};
+}
+
 export function resolveDocumentAsset(documentRecord, sectionId = null) {
-  const asset = documentRecord?.source?.asset;
+  const asset = documentAsset(documentRecord);
   if (!asset || typeof asset.url !== 'string' || !asset.url.trim()) return null;
   const section = sectionById(documentRecord, sectionId);
-  const sectionSource = section?.source ?? {};
+  const anchor = sectionAnchor(section);
   return Object.freeze({
     url: asset.url.trim(),
     mimeType: typeof asset.mimeType === 'string' && asset.mimeType.trim()
       ? asset.mimeType.trim()
-      : 'application/octet-stream',
+      : documentRecord?.source?.mimeType ?? 'application/octet-stream',
     title: asset.title ?? documentRecord.source?.title ?? documentRecord.title ?? 'Локальный источник',
-    page: positivePage(sectionSource.page, positivePage(asset.page, 1)),
-    anchor: typeof sectionSource.anchor === 'string' && sectionSource.anchor.trim()
-      ? sectionSource.anchor.trim()
+    page: positivePage(anchor.page, positivePage(asset.page, 1)),
+    anchor: typeof anchor.anchor === 'string' && anchor.anchor.trim()
+      ? anchor.anchor.trim()
       : null,
     sectionId: section?.id ?? null,
   });
