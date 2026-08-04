@@ -107,6 +107,35 @@ function renderClaim({ claim, navigate }) {
   return card;
 }
 
+function annotationNotes(knowledge, documentRecord, sectionId) {
+  const references = [documentRecord.runtimeId, documentRecord.localId, documentRecord.id].filter(Boolean);
+  const notes = [];
+  const seen = new Set();
+  for (const reference of references) {
+    for (const note of knowledge.sectionNotes?.get(`${reference}/${sectionId}`) ?? []) {
+      if (seen.has(note.id)) continue;
+      seen.add(note.id);
+      notes.push(note);
+    }
+  }
+  return notes;
+}
+
+function renderAnnotation(note, navigate) {
+  return Card({
+    kind: 'note',
+    className: 'document-annotation-card',
+    interactive: true,
+    ariaLabel: `Открыть разметку ${note.title}`,
+    onActivate: () => navigate('note', note.id),
+    children: [
+      element('span', { className: 'pill accent', text: note.relationLabel ?? 'Личная разметка' }),
+      Text({ variant: 'label', as: 'strong', text: note.title }),
+      Text({ variant: 'muted', text: note.body }),
+    ],
+  });
+}
+
 function renderSection({
   section,
   documentRecord,
@@ -120,10 +149,21 @@ function renderSection({
     className: 'document-section',
     id: `section-${section.id}`,
   });
+  const sourceButton = assetView?.sourceButton(section.id);
+  const addAnnotation = Button({
+    variant: 'secondary',
+    className: 'document-section-annotation',
+    icon: 'note',
+    text: 'Добавить разметку',
+    onClick: () => navigate('note', 'new', {
+      documentId: documentRecord.runtimeId ?? documentRecord.id,
+      sectionId: section.id,
+    }),
+  });
   const heading = element('header', { className: 'document-section-header' }, [
     Text({ variant: 'heading', as: 'h3', text: section.title }),
-    assetView?.sourceButton(section.id),
-  ].filter(Boolean));
+    element('div', { className: 'document-section-actions' }, [sourceButton, addAnnotation].filter(Boolean)),
+  ]);
   const claims = statementsForSection(
     knowledge.packs,
     documentRecord.packId,
@@ -151,6 +191,15 @@ function renderSection({
     article.append(element('div', { className: 'claim-list' }, (
       claims.map((claim) => renderClaim({ claim, navigate }))
     )));
+  }
+  const annotations = annotationNotes(knowledge, documentRecord, section.id);
+  if (annotations.length) {
+    article.append(element('section', { className: 'document-annotations' }, [
+      Text({ variant: 'label', text: 'Личная разметка' }),
+      element('div', { className: 'document-annotation-list' }, (
+        annotations.map((note) => renderAnnotation(note, navigate))
+      )),
+    ]));
   }
   return article;
 }
