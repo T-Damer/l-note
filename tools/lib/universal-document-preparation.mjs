@@ -17,7 +17,6 @@ import {
   ocrReviewState,
   sha256File,
 } from './ocr-review.mjs';
-import { slugify } from './pack-builder.mjs';
 import {
   acceptedPdfOcrSections,
   createPdfOcrCandidates,
@@ -27,6 +26,8 @@ import {
   copyPrimaryAsset,
   listUniversalSourceFiles,
   saveEmbeddedAssets,
+  uniqueDocumentKey,
+  uniqueSectionIds,
 } from './universal-preparation-files.mjs';
 
 const DEFAULT_MAX_PARSER_BYTES = 128 * 1024 * 1024;
@@ -141,6 +142,7 @@ export async function prepareUniversalDocumentDirectory({
   await mkdir(documentRoot, { recursive: true });
   await mkdir(assetRoot, { recursive: true });
   const usedAssets = new Set();
+  const usedDocuments = new Set();
   const warnings = [];
   const drafts = [];
   const candidates = [];
@@ -174,8 +176,9 @@ export async function prepareUniversalDocumentDirectory({
       usedAssets,
       sections: extracted.sections,
     });
-    extracted.sections = embedded.sections;
-    const documentId = `doc.${slugify(relative)}`;
+    extracted.sections = uniqueSectionIds(embedded.sections);
+    const documentKey = uniqueDocumentKey(relative, usedDocuments);
+    const documentId = `doc.${documentKey}`;
     const isPdf = sourceExtension(filename) === '.pdf';
     const documentCandidates = isPdf && extracted.ocrPages.length
       ? createPdfOcrCandidates({
@@ -194,6 +197,7 @@ export async function prepareUniversalDocumentDirectory({
     const mimeType = routed.mimeType ?? mimeTypeForFilename(filename);
     drafts.push({
       relative,
+      documentKey,
       extracted,
       documentCandidates,
       document: {
@@ -239,11 +243,12 @@ export async function prepareUniversalDocumentDirectory({
       }));
       document.sections.sort((left, right) => pageOrder(left) - pageOrder(right) || left.id.localeCompare(right.id));
     }
+    document.sections = uniqueSectionIds(document.sections);
     if (!document.sections.length && reviewState?.complete) {
       warnings.push(`${draft.relative}: все OCR-страницы отклонены; документ не включён.`);
       continue;
     }
-    await writeJson(path.join(documentRoot, `${slugify(draft.relative)}.json`), document);
+    await writeJson(path.join(documentRoot, `${draft.documentKey}.json`), document);
     warnings.push(...draft.extracted.warnings.map((warning) => `${draft.relative}: ${warning}`));
     sections += document.sections.length;
     writtenDocuments += 1;
