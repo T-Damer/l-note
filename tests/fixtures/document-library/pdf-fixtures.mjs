@@ -45,21 +45,22 @@ function serializePdf(objects) {
   return Buffer.concat(chunks);
 }
 
-function checkerboard(width = 64, height = 64) {
+function checkerboard(width = 64, height = 64, offset = 0) {
   const output = Buffer.alloc(width * height);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      output[y * width + x] = (Math.floor(x / 8) + Math.floor(y / 8)) % 2 ? 32 : 224;
+      const cell = Math.floor((x + offset) / 8) + Math.floor((y + offset) / 8);
+      output[y * width + x] = cell % 2 ? 32 + offset * 3 : 224 - offset * 3;
     }
   }
   return output;
 }
 
-function imageObject(width = 64, height = 64) {
+function imageObject(width = 64, height = 64, offset = 0) {
   return pdfStream(
     `/Type /XObject /Subtype /Image /Width ${width} /Height ${height}`
       + ' /ColorSpace /DeviceGray /BitsPerComponent 8',
-    checkerboard(width, height),
+    checkerboard(width, height, offset),
   );
 }
 
@@ -131,5 +132,34 @@ export function multiColumnPdf() {
       + '/Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
     pdfStream('', `${left}\n${right}`),
+  ]);
+}
+
+export function imageHeavyPdf() {
+  const text = textBlock([
+    'IMAGE HEAVY SEARCHABLE PAGE',
+    'Four independent image objects surround this reliable text layer.',
+    'The text must remain searchable and anchored to page one.',
+    'Embedded images must not force the entire page through OCR.',
+    'The source PDF remains the authority for the visual content.',
+    'Binary image extraction is outside the current portable pack contract.',
+  ], { x: 60, y: 748, size: 11, leading: 17 });
+  const images = [0, 1, 2, 3].map((offset) => imageObject(64, 64, offset));
+  const placements = [
+    'q\n210 0 0 170 55 310 cm\n/Im1 Do\nQ',
+    'q\n210 0 0 170 345 310 cm\n/Im2 Do\nQ',
+    'q\n210 0 0 170 55 90 cm\n/Im3 Do\nQ',
+    'q\n210 0 0 170 345 90 cm\n/Im4 Do\nQ',
+  ].join('\n');
+  return serializePdf([
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] '
+      + '/Resources << /Font << /F1 4 0 R >> '
+      + '/XObject << /Im1 5 0 R /Im2 6 0 R /Im3 7 0 R /Im4 8 0 R >> >> '
+      + '/Contents 9 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    ...images,
+    pdfStream('', `${text}\n${placements}`),
   ]);
 }
