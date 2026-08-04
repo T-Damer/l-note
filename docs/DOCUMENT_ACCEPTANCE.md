@@ -105,7 +105,14 @@ The recognized text never enters a pack before review.
 
 ### Multi-column PDF
 
-A deterministic PDF contains two physical columns with distinct start/end markers. The real parser must keep the declared left-column-then-right-column reading order and avoid unnecessary OCR routing.
+A deterministic PDF contains two physical columns with aligned rows. The real parser recognizes this layout as a two-column Markdown table rather than flattening the text into an ambiguous stream. The acceptance test verifies:
+
+- the page is not unnecessarily routed to OCR;
+- both column headers and every row remain paired;
+- Markdown table structure is retained;
+- row order matches the physical vertical order of the source.
+
+This structured representation is preferred to forcing the whole left column before the whole right column because the source visually expresses paired rows.
 
 ## Deterministic PDF generator
 
