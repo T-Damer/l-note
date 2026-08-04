@@ -20,7 +20,7 @@ It also runs inside the complete `npm run check` gate.
 {
   "schemaVersion": 1,
   "kind": "lnote.document-acceptance",
-  "corpusVersion": "2026.08.04.1",
+  "corpusVersion": "2026.08.04.2",
   "cases": [],
   "coverage": []
 }
@@ -37,7 +37,7 @@ Every case has:
 
 Every intended category remains in `coverage`. Categories without a redistributable, reproducible fixture use `status: pending`; they must not be silently treated as covered.
 
-## Initial active cases
+## Active cases
 
 ### Markdown
 
@@ -71,7 +71,7 @@ The test builds a real ZIP container containing `word/document.xml`, writes a `.
 
 The generated fixture avoids committing an opaque binary while still testing the external executable and real ZIP/XML path.
 
-### PDF
+### Bundled PDF
 
 The bundled PDF is processed through the actual pinned `@firecrawl/pdf-inspector-wasm` package. The test verifies:
 
@@ -80,7 +80,50 @@ The bundled PDF is processed through the actual pinned `@firecrawl/pdf-inspector
 - one-based page normalization;
 - every page reported by `pagesNeedingOcr` remaining outside searchable sections.
 
-It does not claim that this one file covers mixed, scanned, multi-column, image-heavy or unusual-font PDFs.
+### Mixed PDF
+
+A deterministic two-page PDF contains a substantial searchable text layer on page 1 and an image-only page 2. The real WASM parser must:
+
+- keep page 1 outside OCR routing;
+- route page 2 to OCR;
+- produce searchable sections only for page 1 before review;
+- preserve page anchors, inspection metadata, warnings and the original PDF asset.
+
+### Reviewed scanned PDF
+
+A deterministic image-only PDF is classified by the real WASM parser. The production preparation workflow then invokes the OCR boundary.
+
+The CI test uses a deterministic Tesseract TSV response rather than machine-dependent OCR output. This keeps recognition confidence and word boxes reproducible while still testing:
+
+- real PDF classification;
+- `pdftoppm` and Tesseract command routing;
+- the pending-review compilation block;
+- explicit reviewer accept/edit;
+- accepted OCR provenance and final pack compilation.
+
+The recognized text never enters a pack before review.
+
+### Multi-column PDF
+
+A deterministic PDF contains two physical columns with aligned rows. The real parser recognizes this layout as a two-column Markdown table rather than flattening the text into an ambiguous stream. The acceptance test verifies:
+
+- the page is not unnecessarily routed to OCR;
+- both column headers and every row remain paired;
+- Markdown table structure is retained;
+- row order matches the physical vertical order of the source.
+
+This structured representation is preferred to forcing the whole left column before the whole right column because the source visually expresses paired rows.
+
+## Deterministic PDF generator
+
+`tests/fixtures/document-library/pdf-fixtures.mjs` writes valid PDF bytes directly, including xref offsets, standard Type 1 font resources and image XObjects. It has no runtime dependency on a PDF library or office application.
+
+This keeps the fixtures:
+
+- small and reviewable;
+- reproducible across CI runs;
+- independent from opaque binary-editor metadata;
+- easy to extend for focused layout failures.
 
 ## Adding a case
 
@@ -115,12 +158,9 @@ Historical packs remain valid snapshots of their preparation version. Their sour
 
 ## Pending coverage
 
-The initial manifest intentionally leaves these categories pending:
+The manifest still leaves these categories pending:
 
-- mixed PDF with both reliable text and scan pages;
-- scanned PDF with accepted, edited and dismissed OCR pages;
-- multi-column PDF;
-- image-heavy PDF;
+- image-heavy PDF with reliable text and several embedded images;
 - unusual embedded fonts and encoding failures;
 - long documents and large-corpus reopen behavior.
 

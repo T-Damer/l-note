@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "lnote.document-acceptance",
-  "corpusVersion": "2026.08.04.1",
+  "corpusVersion": "2026.08.04.2",
   "cases": [
     {
       "id": "markdown-structure",
@@ -55,6 +55,45 @@
         "minMarkdownChars": 20,
         "requiresExplicitOcrRouting": true
       }
+    },
+    {
+      "id": "generated-mixed-pdf",
+      "format": "pdf-mixed",
+      "source": "generated:mixed.pdf",
+      "status": "active",
+      "expect": {
+        "pageCount": 2,
+        "textPage": 1,
+        "ocrPage": 2,
+        "contains": "TEXT LAYER PAGE ONE"
+      }
+    },
+    {
+      "id": "generated-scanned-pdf-reviewed-ocr",
+      "format": "pdf-scanned",
+      "source": "generated:scan.pdf",
+      "status": "active",
+      "expect": {
+        "pageCount": 1,
+        "ocrPages": [1],
+        "reviewedText": "Reviewed scanned page text."
+      }
+    },
+    {
+      "id": "generated-multicolumn-pdf",
+      "format": "pdf-multicolumn",
+      "source": "generated:columns.pdf",
+      "status": "active",
+      "expect": {
+        "pageCount": 1,
+        "tableRows": [
+          ["LEFT COLUMN ALPHA", "RIGHT COLUMN ALPHA"],
+          ["Left column sentence one.", "Right column sentence one."],
+          ["Left column sentence two.", "Right column sentence two."],
+          ["Left column sentence three.", "Right column sentence three."],
+          ["LEFT COLUMN OMEGA", "RIGHT COLUMN OMEGA"]
+        ]
+      }
     }
   ],
   "coverage": [
@@ -62,9 +101,9 @@
     { "category": "txt-utf8", "status": "active", "caseId": "utf8-text" },
     { "category": "docx-headings", "status": "active", "caseId": "generated-docx-headings" },
     { "category": "pdf-wasm", "status": "active", "caseId": "bundled-pdf-wasm" },
-    { "category": "mixed-pdf", "status": "pending" },
-    { "category": "scanned-pdf-reviewed-ocr", "status": "pending" },
-    { "category": "multi-column-pdf", "status": "pending" },
+    { "category": "mixed-pdf", "status": "active", "caseId": "generated-mixed-pdf" },
+    { "category": "scanned-pdf-reviewed-ocr", "status": "active", "caseId": "generated-scanned-pdf-reviewed-ocr" },
+    { "category": "multi-column-pdf", "status": "active", "caseId": "generated-multicolumn-pdf" },
     { "category": "image-heavy-pdf", "status": "pending" },
     { "category": "unusual-embedded-fonts", "status": "pending" },
     { "category": "long-document", "status": "pending" }

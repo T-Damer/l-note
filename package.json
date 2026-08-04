@@ -34,7 +34,7 @@
     "validate": "node tools/validate-packs.mjs",
     "check:structure": "node tools/check-code-structure.mjs",
     "test": "node --test",
-    "test:document-acceptance": "node --test tests/document-library-acceptance.test.mjs",
+    "test:document-acceptance": "node --test tests/document-library-acceptance.test.mjs tests/pdf-document-acceptance.test.mjs",
     "test:pdf-e2e": "node tools/pdf-inspector-browser-smoke.mjs",
     "test:sqlite-e2e": "node tools/sqlite-browser-smoke.mjs",
     "test:sqlite-artifact-e2e": "node tools/sqlite-artifact-browser-smoke.mjs",
