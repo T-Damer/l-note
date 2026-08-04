@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "kind": "lnote.document-acceptance",
-  "corpusVersion": "2026.08.04.3",
+  "corpusVersion": "2026.08.04.4",
   "cases": [
     {
       "id": "markdown-structure",
@@ -116,6 +116,28 @@
         "endMarker": "longdoc-5200",
         "searchMarkers": ["longdoc-0001", "longdoc-2600", "longdoc-5200"]
       }
+    },
+    {
+      "id": "generated-embedded-type3-font",
+      "format": "pdf-embedded-font",
+      "source": "generated:embedded-font.pdf",
+      "status": "active",
+      "expect": {
+        "contains": [
+          "EMBEDDED FONT TEXT",
+          "SEARCHABLE SOURCE TEXT REMAINS AVAILABLE",
+          "ENCODING PROVENANCE MUST REMAIN EXPLICIT"
+        ]
+      }
+    },
+    {
+      "id": "generated-broken-font-encoding",
+      "format": "pdf-broken-encoding",
+      "source": "generated:broken-font.pdf",
+      "status": "active",
+      "expect": {
+        "ocrPages": [1]
+      }
     }
   ],
   "coverage": [
@@ -128,6 +150,7 @@
     { "category": "multi-column-pdf", "status": "active", "caseId": "generated-multicolumn-pdf" },
     { "category": "image-heavy-pdf", "status": "active", "caseId": "generated-image-heavy-pdf" },
     { "category": "long-document", "status": "active", "caseId": "generated-long-document" },
-    { "category": "unusual-embedded-fonts", "status": "pending" }
+    { "category": "unusual-embedded-fonts", "status": "active", "caseId": "generated-embedded-type3-font" },
+    { "category": "broken-font-encoding", "status": "active", "caseId": "generated-broken-font-encoding" }
   ]
 }

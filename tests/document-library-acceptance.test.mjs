@@ -122,7 +122,7 @@ function caseByFormat(format) {
   return value;
 }
 
-test('acceptance manifest is versioned and leaves uncovered categories explicit', () => {
+test('acceptance manifest is versioned and all declared PDF categories are active', () => {
   assert.equal(manifest.schemaVersion, 1);
   assert.equal(manifest.kind, 'lnote.document-acceptance');
   assert.match(manifest.corpusVersion, /^\d{4}\.\d{2}\.\d{2}\.\d+$/u);
@@ -137,10 +137,11 @@ test('acceptance manifest is versioned and leaves uncovered categories explicit'
     'multi-column-pdf',
     'image-heavy-pdf',
     'long-document',
+    'unusual-embedded-fonts',
+    'broken-font-encoding',
   ]) {
     assert.ok(manifest.coverage.some((item) => item.category === category && item.status === 'active'));
   }
-  assert.ok(manifest.coverage.some((item) => item.category === 'unusual-embedded-fonts' && item.status === 'pending'));
 });
 
 for (const format of ['markdown', 'txt']) {
