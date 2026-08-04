@@ -1,3 +1,4 @@
+import { sectionTransferActivities } from './helpers/transfer-activity.js';
 import { createTransferQueue, TRANSFER_PRIORITY } from './services/transfer-queue.js';
 import { createPackageTransferHandler } from './services/package-transfer.js';
 import { createQueuedRuntimeLoader } from './services/queued-runtime-loader.js';
@@ -14,6 +15,17 @@ document.body.append(transferQueueHost);
 const transferQueueView = createTransferQueueView({
   queue: transferQueue,
   container: transferQueueHost,
+});
+const transferProgressSections = ['search', 'ask', 'library'];
+const transferProgressUnsubscribe = transferQueue.subscribe((tasks) => {
+  const activities = sectionTransferActivities(tasks);
+  for (const section of transferProgressSections) {
+    dom.sidebarController?.setActivityProgress(
+      section,
+      activities[section] ?? { active: false },
+      'transfer',
+    );
+  }
 });
 
 const directPackageTransfer = createPackageTransferHandler({
@@ -82,7 +94,7 @@ downloadAndInstall = async function downloadAndInstallThroughQueue(entry, button
     await queued.completion;
   } catch (error) {
     if (error?.name !== 'AbortError') {
-      toast('Не удалось установить пакет. Повторите загрузку в панели операций.', 'error');
+      toast('Не удалось установить пакет. Откройте уведомление об ошибке и повторите операцию.', 'error');
     }
   } finally {
     if (button?.isConnected) {
@@ -104,4 +116,8 @@ Object.assign(state, {
   queuedModelLoader,
   queuedSpeechLoader,
 });
-Object.assign(dom, { transferQueueHost, transferQueueView });
+Object.assign(dom, {
+  transferQueueHost,
+  transferQueueView,
+  transferProgressUnsubscribe,
+});
