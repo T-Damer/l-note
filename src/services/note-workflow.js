@@ -29,6 +29,13 @@ export function normalizeRelatedEntityIds(value) {
   return [...new Set(value.filter((id) => typeof id === 'string' && id.trim()))];
 }
 
+export function normalizeNoteTarget(draft = {}) {
+  const targetClaimId = textValue(draft.targetClaimId, 240) || null;
+  const targetDocumentId = textValue(draft.targetDocumentId, 240) || null;
+  const targetSectionId = targetDocumentId ? textValue(draft.targetSectionId, 240) || null : null;
+  return { targetClaimId, targetDocumentId, targetSectionId };
+}
+
 export function createNoteRecord({
   draft = {},
   previous = null,
@@ -44,13 +51,14 @@ export function createNoteRecord({
 
   const relation = normalizeNoteRelation(draft.relation);
   const suppliedId = textValue(draft.id, 160);
+  const target = normalizeNoteTarget(draft);
   return Object.freeze({
     id: previous?.id ?? (suppliedId || createId()),
     title,
     body,
     relation,
     relationLabel: relationLabel(relation),
-    targetClaimId: textValue(draft.targetClaimId, 240) || null,
+    ...target,
     relatedEntityIds: normalizeRelatedEntityIds(relatedEntityIds),
     createdAt: timestamp(previous?.createdAt ?? draft.createdAt, now),
     updatedAt: preserveUpdatedAt ? timestamp(draft.updatedAt, now) : now,
