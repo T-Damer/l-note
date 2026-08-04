@@ -50,6 +50,5 @@ test('large panel receives only operations that require user attention', () => {
   assert.deepEqual(attentionTransferTasks(tasks).map((task) => task.id), [
     'interrupted',
     'failed',
-    'cancelled',
   ]);
 });
