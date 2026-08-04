@@ -126,9 +126,9 @@ function searchPack(pack) {
     const records = flattenKnowledge([pack], []);
     const search = createSearchEngine(records, pack.entities);
     for (const [query, expectedDocument] of [
-      ['real CSV reader', 'csv_articles'],
-      ['real Parquet reader', 'parquet_metrics'],
-      ['real SQLite scanner', 'sqlite_notes'],
+      ['real CSV reader', 'doc.csv_articles'],
+      ['real Parquet reader', 'doc.parquet_metrics'],
+      ['real SQLite scanner', 'doc.sqlite_notes'],
     ]) {
       const results = search.search(query, { limit: 3 });
       assert.equal(results[0]?.documentId, expectedDocument, `${query}: ${JSON.stringify(results)}`);
@@ -159,9 +159,12 @@ async function main() {
     await runDuckDb({
       executable,
       cwd: directory,
-      sql: `COPY (SELECT 20 AS id, 'Parquet metric' AS title, '
-        Source text from the real Parquet reader.' AS body, 42.5 AS value)
-        TO ${sqlLiteral(parquet)} (FORMAT PARQUET);`,
+      sql: `COPY (
+        SELECT 20 AS id,
+          'Parquet metric' AS title,
+          'Source text from the real Parquet reader.' AS body,
+          42.5 AS value
+      ) TO ${sqlLiteral(parquet)} (FORMAT PARQUET);`,
     });
     await writeFile(configPath, `${JSON.stringify(stageConfig(), null, 2)}\n`);
 
