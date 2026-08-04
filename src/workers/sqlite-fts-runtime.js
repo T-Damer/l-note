@@ -8,13 +8,10 @@ import {
   sqliteFtsRecordValues,
   sqliteVocabularyRange,
 } from '../helpers/sqlite-fts.js';
+import { DEFAULT_SQLITE_SEARCH_DATABASE_NAME, normalizeSqliteSearchDatabaseName } from '../helpers/sqlite-storage-name.js';
 import { tokenize } from '../search.js';
-import {
-  SQLITE_WASM_URL,
-  loadSqliteRuntimeModules,
-} from './sqlite-runtime-modules.js';
+import { SQLITE_WASM_URL, loadSqliteRuntimeModules } from './sqlite-runtime-modules.js';
 
-const DATABASE_NAME = 'l-note-search.db';
 const INSERT_SQL = `
   INSERT INTO records_fts(
     id, payload, title, document_title, body, aliases, entity_names, tags
@@ -70,10 +67,16 @@ function compileOption(row) {
 }
 
 export class SqliteFtsRuntime {
-  constructor({ moduleUrl, idbModuleUrl, wasmUrl = SQLITE_WASM_URL } = {}) {
+  constructor({
+    moduleUrl,
+    idbModuleUrl,
+    wasmUrl = SQLITE_WASM_URL,
+    databaseName = DEFAULT_SQLITE_SEARCH_DATABASE_NAME,
+  } = {}) {
     this.moduleUrl = moduleUrl;
     this.idbModuleUrl = idbModuleUrl;
     this.wasmUrl = wasmUrl;
+    this.databaseName = normalizeSqliteSearchDatabaseName(databaseName);
     this.connection = null;
     this.initializing = null;
     this.existingDatabase = null;
@@ -105,7 +108,7 @@ export class SqliteFtsRuntime {
         ? modules.withExistDB(this.existingDatabase, { url: this.wasmUrl })
         : { url: this.wasmUrl };
       this.connection = await modules.initSQLite(
-        modules.useIdbStorage(DATABASE_NAME, storageOptions),
+        modules.useIdbStorage(this.databaseName, storageOptions),
       );
     } catch (error) {
       throw errorAt('database open failed', error);

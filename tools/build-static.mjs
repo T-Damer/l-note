@@ -13,7 +13,17 @@ await buildPhosphorIcons(root);
 await buildPdfInspectorVendor(root);
 await rm(dist, { recursive: true, force: true });
 await mkdir(dist, { recursive: true });
-for (const item of ['index.html', 'styles.css', 'manifest.webmanifest', 'service-worker.js', 'assets', 'src', 'packs', 'vendor']) {
+for (const item of [
+  'index.html',
+  'styles.css',
+  'manifest.webmanifest',
+  'service-worker.js',
+  'assets',
+  'benchmarks',
+  'src',
+  'packs',
+  'vendor',
+]) {
   await cp(path.join(root, item), path.join(dist, item), { recursive: true });
 }
 const appPartsDir = path.join(root, 'src', 'app-parts');

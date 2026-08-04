@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>L-Note · Search benchmark</title>
+  <style>
+    :root {
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color-scheme: light dark;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: Canvas; color: CanvasText; }
+    main { width: min(1120px, 100%); margin: 0 auto; padding: 24px; }
+    h1 { margin: 0 0 8px; font-size: clamp(1.7rem, 4vw, 2.6rem); }
+    h2 { margin-top: 0; font-size: 1.1rem; }
+    p { line-height: 1.55; }
+    .muted { color: color-mix(in srgb, CanvasText 65%, transparent); }
+    .panel { border: 1px solid color-mix(in srgb, CanvasText 18%, transparent); border-radius: 16px; padding: 18px; margin-top: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    label { display: grid; gap: 7px; font-weight: 650; }
+    input { width: 100%; padding: 11px 12px; border: 1px solid color-mix(in srgb, CanvasText 24%, transparent); border-radius: 10px; background: Canvas; color: CanvasText; font: inherit; }
+    button { padding: 10px 15px; border-radius: 10px; border: 1px solid color-mix(in srgb, CanvasText 24%, transparent); background: ButtonFace; color: ButtonText; font: inherit; font-weight: 650; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    progress { width: 100%; height: 12px; margin-top: 14px; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; min-width: 900px; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th, td { padding: 10px; border-bottom: 1px solid color-mix(in srgb, CanvasText 14%, transparent); text-align: right; white-space: nowrap; }
+    th:first-child, td:first-child, th:last-child, td:last-child { text-align: left; }
+    pre { max-height: 420px; overflow: auto; padding: 14px; border-radius: 12px; background: color-mix(in srgb, CanvasText 7%, Canvas); font-size: 12px; line-height: 1.45; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .notice { border-left: 4px solid currentColor; padding-left: 12px; }
+    @media (max-width: 720px) {
+      main { padding: 16px; }
+      .grid { grid-template-columns: 1fr; }
+      .panel { padding: 14px; }
+    }
+  </style>
+  <script src="../vendor/minisearch.js"></script>
+  <script type="module" src="./search-benchmark.js"></script>
+</head>
+<body>
+<main>
+  <header>
+    <p class="muted"><a href="../">← L-Note</a></p>
+    <h1>Search benchmark</h1>
+    <p>Сравнение MiniSearch и SQLite/FTS5 на текущем устройстве. Рабочая база поиска не используется: SQLite benchmark хранится отдельно в <code>l-note-search-benchmark.db</code> и очищается после каждого размера.</p>
+    <p id="device-summary" class="muted"></p>
+  </header>
+
+  <section class="panel">
+    <h2>Параметры</h2>
+    <form id="benchmark-form">
+      <div class="grid">
+        <label>
+          Размеры корпусов
+          <input id="counts" name="counts" value="1000, 5000, 10000" inputmode="numeric" autocomplete="off">
+        </label>
+        <label>
+          Символов текста на запись
+          <input id="body-chars" name="bodyChars" type="number" min="120" max="8192" value="640">
+        </label>
+        <label>
+          Повторов набора запросов
+          <input id="query-iterations" name="queryIterations" type="number" min="1" max="50" value="5">
+        </label>
+      </div>
+      <div class="actions">
+        <button id="run-benchmark" type="submit">Запустить</button>
+        <button id="stop-benchmark" type="button" disabled>Остановить после этапа</button>
+        <button id="export-report" type="button" disabled>Скачать JSON</button>
+      </div>
+      <progress id="benchmark-progress" value="0" max="3"></progress>
+      <p id="benchmark-status" role="status" aria-live="polite">Готов к запуску.</p>
+    </form>
+    <p class="notice muted">Для сопоставимых результатов закройте тяжёлые вкладки, отключите энергосбережение и перезагружайте эту страницу перед повтором. На Android не сворачивайте браузер во время одного прогона.</p>
+  </section>
+
+  <section class="panel">
+    <h2>Результаты, мс</h2>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Записей</th>
+            <th>Оценка корпуса</th>
+            <th>Mini build</th>
+            <th>Mini query p95</th>
+            <th>SQLite build</th>
+            <th>SQLite reopen</th>
+            <th>SQLite query p95</th>
+            <th>Статус</th>
+          </tr>
+        </thead>
+        <tbody id="results-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Отчёт</h2>
+    <p class="muted">В отчёт входят user agent, число потоков, доступный сигнал <code>deviceMemory</code>, параметры корпуса, build/reopen/query p50/p95 и доступные heap-снимки.</p>
+    <pre id="report-json">После запуска здесь появится JSON.</pre>
+  </section>
+</main>
+</body>
+</html>
