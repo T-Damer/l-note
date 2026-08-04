@@ -1,3 +1,4 @@
+import { indexNoteTargets, resolveNoteDocument } from './helpers/note-targets.js';
 import { validatePrebuiltSearchArtifacts } from './helpers/prebuilt-search-artifacts.js';
 import { validateStatementRelations } from './helpers/statement-conflicts.js';
 import { validateStatementSelections } from './helpers/statement-selections.js';
@@ -165,8 +166,20 @@ export function buildKnowledgeState(packs, notes = []) {
     linked.push(note);
     claimNotes.set(note.targetClaimId, linked);
   }
-
-  return { packs, notes, documents, sections, entities, claims, relations, entityMentions, claimNotes };
+  const noteTargets = indexNoteTargets(notes);
+  return {
+    packs,
+    notes,
+    documents,
+    sections,
+    entities,
+    claims,
+    relations,
+    entityMentions,
+    claimNotes,
+    documentNotes: noteTargets.byDocument,
+    sectionNotes: noteTargets.bySection,
+  };
 }
 
 export function flattenKnowledge(packs, notes = []) {
@@ -207,23 +220,26 @@ export function flattenKnowledge(packs, notes = []) {
   }
 
   for (const note of notes) {
+    const target = resolveNoteDocument(packs, note);
     records.push({
       id: `note:${note.id}`,
       kind: 'note',
       noteId: note.id,
       packId: 'personal',
       packTitle: 'Личные заметки',
-      documentTitle: note.relationLabel ?? 'Личная заметка',
+      documentId: note.targetDocumentId ?? null,
+      documentTitle: target?.document.title ?? note.relationLabel ?? 'Личная заметка',
+      sectionId: note.targetSectionId ?? null,
       title: note.title,
       body: note.body,
       aliases: '',
       entityNames: '',
       entityIds: note.relatedEntityIds ?? [],
-      tags: `personal ${note.relation ?? 'observation'}`,
+      tags: `personal ${note.relation ?? 'observation'}${note.targetDocumentId ? ' source-annotation' : ''}`,
       authority: 'personal',
       relation: note.relation ?? 'observation',
       effectiveFrom: note.updatedAt,
-      sourceTitle: 'Локальная заметка',
+      sourceTitle: target?.section?.title ?? target?.document.source?.title ?? 'Локальная заметка',
       claimIds: note.targetClaimId ? [note.targetClaimId] : [],
     });
   }
