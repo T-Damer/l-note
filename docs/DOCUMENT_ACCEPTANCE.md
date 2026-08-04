@@ -20,7 +20,7 @@ It also runs inside the complete `npm run check` gate.
 {
   "schemaVersion": 1,
   "kind": "lnote.document-acceptance",
-  "corpusVersion": "2026.08.04.3",
+  "corpusVersion": "2026.08.04.4",
   "cases": [],
   "coverage": []
 }
@@ -28,14 +28,7 @@ It also runs inside the complete `npm run check` gate.
 
 `corpusVersion` changes whenever a fixture or its expected interpretation changes. A preparation implementation change that does not alter any accepted output does not require a corpus-version change.
 
-Every case has:
-
-- a stable `id`;
-- a source format and path or deterministic generator;
-- `status: active` only when CI executes its expectations;
-- an explicit `expect` object.
-
-Every intended category remains in `coverage`. Categories without a redistributable, reproducible fixture use `status: pending`; they must not be silently treated as covered.
+Every case has a stable ID, a source path or deterministic generator, an active CI expectation and a declared source-integrity boundary.
 
 ## Active cases
 
@@ -65,33 +58,42 @@ A deterministic PDF contains two aligned physical columns. The parser recognizes
 
 ### Image-heavy PDF
 
-A generated searchable page contains four independent image XObjects around a reliable text layer. The test verifies:
+A generated searchable page contains four independent image XObjects around a reliable text layer. Embedded images must not force the page through OCR, and the original PDF remains the authoritative visual asset. The current portable contract does not claim binary image extraction.
 
-- all four images are physically present in the PDF bytes;
-- embedded images do not force the page through OCR;
-- reliable text remains searchable and page-anchored;
-- the original PDF remains available for visual content;
-- the prepared pack records no false OCR pages.
+### Embedded Type3 font
 
-The current portable contract does not claim binary extraction of embedded images. `pdf-inspector` currently provides Markdown-level image representation, while the original PDF remains the authoritative visual asset.
+A deterministic PDF embeds custom Type3 glyph programs rather than relying on a system font. A complete `ToUnicode` CMap maps the custom character codes back to Unicode.
+
+The test requires:
+
+- exact extraction of several known phrases;
+- no encoding warning;
+- no OCR routing;
+- normal page sections and source anchors;
+- preservation of the same result through the strong-device preparation pipeline.
+
+### Broken font encoding
+
+The same Type3 font is generated without a `ToUnicode` CMap. This is not accepted as merely lower-quality text. The parser must:
+
+- report an encoding issue;
+- route the affected page to OCR;
+- produce no searchable section before OCR review;
+- prevent custom glyph codes or guessed garbage from entering evidence.
+
+This converts encoding ambiguity into the ordinary reviewed OCR boundary instead of silently indexing unreliable text.
 
 ### Long document and disk reopen
 
-A deterministic Markdown source creates 5,200 sections in one document. The acceptance workflow verifies:
-
-- browser-local preparation and pack validation;
-- JSON serialization and reopen without losing the final section;
-- automatic eligibility for disk-backed search;
-- portable SQLite/FTS5 artifact construction;
-- artifact metadata and record count;
-- close and independent reopen of the SQLite file;
-- exact search hits near the beginning, middle and end on repeated opens.
+A deterministic Markdown source creates 5,200 sections in one document. The acceptance workflow verifies browser preparation, JSON reopen, disk-search eligibility, portable SQLite/FTS5 construction and independent repeated database reopen with exact hits near the beginning, middle and end.
 
 This test validates portability and reopen behavior, not final mobile performance thresholds.
 
-## Deterministic PDF generator
+## Deterministic fixture generators
 
-`tests/fixtures/document-library/pdf-fixtures.mjs` writes valid PDF bytes directly, including xref offsets, standard Type 1 font resources and image XObjects. It has no runtime dependency on a PDF library or office application.
+- `pdf-fixtures.mjs` writes ordinary text, image, mixed and column-layout PDFs.
+- `embedded-font-fixtures.mjs` writes custom Type3 fonts and ToUnicode CMaps.
+- both generators calculate real PDF object offsets and xref tables without an external PDF library.
 
 ## Adding a case
 
@@ -124,10 +126,6 @@ The migration procedure is:
 
 Historical packs remain valid preparation snapshots with source and review provenance.
 
-## Pending coverage
+## Remaining Phase 3 work
 
-The remaining explicit PDF fixture gap is:
-
-- unusual embedded fonts and encoding failures.
-
-Broader ranking and answer-quality regressions remain separate Phase 3 tasks even though long-document disk reopen is now covered.
+The versioned format/layout fixture matrix is complete for the currently declared categories. Remaining Phase 3 tasks are broader retrieval ranking, local-answer citation/number/negation regressions and additional real-world libraries rather than another missing synthetic format fixture.
