@@ -89,7 +89,7 @@ test('uses temporary environment-backed secrets and read-only remote attachments
   assert.deepEqual(plan.redactions, ['private-password']);
 });
 
-test('rejects raw SQL, inline credentials and duplicate targets', () => {
+test('rejects raw SQL, inline credentials, duplicate and reserved targets', () => {
   assert.throws(() => buildDuckDbStageSql(baseConfig([{
     type: 'csv',
     path: './data.csv',
@@ -108,6 +108,12 @@ test('rejects raw SQL, inline credentials and duplicate targets', () => {
     { type: 'csv', path: './a.csv', table: 'same' },
     { type: 'json', path: './b.json', table: 'same' },
   ]), { outputPath: '/tmp/stage.sqlite' }), /Duplicate DuckDB target table/u);
+
+  for (const table of ['sqlite_cache', 'lnote_private']) {
+    assert.throws(() => buildDuckDbStageSql(baseConfig([{
+      type: 'csv', path: './data.csv', table,
+    }]), { outputPath: '/tmp/stage.sqlite' }), /reserved SQLite\/L-Note prefixes/u);
+  }
 });
 
 function createFakeStageDatabase(filename, stagedAt) {
