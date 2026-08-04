@@ -76,13 +76,14 @@ function anydocModel() {
 
 function fakeAnydocModule() {
   return {
-    formatFromBytes() {
-      return 'docx';
+    formatFromBytes(bytes) {
+      return Buffer.from(bytes).toString('utf8') === 'fake-docx' ? 'docx' : null;
     },
-    formatFromPath() {
-      return 'docx';
+    formatFromPath(filename) {
+      return String(filename).toLowerCase().endsWith('.docx') ? 'docx' : null;
     },
-    async toDocument() {
+    async toDocument(_bytes, format) {
+      if (format !== 'docx') throw new Error('unsupported test container');
       return anydocModel();
     },
   };
@@ -126,14 +127,18 @@ test('loads anydoc optionally and reports a missing native package without faili
   }), /Cannot find package/u);
 });
 
-test('normalizes anydoc embedded assets and block provenance', async () => {
-  const result = await tryExtractAnydocDocument('/virtual/source.docx', {
+test('normalizes anydoc embedded assets and detects mislabeled office bytes', async () => {
+  const options = {
     mode: 'require',
     moduleLoader: async () => fakeAnydocModule(),
-    readFileFn: async () => Buffer.from('docx-bytes'),
-  });
+    readFileFn: async () => Buffer.from('fake-docx'),
+  };
+  const result = await tryExtractAnydocDocument('/virtual/source.docx', options);
+  const mislabeled = await tryExtractAnydocDocument('/virtual/source.bin', options);
   assert.equal(result.status, 'extracted');
+  assert.equal(mislabeled.status, 'extracted');
   assert.equal(result.extracted.detectedFormat, 'docx');
+  assert.equal(mislabeled.extracted.detectedFormat, 'docx');
   assert.equal(result.extracted.embeddedAssets[0].originPart, 'word/media/image1.png');
   assert.equal(result.extracted.embeddedAssets[0].data.toString(), 'embedded-image');
 });
@@ -173,6 +178,9 @@ test('prepares structured, text and unknown binary files in one valid pack', asy
     assert.ok(attachment);
     assert.equal(office.source.extractor, 'anydoc@0.1.2');
     assert.equal(office.source.embeddedAssets.length, 1);
+    assert.equal(office.asset.mimeType, office.source.mimeType);
+    assert.equal(text.asset.mimeType, 'text/markdown');
+    assert.equal(attachment.asset.url, attachment.source.path);
     assert.match(office.sections[0].text, /\.\/assets\/report-docx-embedded-0\.png/u);
     assert.match(text.sections[0].text, /Текст заметки/u);
     assert.equal(attachment.sections[0].title, 'Файл для ручной разметки');
