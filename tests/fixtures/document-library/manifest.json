@@ -86,11 +86,12 @@
       "status": "active",
       "expect": {
         "pageCount": 1,
-        "readingOrder": [
-          "LEFT COLUMN ALPHA",
-          "LEFT COLUMN OMEGA",
-          "RIGHT COLUMN ALPHA",
-          "RIGHT COLUMN OMEGA"
+        "tableRows": [
+          ["LEFT COLUMN ALPHA", "RIGHT COLUMN ALPHA"],
+          ["Left column sentence one.", "Right column sentence one."],
+          ["Left column sentence two.", "Right column sentence two."],
+          ["Left column sentence three.", "Right column sentence three."],
+          ["LEFT COLUMN OMEGA", "RIGHT COLUMN OMEGA"]
         ]
       }
     }
