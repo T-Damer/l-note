@@ -43,17 +43,35 @@ function serializePdf(objects) {
 }
 
 function glyphName(code) {
-  return code === 32 ? 'space' : `g${code.toString(16).padStart(2, '0')}`;
+  return `glyph${code.toString(16).padStart(2, '0')}`;
 }
 
-function hexText(value) {
-  return Buffer.from(value, 'ascii').toString('hex').toUpperCase();
+function characterEncoding(lines) {
+  const characters = [...new Set(lines.join('').split(''))].sort();
+  const characterToCode = new Map();
+  const codeToCharacter = new Map();
+  for (const [index, character] of characters.entries()) {
+    const code = index + 1;
+    characterToCode.set(character, code);
+    codeToCharacter.set(code, character);
+  }
+  return { characterToCode, codeToCharacter };
 }
 
-function toUnicodeCmap(codes) {
-  const mappings = codes.map((code) => (
-    `<${code.toString(16).padStart(2, '0').toUpperCase()}> `
-      + `<${code.toString(16).padStart(4, '0').toUpperCase()}>`
+function hexText(value, characterToCode) {
+  return [...value]
+    .map((character) => characterToCode.get(character).toString(16).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
+}
+
+function unicodeHex(character) {
+  return character.codePointAt(0).toString(16).padStart(4, '0').toUpperCase();
+}
+
+function toUnicodeCmap(codeToCharacter) {
+  const mappings = [...codeToCharacter.entries()].map(([code, character]) => (
+    `<${code.toString(16).padStart(2, '0').toUpperCase()}> <${unicodeHex(character)}>`
   ));
   return [
     '/CIDInit /ProcSet findresource begin',
@@ -75,11 +93,11 @@ function toUnicodeCmap(codes) {
   ].join('\n');
 }
 
-function textContent(lines) {
+function textContent(lines, characterToCode) {
   const output = ['BT', '/F1 14 Tf', '54 730 Td'];
   for (const [index, line] of lines.entries()) {
     if (index) output.push('0 -30 Td');
-    output.push(`<${hexText(line)}> Tj`);
+    output.push(`<${hexText(line, characterToCode)}> Tj`);
   }
   output.push('ET');
   return output.join('\n');
@@ -94,7 +112,8 @@ export function embeddedType3FontPdf({ withToUnicode = true } = {}) {
     'ENCODING PROVENANCE MUST REMAIN EXPLICIT',
     'BROKEN TEXT MUST NEVER ENTER SEARCH EVIDENCE',
   ];
-  const codes = [...new Set(lines.join('').split('').map((character) => character.charCodeAt(0)))].sort((a, b) => a - b);
+  const { characterToCode, codeToCharacter } = characterEncoding(lines);
+  const codes = [...codeToCharacter.keys()];
   const glyphRefs = new Map();
   let nextObject = 5;
   for (const code of codes) {
@@ -127,9 +146,10 @@ export function embeddedType3FontPdf({ withToUnicode = true } = {}) {
     font,
   ];
   for (const code of codes) {
-    objects.push(pdfStream('', code === 32 ? '600 0 d0' : '600 0 d0\n40 40 500 620 re S'));
+    const character = codeToCharacter.get(code);
+    objects.push(pdfStream('', character === ' ' ? '600 0 d0' : '600 0 d0\n40 40 500 620 re S'));
   }
-  if (withToUnicode) objects.push(pdfStream('', toUnicodeCmap(codes)));
-  objects.push(pdfStream('', textContent(lines)));
+  if (withToUnicode) objects.push(pdfStream('', toUnicodeCmap(codeToCharacter)));
+  objects.push(pdfStream('', textContent(lines, characterToCode)));
   return serializePdf(objects);
 }
