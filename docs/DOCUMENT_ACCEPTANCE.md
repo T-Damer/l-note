@@ -62,7 +62,7 @@ A generated searchable page contains four independent image XObjects around a re
 
 ### Embedded Type3 font
 
-A deterministic PDF embeds custom Type3 glyph programs rather than relying on a system font. A complete `ToUnicode` CMap maps the custom character codes back to Unicode.
+A deterministic PDF embeds custom Type3 glyph programs rather than relying on a system font. A complete `ToUnicode` CMap maps deliberately scrambled custom character codes back to Unicode.
 
 The test requires:
 
@@ -74,14 +74,15 @@ The test requires:
 
 ### Broken font encoding
 
-The same Type3 font is generated without a `ToUnicode` CMap. This is not accepted as merely lower-quality text. The parser must:
+The same Type3 font and scrambled character codes are generated without a `ToUnicode` CMap. This is not accepted as merely lower-quality text.
 
-- report an encoding issue;
-- route the affected page to OCR;
-- produce no searchable section before OCR review;
-- prevent custom glyph codes or guessed garbage from entering evidence.
+The current parser does not necessarily set the broad `hasEncodingIssues` diagnostic for this Type3 shape, so the acceptance contract is tied to the safety outcome rather than that optional flag:
 
-This converts encoding ambiguity into the ordinary reviewed OCR boundary instead of silently indexing unreliable text.
+- the affected page is routed to OCR;
+- no searchable section is produced before OCR review;
+- custom glyph codes or guessed garbage never enter evidence.
+
+This converts mapping ambiguity into the ordinary reviewed OCR boundary instead of silently indexing unreliable text.
 
 ### Long document and disk reopen
 
@@ -92,7 +93,7 @@ This test validates portability and reopen behavior, not final mobile performanc
 ## Deterministic fixture generators
 
 - `pdf-fixtures.mjs` writes ordinary text, image, mixed and column-layout PDFs.
-- `embedded-font-fixtures.mjs` writes custom Type3 fonts and ToUnicode CMaps.
+- `embedded-font-fixtures.mjs` writes custom Type3 fonts, scrambled byte encodings and ToUnicode CMaps.
 - both generators calculate real PDF object offsets and xref tables without an external PDF library.
 
 ## Adding a case
