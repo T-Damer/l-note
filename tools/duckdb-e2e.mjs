@@ -57,7 +57,7 @@ function stageConfig() {
         type: 'sqlite',
         path: './source.sqlite',
         alias: 'source_sqlite',
-        tables: [{ source: 'notes', target: 'sqlite_notes' }],
+        tables: [{ source: 'notes', target: 'source_notes' }],
       },
     ],
   };
@@ -76,7 +76,7 @@ function mapping() {
         titleColumn: 'title',
         textColumns: ['title', 'body', 'value'],
       },
-      sqlite_notes: {
+      source_notes: {
         idColumns: ['id'],
         titleColumn: 'title',
         textColumns: ['title', 'body'],
@@ -96,7 +96,7 @@ function inspectStage(filename) {
     assert.deepEqual(sourceTypes, [
       { target_table: 'csv_articles', source_type: 'csv' },
       { target_table: 'parquet_metrics', source_type: 'parquet' },
-      { target_table: 'sqlite_notes', source_type: 'sqlite' },
+      { target_table: 'source_notes', source_type: 'sqlite' },
     ]);
     assert.deepEqual(database.prepare('SELECT * FROM csv_articles').all(), [{
       id: '10',
@@ -109,7 +109,7 @@ function inspectStage(filename) {
       body: 'Source text from the real Parquet reader.',
       value: 42.5,
     }]);
-    assert.deepEqual(database.prepare('SELECT * FROM sqlite_notes').all(), [{
+    assert.deepEqual(database.prepare('SELECT * FROM source_notes').all(), [{
       id: 30,
       title: 'SQLite note',
       body: 'Source text from the real SQLite scanner.',
@@ -128,7 +128,7 @@ function searchPack(pack) {
     for (const [query, expectedDocument] of [
       ['real CSV reader', 'doc.csv_articles'],
       ['real Parquet reader', 'doc.parquet_metrics'],
-      ['real SQLite scanner', 'doc.sqlite_notes'],
+      ['real SQLite scanner', 'doc.source_notes'],
     ]) {
       const results = search.search(query, { limit: 3 });
       assert.equal(results[0]?.documentId, expectedDocument, `${query}: ${JSON.stringify(results)}`);
@@ -177,7 +177,7 @@ async function main() {
       executable,
       stagedAt,
     });
-    assert.deepEqual(staged.targets, ['csv_articles', 'parquet_metrics', 'sqlite_notes']);
+    assert.deepEqual(staged.targets, ['csv_articles', 'parquet_metrics', 'source_notes']);
     assert.deepEqual(staged.objects.map((object) => object.name), staged.targets);
     assert.ok(staged.bytes > 0);
     inspectStage(stagePath);
