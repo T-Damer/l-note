@@ -8,6 +8,7 @@ import {
 } from './duckdb-bridge-config.mjs';
 
 const FILE_TYPES = new Set(['csv', 'json', 'parquet']);
+const RESERVED_TARGET_PREFIX = /^(?:sqlite_|lnote_)/iu;
 const SECRET_FIELDS = new Map([
   ['host', 'HOST'],
   ['port', 'PORT'],
@@ -34,8 +35,16 @@ function safeName(value, label) {
   return name;
 }
 
-function tableName(value, label = 'target table') {
+function tableName(value, label = 'table') {
   return safeName(value, label).replaceAll('.', '_').replaceAll('-', '_');
+}
+
+function targetTableName(value, label = 'target table') {
+  const target = tableName(value, label);
+  if (RESERVED_TARGET_PREFIX.test(target)) {
+    throw new Error(`${label} must not use reserved SQLite/L-Note prefixes sqlite_ or lnote_.`);
+  }
+  return target;
 }
 
 function sourceParts(value, label) {
@@ -118,7 +127,7 @@ function metadataInsert(target, sourceType, locator, config, stagedAt) {
 }
 
 function localFileSource(source, context) {
-  const target = tableName(source.table, 'file source table');
+  const target = targetTableName(source.table, 'file source table');
   context.claimTarget(target);
   const reader = fileReader(source, context.configDirectory);
   context.statements.push(`CREATE TABLE lnote_stage.${quoteIdentifier(target)} AS SELECT * FROM ${reader.expression};`);
@@ -134,7 +143,7 @@ function localFileSource(source, context) {
 function databaseTables(source, context, { alias, locator, type }) {
   for (const table of source.tables) {
     const sourceIdentifiers = sourceParts(table.source, `${type} table source`);
-    const target = tableName(table.target ?? sourceIdentifiers.at(-1), `${type} target table`);
+    const target = targetTableName(table.target ?? sourceIdentifiers.at(-1), `${type} target table`);
     context.claimTarget(target);
     context.statements.push(
       `CREATE TABLE lnote_stage.${quoteIdentifier(target)} AS SELECT * FROM ${qualified([alias, ...sourceIdentifiers])};`,
