@@ -8,13 +8,16 @@ import {
   sqliteFtsRecordValues,
   sqliteVocabularyRange,
 } from '../helpers/sqlite-fts.js';
+import {
+  DEFAULT_SQLITE_SEARCH_DATABASE_NAME,
+  normalizeSqliteSearchDatabaseName,
+} from '../helpers/sqlite-storage-name.js';
 import { tokenize } from '../search.js';
 import {
   SQLITE_WASM_URL,
   loadSqliteRuntimeModules,
 } from './sqlite-runtime-modules.js';
 
-const DEFAULT_DATABASE_NAME = 'l-note-search.db';
 const INSERT_SQL = `
   INSERT INTO records_fts(
     id, payload, title, document_title, body, aliases, entity_names, tags
@@ -69,25 +72,17 @@ function compileOption(row) {
   return String(row?.compile_options ?? Object.values(row ?? {})[0] ?? '');
 }
 
-function normalizedDatabaseName(value) {
-  const name = String(value ?? DEFAULT_DATABASE_NAME).trim();
-  if (!/^[a-z0-9][a-z0-9._-]{0,95}$/iu.test(name)) {
-    throw new TypeError('SQLite search databaseName must be a simple 1-96 character storage name.');
-  }
-  return name;
-}
-
 export class SqliteFtsRuntime {
   constructor({
     moduleUrl,
     idbModuleUrl,
     wasmUrl = SQLITE_WASM_URL,
-    databaseName = DEFAULT_DATABASE_NAME,
+    databaseName = DEFAULT_SQLITE_SEARCH_DATABASE_NAME,
   } = {}) {
     this.moduleUrl = moduleUrl;
     this.idbModuleUrl = idbModuleUrl;
     this.wasmUrl = wasmUrl;
-    this.databaseName = normalizedDatabaseName(databaseName);
+    this.databaseName = normalizeSqliteSearchDatabaseName(databaseName);
     this.connection = null;
     this.initializing = null;
     this.existingDatabase = null;
