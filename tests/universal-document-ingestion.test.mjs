@@ -175,7 +175,7 @@ test('prepares structured, text and unknown binary files in one valid pack', asy
     assert.equal(office.source.embeddedAssets.length, 1);
     assert.match(office.sections[0].text, /\.\/assets\/report-docx-embedded-0\.png/u);
     assert.match(text.sections[0].text, /Текст заметки/u);
-    assert.match(attachment.sections[0].text, /ручной разметки/u);
+    assert.equal(attachment.sections[0].title, 'Файл для ручной разметки');
     assert.match(attachment.sections[0].text, /SHA-256/u);
     const embeddedUrl = office.source.embeddedAssets[0].url.replace('./assets/', '');
     assert.equal(await readFile(path.join(output, 'assets', embeddedUrl), 'utf8'), 'embedded-image');
