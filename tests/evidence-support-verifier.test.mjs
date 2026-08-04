@@ -34,6 +34,22 @@ const evidence = {
   ],
 };
 
+const scopedNegationEvidence = {
+  contractVersion: '0.1.0',
+  query: 'почечная недостаточность',
+  sources: [{
+    id: 'S1',
+    result: {
+      title: 'Ограничения препарата Альфа',
+      body: [
+        'Препарат Альфа не противопоказан при лёгкой почечной недостаточности.',
+        'Препарат Альфа противопоказан при тяжёлой почечной недостаточности.',
+      ].join(' '),
+    },
+    claims: [],
+  }],
+};
+
 test('splits prose while retaining source identifiers with their statements', () => {
   assert.deepEqual(
     splitAnswerStatements('Бронхиолит возможен [S1].\nСатурация ниже 92% важна [S1].'),
@@ -65,6 +81,30 @@ test('detects a negation that is absent from the cited evidence', () => {
   const result = verifyStatementSupport('Свистящего дыхания при бронхиолите нет [S1].', evidence);
   assert.equal(result.supported, false);
   assert.equal(result.diagnostics.checks[0].negationMismatch, true);
+});
+
+test('binds negation to the best matching sentence and scope', () => {
+  const mildNegative = verifyStatementSupport(
+    'Препарат Альфа не противопоказан при лёгкой почечной недостаточности [S1].',
+    scopedNegationEvidence,
+  );
+  assert.equal(mildNegative.supported, true, JSON.stringify(mildNegative.diagnostics, null, 2));
+  assert.match(mildNegative.diagnostics.checks[0].bestFragment, /не противопоказан при лёгкой/u);
+
+  const mildPositive = verifyStatementSupport(
+    'Препарат Альфа противопоказан при лёгкой почечной недостаточности [S1].',
+    scopedNegationEvidence,
+  );
+  assert.equal(mildPositive.supported, false);
+  assert.equal(mildPositive.diagnostics.checks[0].negationMismatch, true);
+  assert.match(mildPositive.diagnostics.checks[0].bestFragment, /не противопоказан при лёгкой/u);
+
+  const severePositive = verifyStatementSupport(
+    'Препарат Альфа противопоказан при тяжёлой почечной недостаточности [S1].',
+    scopedNegationEvidence,
+  );
+  assert.equal(severePositive.supported, true, JSON.stringify(severePositive.diagnostics, null, 2));
+  assert.match(severePositive.diagnostics.checks[0].bestFragment, /противопоказан при тяжёлой/u);
 });
 
 test('exposes the verifier through the generic evidence-verifier port', () => {
