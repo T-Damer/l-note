@@ -3,7 +3,11 @@ import {
   qualifyDocumentId,
   resolveStatement,
 } from '../helpers/statement-conflicts.js';
-import { Button } from '../ui/components.js';
+import {
+  buildStatementSelectionIndex,
+  statementSelectionLabel,
+} from '../helpers/statement-selections.js';
+import { Button, Card } from '../ui/components.js';
 import { element } from '../ui/dom.js';
 import { Text } from '../ui/text.js';
 import { createStatementConflictDisclosure } from './statement-conflict-view.js';
@@ -65,6 +69,72 @@ function renderSource(claim, knowledge, navigate) {
   return [Text({ variant: 'heading', as: 'h3', text: 'Источник' }), button];
 }
 
+function selectionMetadata(selection) {
+  return [
+    selection.scope ? `Контекст: ${selection.scope}` : '',
+    selection.validAt ? `Актуально на: ${selection.validAt}` : '',
+    selection.reviewedBy ? `Проверил: ${selection.reviewedBy}` : '',
+    selection.reviewedAt ? `Проверено: ${selection.reviewedAt}` : '',
+  ].filter(Boolean).join(' · ');
+}
+
+function selectionSideButton(side, preferred, navigate) {
+  return Button({
+    variant: 'ghost',
+    className: 'backlink-button',
+    children: [
+      Text({
+        variant: 'body',
+        as: 'strong',
+        text: `${preferred ? 'Предпочтительно · ' : ''}${side.documentTitle}`,
+      }),
+      Text({
+        variant: 'caption',
+        as: 'small',
+        text: [side.packTitle, side.quote].filter(Boolean).join(' · '),
+      }),
+    ],
+    onClick: () => navigate('statement', side.claimRef),
+  });
+}
+
+function selectionCard(entry, navigate) {
+  const preferred = new Set(entry.selection.preferredClaimRefs);
+  const sides = element('div', { className: 'backlink-list' });
+  for (const side of entry.selection.sides) {
+    sides.append(selectionSideButton(side, preferred.has(side.claimRef), navigate));
+  }
+  return Card({
+    kind: 'surface',
+    className: 'statement-selection-card',
+    children: [
+      Text({
+        variant: 'eyebrow',
+        text: statementSelectionLabel(entry),
+      }),
+      Text({
+        variant: 'body',
+        as: 'strong',
+        text: entry.selection.reason,
+      }),
+      selectionMetadata(entry.selection)
+        ? Text({ variant: 'caption', as: 'small', text: selectionMetadata(entry.selection) })
+        : null,
+      sides,
+    ].filter(Boolean),
+  });
+}
+
+function renderSelections(claim, knowledge, navigate) {
+  const index = buildStatementSelectionIndex(knowledge.packs);
+  const entries = index.byClaim.get(claim.runtimeId) ?? [];
+  if (!entries.length) return [];
+  return [
+    Text({ variant: 'heading', as: 'h3', text: 'Статус версии' }),
+    element('div', { className: 'backlink-list' }, entries.map((entry) => selectionCard(entry, navigate))),
+  ];
+}
+
 function renderNotes(claim, knowledge, relationLabel, navigate) {
   const ids = new Set([claim.runtimeId, claim.localId, claim.id].filter(Boolean));
   const notes = [...ids].flatMap((id) => knowledge.claimNotes.get(id) ?? []);
@@ -120,6 +190,7 @@ export function renderStatementResource({
   ]);
   const body = [
     Text({ variant: 'body', className: 'statement-text', text: claim.text }),
+    ...renderSelections(claim, knowledge, navigate),
     renderConflicts(claim, knowledge, navigate),
     renderEntities(claim, knowledge, navigate),
     ...renderSource(claim, knowledge, navigate),
