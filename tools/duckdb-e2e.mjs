@@ -130,9 +130,9 @@ function searchPack(pack) {
     const records = flattenKnowledge([pack], []);
     const search = createSearchEngine(records, pack.entities);
     for (const [query, expectedDocument] of [
-      ['real CSV reader', 'doc.csv_articles'],
-      ['real Parquet reader', 'doc.parquet_metrics'],
-      ['real SQLite scanner', 'doc.source_notes'],
+      ['real CSV reader', 'doc.csv-articles'],
+      ['real Parquet reader', 'doc.parquet-metrics'],
+      ['real SQLite scanner', 'doc.source-notes'],
     ]) {
       const results = search.search(query, { limit: 3 });
       assert.equal(results[0]?.documentId, expectedDocument, `${query}: ${JSON.stringify(results)}`);
