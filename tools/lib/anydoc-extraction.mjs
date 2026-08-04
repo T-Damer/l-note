@@ -41,7 +41,7 @@ export async function loadAnydoc({ mode = 'auto', moduleLoader = defaultModuleLo
     return {
       mode: selectedMode,
       module: null,
-      warning: `${ANYDOC_PACKAGE_NAME} is not installed; office formats will use a fallback or remain attachment-only. Install ${ANYDOC_PACKAGE_NAME}@${ANYDOC_RECOMMENDED_VERSION} for structured extraction.`,
+      warning: `${ANYDOC_PACKAGE_NAME} is not installed; office formats will use a fallback or remain attachment-only. Run npm install --no-save ${ANYDOC_PACKAGE_NAME}@${ANYDOC_RECOMMENDED_VERSION} for structured extraction.`,
     };
   }
 }
