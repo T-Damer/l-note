@@ -1,4 +1,4 @@
-import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import {
@@ -139,6 +139,10 @@ export async function prepareUniversalDocumentDirectory({
   const inputRoot = (await stat(inputAbsolute)).isDirectory() ? inputAbsolute : path.dirname(inputAbsolute);
   const documentRoot = path.join(outputRoot, 'documents');
   const assetRoot = path.join(outputRoot, 'assets');
+  await Promise.all([
+    rm(documentRoot, { recursive: true, force: true }),
+    rm(assetRoot, { recursive: true, force: true }),
+  ]);
   await mkdir(documentRoot, { recursive: true });
   await mkdir(assetRoot, { recursive: true });
   const usedAssets = new Set();
