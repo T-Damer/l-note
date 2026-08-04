@@ -2,15 +2,15 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 
-import { prepareDocumentDirectory } from './lib/document-extraction.mjs';
 import { renderOcrReviewHtml } from './lib/ocr-review-html.mjs';
 import {
   createPdfInspectorPreparationRunner,
   decoratePreparedPdfDocuments,
 } from './lib/pdf-inspector-preparation.mjs';
+import { prepareUniversalDocumentDirectory } from './lib/universal-document-preparation.mjs';
 
 export function argumentsFrom(argv) {
-  const output = { ocr: false };
+  const output = { ocr: false, anydoc: 'auto' };
   for (let index = 0; index < argv.length; index += 1) {
     const token = argv[index];
     if (token === '--help' || token === '-h') {
@@ -35,38 +35,49 @@ export function argumentsFrom(argv) {
 }
 
 function usage() {
-  return `L-Note PDF/DOCX preparer
+  return `L-Note universal file preparer
 
-First OCR pass:
+Prepare an arbitrary source directory:
+  node tools/prepare-documents.mjs ./sources \\
+    --output ./prepared/library \\
+    --id com.example.library \\
+    --title "My library"
+
+First OCR pass for scanned PDF pages:
   node tools/prepare-documents.mjs ./sources \\
     --output ./prepared/pending \\
-    --id com.example.documents \\
-    --title "My documents" \\
+    --id com.example.library \\
+    --title "My library" \\
     --ocr
 
 Open ./prepared/pending/ocr-review.html, review every OCR page and download JSON.
-Then prepare the reviewed source directory:
-  node tools/prepare-documents.mjs ./sources \\
-    --output ./prepared/reviewed \\
-    --id com.example.documents \\
-    --title "My documents" \\
-    --ocr \\
-    --ocr-review-in ./downloads/com.example.documents.ocr-review.json
+Then prepare the reviewed source directory with --ocr-review-in.
 
 Options:
   --version 1.0.0
   --description "..."
   --language ru
-  --ocr                         OCR pages flagged by pdf-inspector
-  --ocr-language rus+eng        Tesseract language set
-  --ocr-review-in review.json   apply accept/dismiss decisions
-  --ocr-review-out review.json  default: <output>/ocr-review.json
-  --ocr-review-html review.html default: <output>/ocr-review.html
+  --anydoc auto|require|off      default: auto
+  --max-parser-bytes 134217728   larger files remain attachment-only
+  --ocr                          OCR pages flagged by pdf-inspector
+  --ocr-language rus+eng         Tesseract language set
+  --ocr-review-in review.json    apply accept/dismiss decisions
+  --ocr-review-out review.json   default: <output>/ocr-review.json
+  --ocr-review-html review.html  default: <output>/ocr-review.html
   --max-section-chars 5000
 
-Required local tools:
-  PDF text/layout: bundled pdf-inspector WASM
-  DOCX text: unzip
+Parser routing:
+  PDF                  bundled pdf-inspector WASM + optional reviewed OCR
+  Office/ODF/RTF/EPUB  @firecrawl/anydoc when installed
+  DOCX                 anydoc, then the built-in unzip/XML fallback
+  Text and source code content-based UTF-8/UTF-16 extraction
+  Unknown binary files preserved as attachment-only documents for manual annotation
+
+Optional structured office parser:
+  npm install --no-save @firecrawl/anydoc@0.1.2
+
+Other local tools:
+  DOCX fallback: unzip
   PDF OCR: pdftoppm and tesseract
 
 A directory with pending OCR review cannot be compiled by build-pack.mjs.`;
@@ -110,19 +121,23 @@ export async function prepareFromArguments(args, dependencies = {}) {
     throw new Error(`${usage()}\n\ninput, --output and --id are required.`);
   }
   const pdfPreparation = await preparationRunner(args, dependencies);
-  const result = await prepareDocumentDirectory({
+  const result = await prepareUniversalDocumentDirectory({
     inputPath: args.input,
     outputPath: args.output,
     id: args.id,
     version: args.version ?? '1.0.0',
     title: args.title ?? args.id,
-    description: args.description ?? 'Пакет, подготовленный из PDF/DOCX',
+    description: args.description ?? 'Пакет, подготовленный из пользовательских файлов',
     language: args.language ?? 'ru',
+    anydocMode: args.anydoc ?? 'auto',
+    maxParserBytes: Number(args.maxParserBytes ?? 128 * 1024 * 1024),
     ocr: Boolean(args.ocr),
     ocrLanguage: args.ocrLanguage ?? 'rus+eng',
     ocrReview: await readOcrReview(args.ocrReviewIn),
     maxSectionChars: Number(args.maxSectionChars ?? 5000),
     runner: pdfPreparation.runner,
+    anydocModuleLoader: dependencies.anydocModuleLoader,
+    readFileFn: dependencies.readFileFn,
     generatedAt: dependencies.generatedAt,
     onProgress: dependencies.onProgress ?? ((progress) => {
       if (progress.stage === 'extract') {
@@ -147,6 +162,7 @@ async function main() {
   process.stderr.write('\n');
   console.log(`Prepared ${resolve(result.outputPath)}`);
   console.log(`${result.files} files, ${result.documents} documents, ${result.sections} sections`);
+  console.log(`Parsers: ${Object.entries(result.parserStats).map(([name, count]) => `${name}=${count}`).join(', ')}`);
   if (result.ocrReviewArtifacts) {
     console.log(`OCR review JSON: ${result.ocrReviewArtifacts.jsonTarget}`);
     console.log(`OCR review page: ${result.ocrReviewArtifacts.htmlTarget}`);
