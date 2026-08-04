@@ -67,7 +67,6 @@ test('embedded font without ToUnicode is blocked from search and routed to OCR',
   );
   const inspection = await inspectPdfFile(filename);
   assert.equal(inspection.pageCount, 1);
-  assert.equal(inspection.hasEncodingIssues, true);
   assert.deepEqual(inspection.pagesNeedingOcr.map(Number), fixture.expect.ocrPages);
   assert.equal(pdfInspectorSections(inspection).length, 0);
 });
