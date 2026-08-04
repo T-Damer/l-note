@@ -112,6 +112,21 @@
   opacity: 1;
 }
 
+.mobile-nav button {
+  position: relative;
+}
+
+.mobile-nav .sidebar-activity-progress {
+  position: absolute;
+  top: .3rem;
+  right: .45rem;
+  width: .68rem;
+  height: .68rem;
+  margin: 0;
+  flex-basis: .68rem;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--paper-strong) 88%, transparent);
+}
+
 @keyframes sidebar-progress-spin {
   to {
     transform: rotate(360deg);
