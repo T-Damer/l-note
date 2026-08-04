@@ -6,6 +6,7 @@ import {
   chronologySignals,
 } from './chronology.mjs';
 import { comparableQuantityDifferences } from './quantities.mjs';
+import { applyStatementSelectionChoices } from './statement-selection-review.mjs';
 
 const NEGATIONS = new Set(['не', 'нет', 'нельзя', 'запрещен', 'запрещено', 'without', 'not', 'no', 'never', 'contraindicated']);
 const STOPWORDS = new Set([
@@ -183,9 +184,10 @@ function candidateFor(left, right) {
   if (negationMismatch) reasons.push('отрицание присутствует только в одном утверждении');
   if (scopeDifference) reasons.push(`различается область применения: ${leftScope.join(', ')} ↔ ${rightScope.join(', ')}`);
   if (objectMismatch) reasons.push(`различаются связанные значения: ${left.object} ↔ ${right.object}`);
+  const id = stableCandidateId(left.claimRef, right.claimRef, contentSignals);
 
   return {
-    id: stableCandidateId(left.claimRef, right.claimRef, contentSignals),
+    id,
     sourceClaimId: left.claimId,
     targetClaimId: right.packId === left.packId ? right.claimId : right.claimRef,
     suggestedType,
@@ -196,6 +198,11 @@ function candidateFor(left, right) {
     signals,
     similarity: Number(similarity.overlap.toFixed(3)),
     chronology,
+    preferredChoice: 'none',
+    selectionGroupKey: id,
+    selectionScope: '',
+    selectionValidAt: '',
+    selectionReason: '',
     source: left,
     target: right,
   };
@@ -238,7 +245,7 @@ export function createDiscrepancyReview({ pack, referencePacks = [], generatedAt
     generatedAt,
     targetPackId: pack.id,
     referencePackIds: referencePacks.map((item) => item.id),
-    instructions: 'For each candidate set decision to accept or dismiss. You may change selectedType and reason before applying the review.',
+    instructions: 'For each candidate set decision to accept or dismiss. You may change selectedType, reason and an optional reviewed preference before applying the review.',
     candidates: detectStatementRelationCandidates({ pack, referencePacks }),
   };
 }
@@ -284,8 +291,9 @@ export function applyDiscrepancyReview(pack, review, {
   }
   const byId = new Map((pack.statementRelations ?? []).map((relation) => [relation.id, relation]));
   for (const relation of accepted) byId.set(relation.id, relation);
-  return {
+  const withRelations = {
     ...pack,
     statementRelations: [...byId.values()].sort((left, right) => left.id.localeCompare(right.id)),
   };
+  return applyStatementSelectionChoices(withRelations, review.candidates, { reviewedAt, reviewedBy });
 }
