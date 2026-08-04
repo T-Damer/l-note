@@ -135,8 +135,10 @@ function existingPairKeys(packs) {
   return values;
 }
 
-function contentSuggestedType({ scopeDifference }) {
-  return scopeDifference ? 'different_scope' : 'contradicts';
+function contentSuggestedType({ scopeDifference, negationMismatch, objectMismatch }) {
+  return scopeDifference && !negationMismatch && !objectMismatch
+    ? 'different_scope'
+    : 'contradicts';
 }
 
 function chronologySuggestedType(contentType, chronology) {
@@ -170,7 +172,7 @@ function candidateFor(left, right) {
   if (objectMismatch) contentSignals.push('object_difference');
   const chronology = buildChronology(left, right);
   const signals = [...contentSignals, ...chronologySignals(chronology)];
-  const contentType = contentSuggestedType({ scopeDifference });
+  const contentType = contentSuggestedType({ scopeDifference, negationMismatch, objectMismatch });
   const suggestedType = chronologySuggestedType(contentType, chronology);
   const confidence = Math.min(
     .98,
