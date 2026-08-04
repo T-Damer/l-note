@@ -40,6 +40,7 @@ const SHELL = [
   './src/integrations/minimed-adapter.js',
   './src/helpers/disk-search.js',
   './src/helpers/sqlite-fts.js',
+  './src/helpers/sqlite-storage-name.js',
   './src/helpers/prebuilt-search-artifacts.js',
   './src/helpers/document-assets.js',
   './src/helpers/entity-terms.js',
