@@ -24,6 +24,19 @@ jobs:
       - run: npm ci
       - run: npm run check
 
+  anydoc-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Install pinned native anydoc 0.1.2
+        run: npm install --no-save --ignore-scripts=false @firecrawl/anydoc@0.1.2
+      - run: npm run test:anydoc-e2e
+
   duckdb-smoke:
     runs-on: ubuntu-latest
     timeout-minutes: 15
