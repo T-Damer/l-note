@@ -1,4 +1,5 @@
 import { basename, join, resolve } from 'node:path';
+import { rm } from 'node:fs/promises';
 import { DatabaseSync } from 'node:sqlite';
 
 import { slugify } from './pack-builder.mjs';
@@ -94,7 +95,7 @@ function importOptions(inputPath, database, values) {
   };
 }
 
-async function writeAuthoringDirectory(outputRoot, metadata, documents) {
+async function writeAuthoringMetadata(outputRoot, metadata) {
   await Promise.all([
     writeJson(join(outputRoot, 'manifest.json'), {
       schemaVersion: 1,
@@ -110,11 +111,14 @@ async function writeAuthoringDirectory(outputRoot, metadata, documents) {
     writeJson(join(outputRoot, 'entities.json'), []),
     writeJson(join(outputRoot, 'claims.json'), []),
     writeJson(join(outputRoot, 'relations.json'), []),
-    ...documents.map((document) => writeJson(
-      join(outputRoot, 'documents', `${slugify(document.id)}.json`),
-      document,
-    )),
   ]);
+}
+
+async function writePreparedDocument(outputRoot, document) {
+  return writeJson(
+    join(outputRoot, 'documents', `${slugify(document.id)}.json`),
+    document,
+  );
 }
 
 export async function prepareSqliteDirectory({
@@ -135,9 +139,10 @@ export async function prepareSqliteDirectory({
 } = {}) {
   if (!inputPath || !outputPath || !id) throw new TypeError('inputPath, outputPath and id are required.');
   const outputRoot = await assertEmptyOutputDirectory(outputPath);
-  const database = openReadOnly(inputPath);
+  let database;
   const warnings = [];
   try {
+    database = openReadOnly(inputPath);
     const objects = databaseObjects(database).map((object) => ({
       ...object,
       columns: objectColumns(database, object.name),
@@ -150,9 +155,20 @@ export async function prepareSqliteDirectory({
       maxSectionChars,
       generatedAt,
     });
-    const documents = selected.map((object, index) => {
+    await writeAuthoringMetadata(outputRoot, {
+      id,
+      version,
+      title,
+      description,
+      language,
+      generatedAt,
+    });
+
+    let documents = 0;
+    let sections = 0;
+    for (const [index, object] of selected.entries()) {
       onProgress({ stage: 'object', index, total: selected.length, table: object.name });
-      return importSqliteObject(
+      const document = importSqliteObject(
         database,
         object,
         mappingFor(mapping, object.name),
@@ -160,24 +176,29 @@ export async function prepareSqliteDirectory({
         warnings,
         onProgress,
       );
-    });
-    await writeAuthoringDirectory(outputRoot, {
-      id,
-      version,
-      title,
-      description,
-      language,
-      generatedAt,
-    }, documents);
+      await writePreparedDocument(outputRoot, document);
+      documents += 1;
+      sections += document.sections.length;
+      onProgress({
+        stage: 'written',
+        index,
+        total: selected.length,
+        table: object.name,
+        sections: document.sections.length,
+      });
+    }
     onProgress({ stage: 'done', total: selected.length });
     return {
       outputPath: outputRoot,
       objects: selected.length,
-      documents: documents.length,
-      sections: documents.reduce((sum, document) => sum + document.sections.length, 0),
+      documents,
+      sections,
       warnings: [...new Set(warnings)],
     };
+  } catch (error) {
+    await rm(outputRoot, { recursive: true, force: true });
+    throw error;
   } finally {
-    database.close();
+    database?.close();
   }
 }
