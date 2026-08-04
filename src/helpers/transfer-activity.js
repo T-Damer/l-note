@@ -1,5 +1,5 @@
 const RUNNING_STATUSES = new Set(['queued', 'active']);
-const ATTENTION_STATUSES = new Set(['interrupted', 'failed', 'cancelled']);
+const ATTENTION_STATUSES = new Set(['interrupted', 'failed']);
 
 export const TRANSFER_SECTION_BY_KIND = Object.freeze({
   package: 'library',
