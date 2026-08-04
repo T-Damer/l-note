@@ -174,11 +174,13 @@ function comparisonOrder(value) {
   return value > 0 ? 'source_after_target' : 'source_before_target';
 }
 
-export function compareEditionIdentifiers(sourceEdition = {}, targetEdition = {}) {
-  const sourceIdentifier = clean(sourceEdition.identifier);
-  const targetIdentifier = clean(targetEdition.identifier);
-  const sourceAlgorithm = clean(sourceEdition.comparisonAlgorithm).toLocaleLowerCase('en-US');
-  const targetAlgorithm = clean(targetEdition.comparisonAlgorithm).toLocaleLowerCase('en-US');
+export function compareEditionIdentifiers(sourceEdition, targetEdition) {
+  const sourceValue = sourceEdition ?? {};
+  const targetValue = targetEdition ?? {};
+  const sourceIdentifier = clean(sourceValue.identifier);
+  const targetIdentifier = clean(targetValue.identifier);
+  const sourceAlgorithm = clean(sourceValue.comparisonAlgorithm).toLocaleLowerCase('en-US');
+  const targetAlgorithm = clean(targetValue.comparisonAlgorithm).toLocaleLowerCase('en-US');
   if (!sourceIdentifier || !targetIdentifier || !sourceAlgorithm || sourceAlgorithm !== targetAlgorithm) {
     return 'unknown';
   }
@@ -194,9 +196,11 @@ export function compareEditionIdentifiers(sourceEdition = {}, targetEdition = {}
   return 'unknown';
 }
 
-function sameSeries(sourceEdition = {}, targetEdition = {}) {
-  const source = clean(sourceEdition.seriesId);
-  const target = clean(targetEdition.seriesId);
+function sameSeries(sourceEdition, targetEdition) {
+  const sourceValue = sourceEdition ?? {};
+  const targetValue = targetEdition ?? {};
+  const source = clean(sourceValue.seriesId);
+  const target = clean(targetValue.seriesId);
   if (!source || !target) return null;
   return source === target;
 }
