@@ -100,6 +100,15 @@ async function extractFile(filename, options) {
   });
 }
 
+function sourceAsset(primaryAsset, mimeType, title, isPdf) {
+  return {
+    url: primaryAsset.url,
+    mimeType,
+    title,
+    ...(isPdf ? { page: 1 } : {}),
+  };
+}
+
 export async function prepareUniversalDocumentDirectory({
   inputPath,
   outputPath,
@@ -167,7 +176,8 @@ export async function prepareUniversalDocumentDirectory({
     });
     extracted.sections = embedded.sections;
     const documentId = `doc.${slugify(relative)}`;
-    const documentCandidates = sourceExtension(filename) === '.pdf' && extracted.ocrPages.length
+    const isPdf = sourceExtension(filename) === '.pdf';
+    const documentCandidates = isPdf && extracted.ocrPages.length
       ? createPdfOcrCandidates({
         targetPackId: id,
         sourcePath: relative,
@@ -184,16 +194,15 @@ export async function prepareUniversalDocumentDirectory({
     const mimeType = routed.mimeType ?? mimeTypeForFilename(filename);
     drafts.push({
       relative,
-      primaryAsset,
       extracted,
       documentCandidates,
-      isPdf: sourceExtension(filename) === '.pdf',
       document: {
         id: documentId,
         title: extracted.title,
         summary: `Извлечено или сохранено из ${relative}`,
         authority: 'reference',
         effectiveFrom: null,
+        asset: sourceAsset(primaryAsset, mimeType, extracted.title, isPdf),
         source: {
           title: relative,
           path: primaryAsset.url,
@@ -233,14 +242,6 @@ export async function prepareUniversalDocumentDirectory({
     if (!document.sections.length && reviewState?.complete) {
       warnings.push(`${draft.relative}: все OCR-страницы отклонены; документ не включён.`);
       continue;
-    }
-    if (draft.isPdf) {
-      document.asset = {
-        url: draft.primaryAsset.url,
-        mimeType: 'application/pdf',
-        title: draft.extracted.title,
-        page: 1,
-      };
     }
     await writeJson(path.join(documentRoot, `${slugify(draft.relative)}.json`), document);
     warnings.push(...draft.extracted.warnings.map((warning) => `${draft.relative}: ${warning}`));
