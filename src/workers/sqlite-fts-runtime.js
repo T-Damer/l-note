@@ -14,7 +14,7 @@ import {
   loadSqliteRuntimeModules,
 } from './sqlite-runtime-modules.js';
 
-const DATABASE_NAME = 'l-note-search.db';
+const DEFAULT_DATABASE_NAME = 'l-note-search.db';
 const INSERT_SQL = `
   INSERT INTO records_fts(
     id, payload, title, document_title, body, aliases, entity_names, tags
@@ -69,11 +69,25 @@ function compileOption(row) {
   return String(row?.compile_options ?? Object.values(row ?? {})[0] ?? '');
 }
 
+function normalizedDatabaseName(value) {
+  const name = String(value ?? DEFAULT_DATABASE_NAME).trim();
+  if (!/^[a-z0-9][a-z0-9._-]{0,95}$/iu.test(name)) {
+    throw new TypeError('SQLite search databaseName must be a simple 1-96 character storage name.');
+  }
+  return name;
+}
+
 export class SqliteFtsRuntime {
-  constructor({ moduleUrl, idbModuleUrl, wasmUrl = SQLITE_WASM_URL } = {}) {
+  constructor({
+    moduleUrl,
+    idbModuleUrl,
+    wasmUrl = SQLITE_WASM_URL,
+    databaseName = DEFAULT_DATABASE_NAME,
+  } = {}) {
     this.moduleUrl = moduleUrl;
     this.idbModuleUrl = idbModuleUrl;
     this.wasmUrl = wasmUrl;
+    this.databaseName = normalizedDatabaseName(databaseName);
     this.connection = null;
     this.initializing = null;
     this.existingDatabase = null;
@@ -105,7 +119,7 @@ export class SqliteFtsRuntime {
         ? modules.withExistDB(this.existingDatabase, { url: this.wasmUrl })
         : { url: this.wasmUrl };
       this.connection = await modules.initSQLite(
-        modules.useIdbStorage(DATABASE_NAME, storageOptions),
+        modules.useIdbStorage(this.databaseName, storageOptions),
       );
     } catch (error) {
       throw errorAt('database open failed', error);
