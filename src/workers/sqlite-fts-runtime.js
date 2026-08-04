@@ -8,15 +8,9 @@ import {
   sqliteFtsRecordValues,
   sqliteVocabularyRange,
 } from '../helpers/sqlite-fts.js';
-import {
-  DEFAULT_SQLITE_SEARCH_DATABASE_NAME,
-  normalizeSqliteSearchDatabaseName,
-} from '../helpers/sqlite-storage-name.js';
+import { DEFAULT_SQLITE_SEARCH_DATABASE_NAME, normalizeSqliteSearchDatabaseName } from '../helpers/sqlite-storage-name.js';
 import { tokenize } from '../search.js';
-import {
-  SQLITE_WASM_URL,
-  loadSqliteRuntimeModules,
-} from './sqlite-runtime-modules.js';
+import { SQLITE_WASM_URL, loadSqliteRuntimeModules } from './sqlite-runtime-modules.js';
 
 const INSERT_SQL = `
   INSERT INTO records_fts(
