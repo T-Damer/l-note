@@ -195,10 +195,9 @@ export async function prepareSqliteDirectory({
       warnings: [...new Set(warnings)],
     };
   } catch (error) {
-    database.close();
     await rm(outputRoot, { recursive: true, force: true });
     throw error;
   } finally {
-    if (database.isOpen) database.close();
+    database.close();
   }
 }
