@@ -13,6 +13,11 @@ function fallbackReason(filename, warnings, tooLarge) {
   return `Для ${path.extname(filename) || 'этого формата'} нет локального автоматического парсера.`;
 }
 
+function anydocProbeMode(kind, requestedMode) {
+  if (requestedMode === 'off') return 'off';
+  return kind === 'anydoc' ? requestedMode : 'auto';
+}
+
 export async function extractUniversalDocument(filename, {
   relativePath = path.basename(filename),
   fileBytes = 0,
@@ -29,9 +34,9 @@ export async function extractUniversalDocument(filename, {
   const warnings = [];
   const tooLarge = fileBytes > Math.max(1, Number(maxParserBytes) || 1);
 
-  if (!tooLarge && kind === 'anydoc') {
+  if (!tooLarge && kind !== 'text') {
     const anydoc = await tryExtractAnydocDocument(filename, {
-      mode: anydocMode,
+      mode: anydocProbeMode(kind, anydocMode),
       moduleLoader: anydocModuleLoader,
       readFileFn,
       maxSectionChars,
@@ -39,7 +44,7 @@ export async function extractUniversalDocument(filename, {
     if (anydoc.status === 'extracted') {
       return { extracted: anydoc.extracted, parser: 'anydoc', mimeType };
     }
-    if (anydoc.warning) warnings.push(anydoc.warning);
+    if (kind === 'anydoc' && anydoc.warning) warnings.push(anydoc.warning);
   }
 
   if (!tooLarge && path.extname(filename).toLowerCase() === '.docx' && legacyDocxExtractor) {
