@@ -43,7 +43,7 @@ function normalizedProgress(value) {
   return Math.max(0, Math.min(1, normalized));
 }
 
-function activitySummary(values) {
+export function summarizeActivitySources(values = []) {
   const active = values.filter((value) => value.active);
   if (!active.length) return null;
   const progress = active.map((value) => normalizedProgress(value.progress));
@@ -125,7 +125,7 @@ export function createSidebarController({
   function renderActivityProgress(section) {
     const nodes = progressNodesFor(section);
     if (!nodes.length) return false;
-    const summary = activitySummary([...(activitySources.get(section)?.values() ?? [])]);
+    const summary = summarizeActivitySources([...(activitySources.get(section)?.values() ?? [])]);
     for (const node of nodes) {
       node.hidden = !summary;
       if (!summary) continue;
