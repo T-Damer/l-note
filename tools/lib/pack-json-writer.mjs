@@ -1,6 +1,8 @@
 import { mkdir, open, rename, rm } from 'node:fs/promises';
 import path from 'node:path';
 
+const JSON_ARRAY_STREAM = Symbol('lnote.json-array-stream');
+
 function serializedJson(value) {
   const output = JSON.stringify(value, null, 2);
   if (output === undefined) throw new TypeError('Pack values must be JSON serializable.');
@@ -32,12 +34,20 @@ async function writeChunk(file, value, state) {
   state.bytes += Buffer.byteLength(text);
 }
 
-async function writeArray(file, key, values, state, isLast, onProgress) {
+function arrayDescriptor(value) {
+  if (Array.isArray(value)) return { values: value, total: value.length };
+  if (value?.[JSON_ARRAY_STREAM]) return value;
+  return null;
+}
+
+async function writeArray(file, key, descriptor, state, isLast, onProgress) {
   await writeChunk(file, `  ${JSON.stringify(key)}: [\n`, state);
-  for (const [index, value] of values.entries()) {
+  let index = 0;
+  for await (const value of descriptor.values) {
     if (index) await writeChunk(file, ',\n', state);
     await writeChunk(file, indentedJson(value, 4), state);
-    onProgress({ stage: 'item', key, index, total: values.length });
+    onProgress({ stage: 'item', key, index, total: descriptor.total });
+    index += 1;
   }
   await writeChunk(file, `\n  ]${isLast ? '' : ','}\n`, state);
 }
@@ -50,10 +60,23 @@ async function writeProperty(file, key, value, state, isLast) {
   await writeChunk(file, `${isLast ? '' : ','}\n`, state);
 }
 
-export async function writePackJson(filename, pack, { onProgress = () => {} } = {}) {
-  if (!pack || typeof pack !== 'object' || Array.isArray(pack)) {
-    throw new TypeError('A pack object is required.');
+export function jsonArrayStream(values, { total = null } = {}) {
+  if (!values || (!values[Symbol.iterator] && !values[Symbol.asyncIterator])) {
+    throw new TypeError('jsonArrayStream requires an iterable or async iterable.');
   }
+  return Object.freeze({
+    [JSON_ARRAY_STREAM]: true,
+    values,
+    total: Number.isInteger(total) && total >= 0 ? total : null,
+  });
+}
+
+export async function writeJsonObjectEntries(
+  filename,
+  entries,
+  { onProgress = () => {} } = {},
+) {
+  const normalizedEntries = [...entries];
   const paths = outputPaths(filename);
   await mkdir(paths.directory, { recursive: true });
   let file;
@@ -61,10 +84,10 @@ export async function writePackJson(filename, pack, { onProgress = () => {} } = 
   try {
     file = await open(paths.partialPath, 'wx');
     await writeChunk(file, '{\n', state);
-    const entries = Object.entries(pack);
-    for (const [index, [key, value]] of entries.entries()) {
-      const isLast = index === entries.length - 1;
-      if (Array.isArray(value)) await writeArray(file, key, value, state, isLast, onProgress);
+    for (const [index, [key, value]] of normalizedEntries.entries()) {
+      const isLast = index === normalizedEntries.length - 1;
+      const descriptor = arrayDescriptor(value);
+      if (descriptor) await writeArray(file, key, descriptor, state, isLast, onProgress);
       else await writeProperty(file, key, value, state, isLast);
     }
     await writeChunk(file, '}\n', state);
@@ -79,4 +102,11 @@ export async function writePackJson(filename, pack, { onProgress = () => {} } = 
     await rm(paths.partialPath, { force: true });
     throw error;
   }
+}
+
+export async function writePackJson(filename, pack, options = {}) {
+  if (!pack || typeof pack !== 'object' || Array.isArray(pack)) {
+    throw new TypeError('A pack object is required.');
+  }
+  return writeJsonObjectEntries(filename, Object.entries(pack), options);
 }
