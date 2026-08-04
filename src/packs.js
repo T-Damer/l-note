@@ -1,5 +1,6 @@
 import { validatePrebuiltSearchArtifacts } from './helpers/prebuilt-search-artifacts.js';
 import { validateStatementRelations } from './helpers/statement-conflicts.js';
+import { validateStatementSelections } from './helpers/statement-selections.js';
 
 const PACK_SCHEMA_VERSION = 1;
 
@@ -114,6 +115,7 @@ export function validatePack(pack) {
 
   errors.push(...validatePrebuiltSearchArtifacts(pack));
   errors.push(...validateStatementRelations(pack));
+  errors.push(...validateStatementSelections(pack));
   return { valid: errors.length === 0, errors };
 }
 

@@ -91,6 +91,20 @@ export interface StatementRelation {
   [key: string]: unknown;
 }
 
+export interface StatementSelection {
+  id: string;
+  groupKey: string;
+  claimRefs: string[];
+  preferredClaimRefs: string[];
+  status?: 'confirmed';
+  reason: string;
+  scope?: string;
+  validAt?: string;
+  reviewedAt: string;
+  reviewedBy: string;
+  [key: string]: unknown;
+}
+
 export interface KnowledgeRelation {
   sourceId: string;
   targetId: string;
@@ -132,6 +146,7 @@ export interface KnowledgePack {
   claims: KnowledgeStatement[];
   relations: KnowledgeRelation[];
   statementRelations?: StatementRelation[];
+  statementSelections?: StatementSelection[];
   searchArtifacts?: PrebuiltSearchArtifact[];
   [key: string]: unknown;
 }

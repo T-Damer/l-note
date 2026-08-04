@@ -35,6 +35,7 @@ const offlineModules = [
   'src/helpers/document-assets.js',
   'src/helpers/pdf-inspector-result.js',
   'src/helpers/statement-conflicts.js',
+  'src/helpers/statement-selections.js',
   'src/helpers/text-diff.js',
   'src/helpers/transfer-queue.js',
   'src/pages/ask-page-controller.js',
@@ -46,6 +47,7 @@ const offlineModules = [
   'src/pages/search-results-view.js',
   'src/pages/sidebar-controller.js',
   'src/pages/statement-conflict-view.js',
+  'src/pages/statement-resource-view.js',
   'src/pages/transfer-queue-view.js',
   'src/pages/voice-search-controller.js',
   'src/pages/voice-search-elements.js',
@@ -203,6 +205,11 @@ test('static build contains the complete local-first shell', async () => {
     /buildStatementConflictIndex/u,
     /sectionConflictAnnotations/u,
   ]);
+  await assertContains('src/helpers/statement-selections.js', [
+    /validateStatementSelections/u,
+    /buildStatementSelectionIndex/u,
+    /preferredClaimRefs/u,
+  ]);
   await assertContains('src/pages/document-resource-view.js', [
     /buildStatementConflictIndex/u,
     /createStatementConflictDisclosure/u,
@@ -212,6 +219,11 @@ test('static build contains the complete local-first shell', async () => {
     /statement-conflict-marker/u,
     /В источниках есть разные сведения/u,
     /не выбирает одну автоматически/u,
+  ]);
+  await assertContains('src/pages/statement-resource-view.js', [
+    /buildStatementSelectionIndex/u,
+    /Статус версии/u,
+    /Предпочтительно/u,
   ]);
   await assertContains('src/pages/concept-resource-view.js', [
     /relationGraph/u,
@@ -262,7 +274,7 @@ test('static build contains the complete local-first shell', async () => {
     /"type":"contradicts"/u,
   ]);
   await assertContains('service-worker.js', [
-    /l-note-shell-v42/u,
+    /l-note-shell-v43/u,
     /cdn\.jsdelivr\.net/u,
     /pdf-inspector\/pdf_inspector_wasm_bg\.wasm/u,
     /pdf-inspector-result\.js/u,
@@ -275,6 +287,7 @@ test('static build contains the complete local-first shell', async () => {
     /sqlite-runtime-modules\.js/u,
     /sqlite-search-worker\.js/u,
     /statement-conflicts\.js/u,
+    /statement-selections\.js/u,
     /statement-conflict-view\.js/u,
     /queued-runtime-loader\.js/u,
     /transfer-queue\.js/u,
