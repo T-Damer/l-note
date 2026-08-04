@@ -139,9 +139,10 @@ export async function prepareSqliteDirectory({
 } = {}) {
   if (!inputPath || !outputPath || !id) throw new TypeError('inputPath, outputPath and id are required.');
   const outputRoot = await assertEmptyOutputDirectory(outputPath);
-  const database = openReadOnly(inputPath);
+  let database;
   const warnings = [];
   try {
+    database = openReadOnly(inputPath);
     const objects = databaseObjects(database).map((object) => ({
       ...object,
       columns: objectColumns(database, object.name),
@@ -198,6 +199,6 @@ export async function prepareSqliteDirectory({
     await rm(outputRoot, { recursive: true, force: true });
     throw error;
   } finally {
-    database.close();
+    database?.close();
   }
 }
