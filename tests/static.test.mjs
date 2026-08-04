@@ -74,6 +74,13 @@ const offlineModules = [
   'src/ui/routed-dialog.js',
 ];
 
+const benchmarkModules = [
+  'benchmarks/search-benchmark.js',
+  'benchmarks/search-benchmark-core.js',
+  'benchmarks/search-benchmark-runner.js',
+  'benchmarks/sqlite-benchmark-worker.js',
+];
+
 async function assertContains(relative, patterns) {
   const source = await readFile(path.join(root, 'dist', relative), 'utf8');
   for (const pattern of patterns) assert.match(source, pattern, `${relative} must match ${pattern}`);
@@ -88,6 +95,8 @@ test('static build contains the complete local-first shell', async () => {
     'styles.css',
     'service-worker.js',
     'assets/lnote-source-demo.pdf',
+    'benchmarks/search.html',
+    ...benchmarkModules,
     'vendor/minisearch.js',
     'vendor/pdf-inspector/pdf_inspector_wasm.js',
     'vendor/pdf-inspector/pdf_inspector_wasm_bg.wasm',
@@ -132,6 +141,26 @@ test('static build contains the complete local-first shell', async () => {
     'Search suggestions must be directly below the search input.',
   );
 
+  await assertContains('benchmarks/search.html', [
+    /Search benchmark/u,
+    /l-note-search-benchmark\.db/u,
+    /id="benchmark-form"/u,
+    /vendor\/minisearch\.js/u,
+    /search-benchmark\.js/u,
+  ]);
+  await assertContains('benchmarks/search-benchmark-runner.js', [
+    /sqlite-benchmark-worker\.js/u,
+    /createMiniSearchPort/u,
+    /createSqliteFtsSearchPort/u,
+    /isolatedStorage/u,
+    /runSearchBenchmark/u,
+  ]);
+  await assertContains('benchmarks/sqlite-benchmark-worker.js', [
+    /l-note-search-benchmark\.db/u,
+    /SqliteFtsRuntime/u,
+    /commandQueue/u,
+  ]);
+
   const app = await assertContains('src/app.js', [
     /createAdaptiveSearchPort/u,
     /createBrowserSpeechRecognitionPort/u,
@@ -166,6 +195,7 @@ test('static build contains the complete local-first shell', async () => {
   await assertContains('src/workers/sqlite-fts-runtime.js', [
     /loadSqliteRuntimeModules/u,
     /modules\.useIdbStorage/u,
+    /this\.databaseName/u,
     /modules\.withExistDB/u,
     /reopenFromFile/u,
     /CREATE VIRTUAL TABLE IF NOT EXISTS records_fts USING fts5/u,
@@ -282,8 +312,11 @@ test('static build contains the complete local-first shell', async () => {
     /"type":"contradicts"/u,
   ]);
   await assertContains('service-worker.js', [
-    /l-note-shell-v44/u,
+    /l-note-shell-v45/u,
     /cdn\.jsdelivr\.net/u,
+    /benchmarks\/search\.html/u,
+    /benchmarks\/search-benchmark-runner\.js/u,
+    /benchmarks\/sqlite-benchmark-worker\.js/u,
     /pdf-inspector\/pdf_inspector_wasm_bg\.wasm/u,
     /pdf-inspector-result\.js/u,
     /browser-pdf-inspector\.js/u,
@@ -308,7 +341,7 @@ test('static build contains the complete local-first shell', async () => {
     encoding: 'utf8',
   });
   assert.equal(appSyntax.status, 0, `${appSyntax.stderr}\n\nAssembled app tail:\n${numberedTail(app)}`);
-  for (const relative of offlineModules) {
+  for (const relative of [...offlineModules, ...benchmarkModules]) {
     const check = spawnSync(process.execPath, ['--check', path.join(root, 'dist', relative)], {
       cwd: root,
       encoding: 'utf8',
