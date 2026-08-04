@@ -107,7 +107,9 @@ try {
   const input = path.join(root, 'input');
   const output = path.join(root, 'prepared');
   await mkdir(input, { recursive: true });
-  await writeFile(path.join(input, 'native.docx'), minimalDocx());
+  const docx = minimalDocx();
+  await writeFile(path.join(input, 'native.docx'), docx);
+  await writeFile(path.join(input, 'renamed.bin'), docx);
   await writeFile(path.join(input, 'registry.csv'), [
     'name,dose,unit',
     'Alpha,5,mg',
@@ -123,15 +125,19 @@ try {
     anydocMode: 'require',
     generatedAt: '2026-08-04T17:00:00.000Z',
   });
-  assert.equal(result.files, 2);
-  assert.equal(result.documents, 2);
-  assert.equal(result.parserStats.anydoc, 2);
+  assert.equal(result.files, 3);
+  assert.equal(result.documents, 3);
+  assert.equal(result.parserStats.anydoc, 3);
 
   const pack = await buildPack(output);
   const validation = validatePack(pack);
   assert.equal(validation.valid, true, validation.errors.join('\n'));
-  assert.equal(pack.documents.length, 2);
+  assert.equal(pack.documents.length, 3);
   assert.ok(pack.documents.every((document) => document.source.extractor === 'anydoc@0.1.2'));
+  const mislabeled = pack.documents.find((document) => document.source.title === 'renamed.bin');
+  assert.equal(mislabeled?.source.format, 'docx');
+  assert.equal(mislabeled?.source.mimeType, 'application/octet-stream');
+  assert.equal(mislabeled?.asset.url, mislabeled?.source.path);
   const text = corpusText(pack);
   assert.match(text, /Локальный anydoc документ/u);
   assert.match(text, /Доза/u);
