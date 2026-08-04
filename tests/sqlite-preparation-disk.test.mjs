@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -23,8 +23,27 @@ function createDatabase(filename) {
   }
 }
 
+function createLargeDatabase(filename, rows = 1200) {
+  const database = new DatabaseSync(filename);
+  try {
+    database.exec('CREATE TABLE large_table(id INTEGER PRIMARY KEY, body TEXT); BEGIN;');
+    const insert = database.prepare('INSERT INTO large_table VALUES (?, ?)');
+    for (let index = 1; index <= rows; index += 1) {
+      insert.run(index, `streamed row ${String(index).padStart(4, '0')}`);
+    }
+    database.exec('COMMIT;');
+  } finally {
+    database.close();
+  }
+}
+
 function documentFile(output, documentId) {
   return path.join(output, 'documents', `${slugify(documentId)}.json`);
+}
+
+function partialDocumentFile(output, documentId) {
+  const finalPath = documentFile(output, documentId);
+  return path.join(path.dirname(finalPath), `.${path.basename(finalPath)}.partial`);
 }
 
 async function temporaryDirectory() {
@@ -62,6 +81,70 @@ test('writes each prepared SQLite document before importing the next object', as
       events.filter((event) => event.stage === 'written').map((event) => event.table),
       ['first_table', 'second_table'],
     );
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('streams one large table into an atomically published document', async () => {
+  const directory = await temporaryDirectory();
+  try {
+    const input = path.join(directory, 'large.sqlite');
+    const output = path.join(directory, 'prepared');
+    const finalPath = documentFile(output, 'doc.large-table');
+    const partialPath = partialDocumentFile(output, 'doc.large-table');
+    createLargeDatabase(input);
+    let observedMidStream = false;
+
+    const result = await prepareSqliteDirectory({
+      inputPath: input,
+      outputPath: output,
+      id: 'acceptance.sqlite-stream',
+      tables: ['large_table'],
+      onProgress(event) {
+        if (event.stage === 'rows' && event.rows === 500) {
+          observedMidStream = true;
+          assert.equal(existsSync(finalPath), false);
+          assert.equal(existsSync(partialPath), true);
+        }
+      },
+    });
+
+    assert.equal(observedMidStream, true);
+    assert.equal(result.sections, 1200);
+    assert.equal(existsSync(finalPath), true);
+    assert.equal(existsSync(partialPath), false);
+    const document = JSON.parse(await readFile(finalPath, 'utf8'));
+    assert.equal(document.sections.length, 1200);
+    assert.equal(document.sections[0].provenance.rowNumber, 1);
+    assert.equal(document.sections.at(-1).provenance.rowNumber, 1200);
+    assert.match(document.sections.at(-1).text, /streamed row 1200/u);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('finalizes truncation metadata after the streamed section array', async () => {
+  const directory = await temporaryDirectory();
+  try {
+    const input = path.join(directory, 'limited.sqlite');
+    const output = path.join(directory, 'prepared');
+    const finalPath = documentFile(output, 'doc.large-table');
+    createLargeDatabase(input, 5);
+
+    const result = await prepareSqliteDirectory({
+      inputPath: input,
+      outputPath: output,
+      id: 'acceptance.sqlite-stream-limit',
+      tables: ['large_table'],
+      maxRowsPerTable: 3,
+    });
+
+    assert.equal(result.sections, 3);
+    assert.match(result.warnings.join('\n'), /ограничен 3 строками/u);
+    const document = JSON.parse(await readFile(finalPath, 'utf8'));
+    assert.equal(document.sections.length, 3);
+    assert.deepEqual(document.extractionWarnings, ['Импорт ограничен 3 строками.']);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
