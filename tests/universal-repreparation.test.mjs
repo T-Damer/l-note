@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -12,9 +12,8 @@ test('re-preparation removes documents and assets deleted from the source direct
   const root = await mkdtemp(path.join(tmpdir(), 'l-note-universal-refresh-'));
   const input = path.join(root, 'input');
   const output = path.join(root, 'prepared');
-  await writeFile(path.join(root, '.keep'), '');
   try {
-    await import('node:fs/promises').then(({ mkdir }) => mkdir(input, { recursive: true }));
+    await mkdir(input, { recursive: true });
     const oldSource = path.join(input, 'old.md');
     const newSource = path.join(input, 'new.md');
     await writeFile(oldSource, '# Old\n\nOld content.');
