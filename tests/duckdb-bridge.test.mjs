@@ -84,7 +84,7 @@ test('uses temporary environment-backed secrets and read-only remote attachments
   assert.match(plan.sql, /TYPE postgres/u);
   assert.match(plan.sql, /ATTACH '' AS "source_db" \(TYPE postgres, READ_ONLY, SECRET/u);
   assert.match(plan.sql, /"source_db"\."public"\."articles"/u);
-  assert.doesNotMatch(plan.sql, /PG_PASSWORD/u);
+  assert.match(plan.sql, /PG_PASSWORD/u);
   assert.doesNotMatch(plan.sql, /"password":"private-password"/u);
   assert.deepEqual(plan.redactions, ['private-password']);
 });
