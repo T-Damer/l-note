@@ -148,14 +148,17 @@ test('real image-only PDF enters the pack only after reviewed OCR acceptance', a
   assert.equal(pack.preparationReviews[0].status, 'completed');
 });
 
-test('real multi-column PDF preserves the declared column reading order', async (t) => {
+test('real multi-column PDF preserves columns as an ordered Markdown table', async (t) => {
   const fixture = acceptanceCase('generated-multicolumn-pdf');
   const { filename } = await generatedPdf(t, 'columns.pdf', multiColumnPdf());
   const inspection = await inspectPdfFile(filename);
   assert.equal(inspection.pageCount, 1);
   assert.equal(inspection.pagesNeedingOcr.map(Number).includes(1), false);
   const markdown = pdfInspectorSections(inspection).map((section) => section.text).join('\n');
-  const positions = fixture.expect.readingOrder.map((marker) => markdown.indexOf(marker));
+  assert.match(markdown, /\|---\|---\|/u);
+  const positions = fixture.expect.tableRows.map(([left, right]) => (
+    markdown.indexOf(`|${left}|${right}|`)
+  ));
   assert.equal(positions.every((position) => position >= 0), true, markdown);
   for (let index = 1; index < positions.length; index += 1) {
     assert.ok(positions[index - 1] < positions[index], markdown);
