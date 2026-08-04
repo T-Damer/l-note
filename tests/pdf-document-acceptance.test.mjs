@@ -13,6 +13,7 @@ import { buildPack } from '../tools/build-pack.mjs';
 import { inspectPdfFile } from '../tools/lib/pdf-inspector-node.mjs';
 import { prepareFromArguments } from '../tools/prepare-documents.mjs';
 import {
+  imageHeavyPdf,
   imageOnlyPdf,
   mixedTextAndImagePdf,
   multiColumnPdf,
@@ -163,4 +164,29 @@ test('real multi-column PDF preserves columns as an ordered Markdown table', asy
   for (let index = 1; index < positions.length; index += 1) {
     assert.ok(positions[index - 1] < positions[index], markdown);
   }
+});
+
+test('image-heavy PDF keeps its reliable text outside OCR routing', async (t) => {
+  const fixture = acceptanceCase('generated-image-heavy-pdf');
+  const pdf = imageHeavyPdf();
+  assert.equal((pdf.toString('latin1').match(/\/Subtype \/Image/gu) ?? []).length, fixture.expect.imageObjects);
+  const { directory, filename } = await generatedPdf(t, 'image-heavy.pdf', pdf);
+  const inspection = await inspectPdfFile(filename);
+  assert.equal(inspection.pageCount, 1);
+  assert.equal(inspection.pagesNeedingOcr.map(Number).includes(1), false);
+  const sections = pdfInspectorSections(inspection);
+  assert.deepEqual([...new Set(sections.map((section) => section.assetAnchor.page))], [1]);
+  assert.match(sections.map((section) => section.text).join('\n'), new RegExp(fixture.expect.contains, 'u'));
+
+  const output = path.join(directory, 'prepared');
+  await prepareFromArguments({
+    input: filename,
+    output,
+    id: 'acceptance.generated-image-heavy-pdf',
+    title: 'Image-heavy PDF acceptance',
+  }, { generatedAt: '2026-08-04T13:00:00.000Z', onProgress() {} });
+  const pack = await buildPack(output);
+  assert.equal(pack.documents[0].source.inspection.pagesNeedingOcr.length, 0);
+  assert.match(pack.documents[0].sections.map((section) => section.text).join('\n'), /IMAGE HEAVY SEARCHABLE PAGE/u);
+  assert.ok((await readdir(path.join(output, 'assets'))).some((name) => name.endsWith('.pdf')));
 });
