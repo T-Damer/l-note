@@ -61,7 +61,7 @@ export function splitAnswerStatements(text) {
   return statements;
 }
 
-function sourceText(source) {
+function sourceValues(source) {
   return [
     source?.result?.title,
     source?.result?.body,
@@ -71,13 +71,28 @@ function sourceText(source) {
     source?.section?.title,
     source?.section?.text,
     ...(source?.claims ?? []).flatMap((claim) => [claim?.text, claim?.source?.quote]),
-  ].filter(Boolean).join(' ');
+  ].filter(Boolean);
+}
+
+function evidenceFragments(source) {
+  const fragments = [];
+  const seen = new Set();
+  for (const value of sourceValues(source)) {
+    for (const fragment of splitAnswerStatements(value)) {
+      const clean = stripMarkup(fragment);
+      const key = normalizeText(clean);
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      fragments.push(clean);
+    }
+  }
+  return fragments;
 }
 
 function sourceMap(evidence) {
   return new Map((evidence?.sources ?? []).map((source) => [source.id, {
     source,
-    text: sourceText(source),
+    fragments: evidenceFragments(source),
   }]));
 }
 
@@ -128,17 +143,39 @@ function statementThreshold(termCount) {
   return .55;
 }
 
-function evidenceSupportsStatement(statement, evidenceText) {
-  const coverage = coverageFor(statement, evidenceText);
+function evidenceSupportsFragment(statement, fragment) {
+  const coverage = coverageFor(statement, fragment);
   const requiredNumbers = numbers(statement);
-  const evidenceNumbers = new Set(numbers(evidenceText));
+  const evidenceNumbers = new Set(numbers(fragment));
   const missingNumbers = requiredNumbers.filter((value) => !evidenceNumbers.has(value));
-  const negationMismatch = hasNegation(statement) && !hasNegation(evidenceText);
+  const negationMismatch = hasNegation(statement) !== hasNegation(fragment);
   const supported = coverage.terms.length > 0
     && coverage.coverage >= statementThreshold(coverage.terms.length)
     && missingNumbers.length === 0
     && !negationMismatch;
-  return { ...coverage, missingNumbers, negationMismatch, supported };
+  return {
+    ...coverage,
+    fragment,
+    missingNumbers,
+    negationMismatch,
+    supported,
+  };
+}
+
+function compareFragmentSupport(left, right) {
+  if (left.coverage !== right.coverage) return right.coverage - left.coverage;
+  if (left.missingNumbers.length !== right.missingNumbers.length) {
+    return left.missingNumbers.length - right.missingNumbers.length;
+  }
+  if (left.negationMismatch !== right.negationMismatch) return Number(left.negationMismatch) - Number(right.negationMismatch);
+  return right.matched.length - left.matched.length;
+}
+
+function evidenceSupportsStatement(statement, fragments) {
+  const candidates = (fragments?.length ? fragments : [''])
+    .map((fragment) => evidenceSupportsFragment(statement, fragment))
+    .sort(compareFragmentSupport);
+  return candidates[0];
 }
 
 function isMetaStatement(statement) {
@@ -168,9 +205,9 @@ export function verifyStatementSupport(answer, evidence) {
         invalidCitations.add(citation);
         continue;
       }
-      candidates.push({ citation, ...evidenceSupportsStatement(statement, source.text) });
+      candidates.push({ citation, ...evidenceSupportsStatement(statement, source.fragments) });
     }
-    const best = candidates.sort((left, right) => right.coverage - left.coverage)[0] ?? null;
+    const best = candidates.sort(compareFragmentSupport)[0] ?? null;
     const supported = Boolean(best?.supported);
     if (!supported) unsupportedStatements.push(statement);
     checks.push({
@@ -178,6 +215,7 @@ export function verifyStatementSupport(answer, evidence) {
       citations,
       supported,
       bestCitation: best?.citation ?? null,
+      bestFragment: best?.fragment ?? null,
       coverage: best?.coverage ?? 0,
       missingNumbers: best?.missingNumbers ?? numbers(statement),
       negationMismatch: best?.negationMismatch ?? false,
