@@ -28,10 +28,16 @@ export function renderDiscrepancyReviewHtml(review) {
     .candidate[data-decision="dismiss"] { opacity: .7; }
     .candidate > header { display: flex; justify-content: space-between; gap: .8rem; }
     .candidate h2 { margin: 0; font-size: 1rem; }
-    .sources { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
-    .source { min-width: 0; padding: .8rem; border-radius: .75rem; background: color-mix(in srgb, CanvasText 6%, Canvas); }
-    .source h3 { margin: 0 0 .2rem; font-size: .9rem; }
+    .sources, .chronology-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+    .source, .chronology-side { min-width: 0; padding: .8rem; border-radius: .75rem; background: color-mix(in srgb, CanvasText 6%, Canvas); }
+    .source h3, .chronology h3, .chronology-side h4 { margin: 0 0 .2rem; font-size: .9rem; }
     blockquote { margin: .65rem 0 0; padding-left: .7rem; border-left: 3px solid color-mix(in srgb, CanvasText 28%, Canvas); line-height: 1.55; white-space: pre-wrap; }
+    .chronology { display: grid; gap: .65rem; padding: .8rem; border: 1px solid color-mix(in srgb, CanvasText 18%, Canvas); border-radius: .75rem; }
+    .chronology-warning { margin: 0; padding: .55rem .65rem; border-radius: .55rem; background: color-mix(in srgb, #b77a00 15%, Canvas); font-size: .82rem; }
+    .chronology-facts { display: flex; flex-wrap: wrap; gap: .35rem; }
+    .chronology-side dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .3rem .6rem; margin: .55rem 0 0; font-size: .8rem; }
+    .chronology-side dt { font-weight: 750; }
+    .chronology-side dd { margin: 0; overflow-wrap: anywhere; }
     .controls { display: grid; grid-template-columns: minmax(12rem, .7fr) minmax(12rem, .7fr) minmax(16rem, 1.6fr); gap: .65rem; }
     label { display: grid; gap: .25rem; font-size: .78rem; font-weight: 700; }
     select, textarea, button { font: inherit; }
@@ -42,7 +48,7 @@ export function renderDiscrepancyReviewHtml(review) {
     .decision button { min-height: 2.25rem; background: Canvas; color: CanvasText; font-size: .78rem; }
     .decision button[aria-pressed="true"] { background: CanvasText; color: Canvas; }
     .empty { padding: 2rem; border: 1px dashed color-mix(in srgb, CanvasText 28%, Canvas); border-radius: 1rem; text-align: center; }
-    @media (max-width: 760px) { .sources, .controls { grid-template-columns: 1fr; } header.page { display: grid; } }
+    @media (max-width: 760px) { .sources, .chronology-grid, .controls { grid-template-columns: 1fr; } header.page { display: grid; } }
   </style>
 </head>
 <body>
@@ -69,6 +75,30 @@ export function renderDiscrepancyReviewHtml(review) {
       ['supersedes', 'Заменяет после проверки'],
     ];
     const decisionLabels = { pending: 'Не решено', accept: 'Принять', dismiss: 'Отклонить' };
+    const relationLabels = {
+      replaces: 'исходный документ явно заменяет сопоставляемый',
+      replaced_by: 'сопоставляемый документ явно заменяет исходный',
+      amends: 'исходный документ явно дополняет сопоставляемый',
+      amended_by: 'сопоставляемый документ явно дополняет исходный',
+      corrects: 'исходный документ явно исправляет сопоставляемый',
+      corrected_by: 'сопоставляемый документ явно исправляет исходный',
+      retracts: 'исходный документ явно отзывает сопоставляемый',
+      retracted_by: 'сопоставляемый документ явно отзывает исходный',
+    };
+    const orderLabels = {
+      source_after_target: 'исходный позже',
+      source_before_target: 'исходный раньше',
+      equal: 'совпадает',
+      unknown: 'порядок не определён',
+    };
+    const validityLabels = {
+      before: 'период исходного раньше', after: 'период исходного позже',
+      meets: 'периоды соприкасаются', met_by: 'периоды соприкасаются',
+      contains: 'исходный период включает сопоставляемый',
+      during: 'исходный период входит в сопоставляемый',
+      overlaps: 'периоды пересекаются', equal: 'периоды совпадают',
+      unknown: 'отношение периодов не определено',
+    };
     const root = document.querySelector('#candidates');
     const summary = document.querySelector('#summary');
 
@@ -88,6 +118,55 @@ export function renderDiscrepancyReviewHtml(review) {
         node('h3', { text: side.documentTitle || 'Документ' }),
         node('div', { className: 'muted', text: [side.packTitle, side.date].filter(Boolean).join(' · ') }),
         node('blockquote', { text: side.quote || side.text || '' }),
+      ]);
+    }
+
+    function temporalText(value) {
+      if (!value?.value) return '—';
+      const precision = { year: 'год', month: 'месяц', day: 'день', instant: 'точное время' }[value.precision];
+      return precision ? value.value + ' · ' + precision : value.value;
+    }
+
+    function editionText(value) {
+      if (!value) return '—';
+      return [value.identifier, value.seriesId, value.comparisonAlgorithm, value.status]
+        .filter(Boolean).join(' · ') || '—';
+    }
+
+    function chronologySide(title, side) {
+      const list = node('dl');
+      const fields = [
+        ['Выпуск', temporalText(side?.publishedAt)],
+        ['Изменён', temporalText(side?.modifiedAt)],
+        ['Получен', temporalText(side?.retrievedAt)],
+        ['Действует с', temporalText(side?.validFrom)],
+        ['До', temporalText(side?.validUntil)],
+        ['Редакция', editionText(side?.edition)],
+      ];
+      for (const [label, value] of fields) list.append(node('dt', { text: label }), node('dd', { text: value }));
+      return node('section', { className: 'chronology-side' }, [node('h4', { text: title }), list]);
+    }
+
+    function chronologyCard(chronology) {
+      if (!chronology) return null;
+      const facts = [
+        'Выпуск: ' + (orderLabels[chronology.issueOrder] || chronology.issueOrder),
+        'Периоды: ' + (validityLabels[chronology.validityRelation] || chronology.validityRelation),
+        'Редакции: ' + (orderLabels[chronology.versionOrder] || chronology.versionOrder),
+      ];
+      if (chronology.sameSeries === true) facts.push('Одна серия документов');
+      if (chronology.sameSeries === false) facts.push('Разные серии документов');
+      if (chronology.explicitArtifactRelation) {
+        facts.push(relationLabels[chronology.explicitArtifactRelation] || chronology.explicitArtifactRelation);
+      }
+      return node('section', { className: 'chronology' }, [
+        node('h3', { text: 'Хронология и редакции' }),
+        node('p', { className: 'chronology-warning', text: 'Более новая дата не означает автоматически более достоверный источник. Используйте эти сведения только как контекст для ручного решения.' }),
+        node('div', { className: 'chronology-facts' }, facts.map((fact) => node('span', { className: 'pill', text: fact }))),
+        node('div', { className: 'chronology-grid' }, [
+          chronologySide('Исходный источник', chronology.source),
+          chronologySide('Сопоставляемый источник', chronology.target),
+        ]),
       ]);
     }
 
@@ -132,6 +211,7 @@ export function renderDiscrepancyReviewHtml(review) {
           decisions,
         ]),
         node('div', { className: 'sources' }, [sourceCard(candidate.source), sourceCard(candidate.target)]),
+        chronologyCard(candidate.chronology),
         node('div', { className: 'controls' }, [
           node('label', {}, [node('span', { text: 'Решение' }), node('div', { className: 'muted', text: decisionLabels[candidate.decision || 'pending'] })]),
           node('label', {}, [node('span', { text: 'Тип связи' }), type]),

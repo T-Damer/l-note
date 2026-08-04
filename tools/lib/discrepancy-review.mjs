@@ -1,6 +1,10 @@
 import { createHash } from 'node:crypto';
 
 import { qualifyStatementId } from '../../src/helpers/statement-conflicts.js';
+import {
+  buildChronology,
+  chronologySignals,
+} from './chronology.mjs';
 import { comparableQuantityDifferences } from './quantities.mjs';
 
 const NEGATIONS = new Set(['не', 'нет', 'нельзя', 'запрещен', 'запрещено', 'without', 'not', 'no', 'never', 'contraindicated']);
@@ -71,12 +75,18 @@ function resourceDate(pack, document) {
   return document?.effectiveFrom ?? document?.source?.publishedAt ?? document?.source?.date ?? pack?.publishedAt ?? null;
 }
 
+function editionMetadata(document) {
+  const edition = document?.edition ?? document?.source?.edition;
+  return edition && typeof edition === 'object' && !Array.isArray(edition) ? edition : null;
+}
+
 function claimResource(pack, claim) {
   const document = (pack.documents ?? []).find((item) => item.id === claim.source?.documentId);
   const section = document?.sections?.find((item) => item.id === claim.source?.sectionId);
   const entityById = new Map((pack.entities ?? []).map((item) => [item.id, item]));
   const subject = entityById.get(claim.subjectId);
   const object = entityById.get(claim.objectId);
+  const documentId = document?.id ?? claim.source?.documentId ?? null;
   return {
     packId: pack.id,
     packTitle: pack.title,
@@ -86,11 +96,18 @@ function claimResource(pack, claim) {
     quote: claim.source?.quote ?? claim.text,
     subject: subject?.name ?? claim.subjectId ?? null,
     object: object?.name ?? claim.objectId ?? null,
-    documentId: document?.id ?? claim.source?.documentId ?? null,
+    documentId,
+    documentRef: documentId ? `${pack.id}::${documentId}` : null,
     documentTitle: document?.title ?? claim.source?.documentId ?? 'Документ',
     sectionId: section?.id ?? claim.source?.sectionId ?? null,
     sectionTitle: section?.title ?? claim.source?.sectionId ?? null,
     date: resourceDate(pack, document),
+    publishedAt: document?.source?.publishedAt ?? document?.source?.date ?? null,
+    modifiedAt: document?.source?.modifiedAt ?? null,
+    retrievedAt: document?.source?.retrievedAt ?? document?.source?.preparedAt ?? null,
+    validFrom: document?.effectiveFrom ?? null,
+    validUntil: document?.effectiveUntil ?? null,
+    edition: editionMetadata(document),
   };
 }
 
@@ -118,6 +135,21 @@ function existingPairKeys(packs) {
   return values;
 }
 
+function contentSuggestedType({ scopeDifference, negationMismatch, objectMismatch }) {
+  return scopeDifference && !negationMismatch && !objectMismatch
+    ? 'different_scope'
+    : 'contradicts';
+}
+
+function chronologySuggestedType(contentType, chronology) {
+  if (chronology.explicitArtifactRelation === 'replaces') return 'supersedes';
+  if (chronology.explicitArtifactRelation === 'amends') return 'refines';
+  if (['before', 'after', 'meets', 'met_by'].includes(chronology.validityRelation)) {
+    return 'different_scope';
+  }
+  return contentType;
+}
+
 function candidateFor(left, right) {
   const similarity = tokenSimilarity(left.text, right.text);
   const subjectMatches = left.subject && right.subject && normalized(left.subject) === normalized(right.subject);
@@ -133,15 +165,19 @@ function candidateFor(left, right) {
   );
   if (!numbers.length && !negationMismatch && !scopeDifference && !objectMismatch) return null;
 
-  const signals = [];
-  if (numbers.length) signals.push('numeric_difference');
-  if (negationMismatch) signals.push('negation_difference');
-  if (scopeDifference) signals.push('scope_difference');
-  if (objectMismatch) signals.push('object_difference');
-  const suggestedType = scopeDifference && !negationMismatch && !objectMismatch
-    ? 'different_scope'
-    : 'contradicts';
-  const confidence = Math.min(.98, .5 + (subjectMatches ? .18 : 0) + similarity.overlap * .2 + signals.length * .07);
+  const contentSignals = [];
+  if (numbers.length) contentSignals.push('numeric_difference');
+  if (negationMismatch) contentSignals.push('negation_difference');
+  if (scopeDifference) contentSignals.push('scope_difference');
+  if (objectMismatch) contentSignals.push('object_difference');
+  const chronology = buildChronology(left, right);
+  const signals = [...contentSignals, ...chronologySignals(chronology)];
+  const contentType = contentSuggestedType({ scopeDifference, negationMismatch, objectMismatch });
+  const suggestedType = chronologySuggestedType(contentType, chronology);
+  const confidence = Math.min(
+    .98,
+    .5 + (subjectMatches ? .18 : 0) + similarity.overlap * .2 + contentSignals.length * .07,
+  );
   const reasons = [];
   if (numbers.length) reasons.push(`различаются значения: ${numbers.map((item) => `${item.left.join('/')} ↔ ${item.right.join('/')} ${item.unit}`.trim()).join(', ')}`);
   if (negationMismatch) reasons.push('отрицание присутствует только в одном утверждении');
@@ -149,7 +185,7 @@ function candidateFor(left, right) {
   if (objectMismatch) reasons.push(`различаются связанные значения: ${left.object} ↔ ${right.object}`);
 
   return {
-    id: stableCandidateId(left.claimRef, right.claimRef, signals),
+    id: stableCandidateId(left.claimRef, right.claimRef, contentSignals),
     sourceClaimId: left.claimId,
     targetClaimId: right.packId === left.packId ? right.claimId : right.claimRef,
     suggestedType,
@@ -159,6 +195,7 @@ function candidateFor(left, right) {
     reason: reasons.join('; '),
     signals,
     similarity: Number(similarity.overlap.toFixed(3)),
+    chronology,
     source: left,
     target: right,
   };
@@ -206,6 +243,16 @@ export function createDiscrepancyReview({ pack, referencePacks = [], generatedAt
   };
 }
 
+function reviewEvidence(candidate) {
+  const signals = Array.isArray(candidate.signals)
+    ? candidate.signals.map(text).filter(Boolean).slice(0, 32)
+    : [];
+  const chronology = candidate.chronology && typeof candidate.chronology === 'object'
+    ? JSON.parse(JSON.stringify(candidate.chronology))
+    : null;
+  return chronology || signals.length ? { signals, chronology } : null;
+}
+
 export function applyDiscrepancyReview(pack, review, {
   reviewedAt = new Date().toISOString(),
   reviewedBy = 'local-reviewer',
@@ -220,6 +267,7 @@ export function applyDiscrepancyReview(pack, review, {
     if (!allowedTypes.has(candidate.selectedType)) {
       throw new Error(`Candidate ${candidate.id} has an unsupported selectedType.`);
     }
+    const evidence = reviewEvidence(candidate);
     accepted.push({
       id: candidate.id,
       sourceClaimId: candidate.sourceClaimId,
@@ -231,6 +279,7 @@ export function applyDiscrepancyReview(pack, review, {
       detectedBy: 'rule+human-review',
       reviewedAt,
       reviewedBy,
+      ...(evidence ? { reviewEvidence: evidence } : {}),
     });
   }
   const byId = new Map((pack.statementRelations ?? []).map((relation) => [relation.id, relation]));
