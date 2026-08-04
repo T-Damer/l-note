@@ -37,6 +37,7 @@ const offlineModules = [
   'src/helpers/statement-conflicts.js',
   'src/helpers/statement-selections.js',
   'src/helpers/text-diff.js',
+  'src/helpers/transfer-activity.js',
   'src/helpers/transfer-queue.js',
   'src/pages/ask-page-controller.js',
   'src/pages/concept-resource-view.js',
@@ -111,6 +112,7 @@ test('static build contains the complete local-first shell', async () => {
     /\.statement-conflict-marker/u,
     /\.statement-conflict-diff/u,
     /\.sidebar-activity-progress/u,
+    /\.mobile-nav \.sidebar-activity-progress/u,
     /\.relation-view-toolbar/u,
     /\.transfer-queue-host/u,
     /\.transfer-queue-panel/u,
@@ -140,6 +142,7 @@ test('static build contains the complete local-first shell', async () => {
     /renderDocumentResource/u,
     /renderStatementResource/u,
     /setActivityProgress/u,
+    /sectionTransferActivities/u,
     /createTransferQueue/u,
     /createQueuedRuntimeLoader/u,
     /createTransferQueueView/u,
@@ -210,6 +213,11 @@ test('static build contains the complete local-first shell', async () => {
     /buildStatementSelectionIndex/u,
     /preferredClaimRefs/u,
   ]);
+  await assertContains('src/helpers/transfer-activity.js', [
+    /sectionTransferActivities/u,
+    /attentionTransferTasks/u,
+    /speech-model/u,
+  ]);
   await assertContains('src/pages/document-resource-view.js', [
     /buildStatementConflictIndex/u,
     /createStatementConflictDisclosure/u,
@@ -236,8 +244,8 @@ test('static build contains the complete local-first shell', async () => {
     /голосовые запросы распознаются офлайн/u,
   ]);
   await assertContains('src/pages/transfer-queue-view.js', [
-    /Нужно продолжить/u,
-    /task\.status !== TRANSFER_STATUS\.COMPLETED/u,
+    /attentionTransferTasks/u,
+    /Требуют внимания/u,
     /Продолжить/u,
   ]);
   await assertContains('src/services/queued-runtime-loader.js', [
@@ -274,7 +282,7 @@ test('static build contains the complete local-first shell', async () => {
     /"type":"contradicts"/u,
   ]);
   await assertContains('service-worker.js', [
-    /l-note-shell-v43/u,
+    /l-note-shell-v44/u,
     /cdn\.jsdelivr\.net/u,
     /pdf-inspector\/pdf_inspector_wasm_bg\.wasm/u,
     /pdf-inspector-result\.js/u,
@@ -290,6 +298,7 @@ test('static build contains the complete local-first shell', async () => {
     /statement-selections\.js/u,
     /statement-conflict-view\.js/u,
     /queued-runtime-loader\.js/u,
+    /transfer-activity\.js/u,
     /transfer-queue\.js/u,
     /assets\/lnote-source-demo\.pdf/u,
   ]);
