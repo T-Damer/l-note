@@ -61,6 +61,9 @@ export function validateKnowledgePackContract(pack) {
   if (pack.statementRelations !== undefined && !Array.isArray(pack.statementRelations)) {
     errors.push('statementRelations must be an array');
   }
+  if (pack.statementSelections !== undefined && !Array.isArray(pack.statementSelections)) {
+    errors.push('statementSelections must be an array');
+  }
   return { valid: errors.length === 0, errors };
 }
 
