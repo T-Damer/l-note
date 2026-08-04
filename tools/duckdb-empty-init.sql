@@ -1,0 +1,1 @@
+-- Intentionally empty. Prevents the bridge from loading a user's ~/.duckdbrc.
