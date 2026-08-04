@@ -2,7 +2,6 @@ import { basename, join, resolve } from 'node:path';
 import { rm } from 'node:fs/promises';
 import { DatabaseSync } from 'node:sqlite';
 
-import { slugify } from './pack-builder.mjs';
 import {
   DEFAULT_MAX_CELL_CHARS,
   DEFAULT_MAX_DATABASE_ROWS,
@@ -12,7 +11,8 @@ import {
   quoteIdentifier,
   writeJson,
 } from './sqlite-adapter-common.mjs';
-import { importSqliteObject } from './sqlite-object-import.mjs';
+import { writeSqliteDocument } from './sqlite-document-writer.mjs';
+import { createSqliteObjectImport } from './sqlite-object-import.mjs';
 import { readSqliteStageSources } from './sqlite-stage-provenance.mjs';
 
 const INTERNAL_PREFIX = 'lnote_';
@@ -114,13 +114,6 @@ async function writeAuthoringMetadata(outputRoot, metadata) {
   ]);
 }
 
-async function writePreparedDocument(outputRoot, document) {
-  return writeJson(
-    join(outputRoot, 'documents', `${slugify(document.id)}.json`),
-    document,
-  );
-}
-
 export async function prepareSqliteDirectory({
   inputPath,
   outputPath,
@@ -168,7 +161,7 @@ export async function prepareSqliteDirectory({
     let sections = 0;
     for (const [index, object] of selected.entries()) {
       onProgress({ stage: 'object', index, total: selected.length, table: object.name });
-      const document = importSqliteObject(
+      const operation = createSqliteObjectImport(
         database,
         object,
         mappingFor(mapping, object.name),
@@ -176,15 +169,16 @@ export async function prepareSqliteDirectory({
         warnings,
         onProgress,
       );
-      await writePreparedDocument(outputRoot, document);
+      const result = await writeSqliteDocument(outputRoot, operation);
       documents += 1;
-      sections += document.sections.length;
+      sections += result.sections;
       onProgress({
         stage: 'written',
         index,
         total: selected.length,
         table: object.name,
-        sections: document.sections.length,
+        rows: result.rows,
+        sections: result.sections,
       });
     }
     onProgress({ stage: 'done', total: selected.length });

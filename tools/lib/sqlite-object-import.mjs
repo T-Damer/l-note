@@ -109,7 +109,7 @@ function emptySection(object) {
   };
 }
 
-function documentFor(object, plan, sections, options, truncated) {
+function documentBase(object, plan, options) {
   const staging = options.stageSources.get(object.name);
   return {
     id: `doc.${slugify(object.name)}`,
@@ -129,48 +129,98 @@ function documentFor(object, plan, sections, options, truncated) {
       ...(staging ? { staging } : {}),
     },
     tags: ['sqlite', object.type, object.name, ...(staging ? [staging.sourceType, 'duckdb-stage'] : [])],
-    sections,
-    ...(truncated ? { extractionWarnings: [`Импорт ограничен ${options.maxRowsPerTable} строками.`] } : {}),
+  };
+}
+
+function rowSections(row, rowNumber, object, plan, options, warnings, usedIds) {
+  const identity = rowIdentity(row, plan.idColumns);
+  const metadata = {
+    provenance: {
+      kind: 'sqlite-row',
+      table: object.name,
+      objectType: object.type,
+      rowNumber,
+      identity,
+      columns: plan.textColumns,
+      orderColumns: plan.orderColumns,
+    },
+  };
+  const sections = splitSection({
+    id: uniqueRowId(object, identity, rowNumber, usedIds, warnings),
+    title: rowTitle(plan, row, identity, rowNumber),
+    text: rowText(plan, row, options, warnings, object.name, rowNumber),
+    maxChars: options.maxSectionChars,
+    metadata,
+  });
+  const tags = rowTags(plan, row, object);
+  for (const section of sections) section.tags = tags;
+  return sections;
+}
+
+export function createSqliteObjectImport(database, object, mapping, options, warnings, onProgress) {
+  const plan = tablePlan(object, mapping);
+  const statement = database.prepare(selectSql(object, plan, warnings));
+  const usedIds = new Set();
+  const state = {
+    complete: false,
+    rows: 0,
+    sections: 0,
+    truncated: false,
+  };
+
+  function* iterateSections() {
+    for (const row of statement.iterate()) {
+      const rowNumber = state.rows + 1;
+      if (rowNumber > options.maxRowsPerTable) {
+        state.truncated = true;
+        break;
+      }
+      state.rows = rowNumber;
+      for (const section of rowSections(row, rowNumber, object, plan, options, warnings, usedIds)) {
+        state.sections += 1;
+        yield section;
+      }
+      if (rowNumber % 500 === 0) onProgress({ stage: 'rows', table: object.name, rows: rowNumber });
+    }
+    if (state.sections === 0) {
+      state.sections = 1;
+      yield emptySection(object);
+    }
+    if (state.truncated) warnings.push(`${object.name}: импорт ограничен ${options.maxRowsPerTable} строками.`);
+    state.complete = true;
+  }
+
+  return {
+    document: documentBase(object, plan, options),
+    sections: iterateSections(),
+    finalize() {
+      if (!state.complete) throw new Error(`${object.name}: section stream was not fully consumed.`);
+      return {
+        rows: state.rows,
+        sections: state.sections,
+        truncated: state.truncated,
+        extractionWarnings: state.truncated
+          ? [`Импорт ограничен ${options.maxRowsPerTable} строками.`]
+          : [],
+      };
+    },
   };
 }
 
 export function importSqliteObject(database, object, mapping, options, warnings, onProgress) {
-  const plan = tablePlan(object, mapping);
-  const sections = [];
-  const usedIds = new Set();
-  const statement = database.prepare(selectSql(object, plan, warnings));
-  let rowNumber = 0;
-  let truncated = false;
-  for (const row of statement.iterate()) {
-    rowNumber += 1;
-    if (rowNumber > options.maxRowsPerTable) {
-      truncated = true;
-      break;
-    }
-    const identity = rowIdentity(row, plan.idColumns);
-    const metadata = {
-      provenance: {
-        kind: 'sqlite-row',
-        table: object.name,
-        objectType: object.type,
-        rowNumber,
-        identity,
-        columns: plan.textColumns,
-        orderColumns: plan.orderColumns,
-      },
-    };
-    const rowSections = splitSection({
-      id: uniqueRowId(object, identity, rowNumber, usedIds, warnings),
-      title: rowTitle(plan, row, identity, rowNumber),
-      text: rowText(plan, row, options, warnings, object.name, rowNumber),
-      maxChars: options.maxSectionChars,
-      metadata,
-    });
-    for (const section of rowSections) section.tags = rowTags(plan, row, object);
-    sections.push(...rowSections);
-    if (rowNumber % 500 === 0) onProgress({ stage: 'rows', table: object.name, rows: rowNumber });
-  }
-  if (truncated) warnings.push(`${object.name}: импорт ограничен ${options.maxRowsPerTable} строками.`);
-  if (!sections.length) sections.push(emptySection(object));
-  return documentFor(object, plan, sections, options, truncated);
+  const operation = createSqliteObjectImport(
+    database,
+    object,
+    mapping,
+    options,
+    warnings,
+    onProgress,
+  );
+  const sections = [...operation.sections];
+  const result = operation.finalize();
+  return {
+    ...operation.document,
+    sections,
+    ...(result.extractionWarnings.length ? { extractionWarnings: result.extractionWarnings } : {}),
+  };
 }
