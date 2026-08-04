@@ -4,7 +4,7 @@
 
 Strong-device preparation should use durable files as the boundary between expensive stages. Large source collections must not be retained twice in application memory when an ordinary authoring file or SQLite artifact can carry the same information.
 
-This document describes the implemented boundary and the remaining limits. It does not claim that every parser is fully streaming.
+This document describes the implemented boundary and the remaining limits. It does not claim that every parser or pack-compilation stage is fully streaming.
 
 ## Current SQLite and DuckDB path
 
@@ -15,14 +15,36 @@ SQLite preparation now proceeds in this order:
 1. validate the output directory and open the source database read-only;
 2. inspect and select tables or views;
 3. write the package manifest and empty semantic metadata files;
-4. import one selected table or view into one L-Note document;
-5. write that document JSON immediately to `documents/`;
-6. release the previous document reference and continue with the next object;
-7. return only aggregate counts and warnings.
+4. begin one selected table/view document in a non-JSON `.partial` file;
+5. iterate source rows in deterministic order;
+6. generate the current row's section group and append it immediately;
+7. finalize extraction warnings, flush and `fsync` the file;
+8. atomically rename the complete file to `documents/*.json`;
+9. continue with the next selected object and retain only aggregate counts.
 
-The importer no longer keeps every generated document and section from every selected object in one array before writing them. Cross-object peak memory is therefore bounded by the largest document currently being prepared rather than the sum of all selected tables and views.
+The importer no longer keeps all generated documents or all sections from one large table in memory. Section text/object memory is bounded by the current row's generated section group plus document metadata.
 
-A `written` progress event is emitted after each document file is durable. The next object starts only after that write completes.
+A `written` progress event is emitted only after atomic publication. The next object starts only after that durable write completes.
+
+## Atomic document boundary
+
+Incomplete documents use a filename such as:
+
+```text
+doc.example.json.partial
+```
+
+The actual implementation prefixes the basename with `.` and keeps the suffix `.partial`. Because the temporary filename does not end in `.json`, the ordinary pack builder cannot discover it as an authoring document.
+
+The writer:
+
+- awaits every file write, providing ordinary filesystem backpressure;
+- serializes each section independently through the same JSON-safe conversion rules;
+- finalizes row-limit warnings only after the section iterator is exhausted;
+- calls `fsync` before closing and renaming;
+- removes the partial file after generator, serialization or write failure.
+
+The final `documents/*.json` path becomes visible only after the complete JSON object is durable and valid.
 
 ## Failure and interruption boundary
 
@@ -31,31 +53,37 @@ The authoring directory is treated as one incomplete preparation transaction.
 - If the source database cannot be opened, the newly created output directory is removed.
 - If schema mapping, row conversion or document writing fails, all partial metadata and document files are removed.
 - The input SQLite connection is closed through one common `finally` boundary.
-- DuckDB staging already removes its partial SQLite output after process, schema-verification or target-verification failure.
+- DuckDB staging removes its partial SQLite output after process, schema-verification or target-verification failure.
 
 A successful authoring directory remains an explicit preparation snapshot. It is not silently rewritten when extraction rules change.
 
-## Current memory limit
+## Remaining memory limits
 
-One table or view is still converted into a complete document object before its JSON file is written. A single very large selected object can therefore retain all of its generated sections in memory.
+Streaming removes the dominant section-text accumulation, but several smaller structures remain proportional to row count:
 
-The next preparation-memory optimization is row/section streaming inside one document. That work requires a versioned or safely assembled document-file format so that:
+- a Set of generated row IDs is retained to detect duplicate identities safely;
+- unique extraction warnings remain available until preparation returns;
+- SQLite itself owns statement and page-cache memory.
 
-- output remains ordinary valid authoring JSON;
-- deterministic row order and section IDs remain unchanged;
-- warnings and extraction metadata are finalized correctly;
-- a failed write never leaves a file that the pack builder can mistake for complete input.
+These structures contain short identifiers or messages rather than complete source sections. Row limits remain available for pathological inputs.
 
-Until that boundary is implemented and measured, row limits remain the safety control for unusually large individual tables.
+The next larger memory boundary is pack compilation. The current pack builder reads completed authoring documents to assemble and validate one portable JSON pack. Very large libraries may therefore still require a disk-oriented compiler or direct SQLite/relational interchange path even though source preparation itself is streamed.
+
+## Compatibility boundary
+
+`importSqliteObject` remains available for direct callers and unit tests. It collects the section iterator into the historical complete-document return shape.
+
+Production `prepareSqliteDirectory` uses the streaming operation and atomic writer instead. Deterministic row order, IDs, provenance, tags, truncation behavior and progress events remain shared between both paths.
 
 ## Regression contract
 
 Automated tests verify that:
 
 - the first document file exists before the second selected object begins;
-- a document file is not visible before its own write completes;
-- `written` events follow selected-object order;
-- aggregate document and section counts remain unchanged;
-- import failures remove the complete partial output directory;
-- input-open failures also leave no output directory;
+- a final document is absent while row 500 of a large table is being processed;
+- the non-JSON partial file exists during streaming and disappears after publication;
+- a 1,200-row source produces a valid 1,200-section document including the final row;
+- row-limit warnings are finalized after the streamed section array;
+- `written` events follow selected-object order and report aggregate counts;
+- import and source-open failures remove the complete partial output directory;
 - the real pinned DuckDB smoke still stages CSV, Parquet and SQLite, imports the results, builds a valid pack and searches it.
