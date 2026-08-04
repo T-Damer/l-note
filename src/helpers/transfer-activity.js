@@ -8,14 +8,20 @@ export const TRANSFER_SECTION_BY_KIND = Object.freeze({
   'speech-model': 'search',
 });
 
+function numericProgress(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
 function normalizedProgress(task) {
-  const loaded = Number(task?.loaded);
-  const total = Number(task?.total);
-  if (Number.isFinite(loaded) && Number.isFinite(total) && total > 0) {
+  const loaded = numericProgress(task?.loaded);
+  const total = numericProgress(task?.total);
+  if (loaded !== null && total !== null && total > 0) {
     return Math.max(0, Math.min(1, loaded / total));
   }
-  const progress = Number(task?.progress);
-  return Number.isFinite(progress) ? Math.max(0, Math.min(1, progress)) : null;
+  const progress = numericProgress(task?.progress);
+  return progress === null ? null : Math.max(0, Math.min(1, progress));
 }
 
 function activityLabel(tasks) {
