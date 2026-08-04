@@ -108,6 +108,19 @@ function createBenchmarkSqlitePort() {
   });
 }
 
+async function closePort(port) {
+  await port?.close?.().catch(() => {});
+}
+
+async function clearBenchmarkStorage() {
+  const port = createBenchmarkSqlitePort();
+  try {
+    await port.clear();
+  } finally {
+    await closePort(port);
+  }
+}
+
 async function benchmarkMiniSearch(records, queries, iterations, shouldStop) {
   const before = heapSnapshot();
   const build = await timed(() => Promise.resolve(createMiniSearchPort(records)));
@@ -131,44 +144,48 @@ async function benchmarkSqlite({
   onStatus,
 }) {
   const before = heapSnapshot();
-  const freshPort = createBenchmarkSqlitePort();
-  if (freshPort.available === false) throw new Error('SQLite/FTS5 backend is unavailable.');
-  await freshPort.clear();
-  const freshBuild = await timed(() => freshPort.build(records, {
-    fingerprint,
-    onProgress(progress) {
-      const completed = Number(progress.completed ?? 0);
-      const total = Number(progress.total ?? 0);
-      onStatus(`SQLite ${progress.stage ?? 'build'}${total ? `: ${completed}/${total}` : ''}`);
-    },
-  }));
-  const afterBuild = heapSnapshot();
-  const freshQueries = await queryBackend(freshPort, queries, iterations, shouldStop);
-  const freshStats = await freshPort.stats();
-  await freshPort.close();
-  assertRunning(shouldStop);
+  let freshPort;
+  let reopenPort;
+  try {
+    await clearBenchmarkStorage();
+    freshPort = createBenchmarkSqlitePort();
+    if (freshPort.available === false) throw new Error('SQLite/FTS5 backend is unavailable.');
+    const freshBuild = await timed(() => freshPort.build(records, {
+      fingerprint,
+      onProgress(progress) {
+        const completed = Number(progress.completed ?? 0);
+        const total = Number(progress.total ?? 0);
+        onStatus(`SQLite ${progress.stage ?? 'build'}${total ? `: ${completed}/${total}` : ''}`);
+      },
+    }));
+    const afterBuild = heapSnapshot();
+    const freshQueries = await queryBackend(freshPort, queries, iterations, shouldStop);
+    const freshStats = await freshPort.stats();
+    await closePort(freshPort);
+    freshPort = null;
+    assertRunning(shouldStop);
 
-  const reopenPort = createBenchmarkSqlitePort();
-  const reopen = await timed(() => reopenPort.build(records, { fingerprint }));
-  const reopenQueries = await queryBackend(reopenPort, queries, iterations, shouldStop);
-  const reopenStats = await reopenPort.stats();
-  await reopenPort.close();
-
-  const cleanupPort = createBenchmarkSqlitePort();
-  await cleanupPort.clear();
-  await cleanupPort.close();
-  return {
-    backend: 'SQLite/FTS5',
-    buildMs: round(freshBuild.durationMs),
-    reopenMs: round(reopen.durationMs),
-    query: freshQueries,
-    reopenQuery: reopenQueries,
-    heapBefore: before,
-    heapAfterBuild: afterBuild,
-    freshStats,
-    reopenStats,
-    isolatedStorage: 'l-note-search-benchmark.db',
-  };
+    reopenPort = createBenchmarkSqlitePort();
+    const reopen = await timed(() => reopenPort.build(records, { fingerprint }));
+    const reopenQueries = await queryBackend(reopenPort, queries, iterations, shouldStop);
+    const reopenStats = await reopenPort.stats();
+    return {
+      backend: 'SQLite/FTS5',
+      buildMs: round(freshBuild.durationMs),
+      reopenMs: round(reopen.durationMs),
+      query: freshQueries,
+      reopenQuery: reopenQueries,
+      heapBefore: before,
+      heapAfterBuild: afterBuild,
+      freshStats,
+      reopenStats,
+      isolatedStorage: 'l-note-search-benchmark.db',
+    };
+  } finally {
+    await closePort(freshPort);
+    await closePort(reopenPort);
+    await clearBenchmarkStorage().catch(() => {});
+  }
 }
 
 export async function runSearchBenchmark({
