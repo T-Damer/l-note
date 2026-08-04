@@ -20,7 +20,7 @@ It also runs inside the complete `npm run check` gate.
 {
   "schemaVersion": 1,
   "kind": "lnote.document-acceptance",
-  "corpusVersion": "2026.08.04.2",
+  "corpusVersion": "2026.08.04.3",
   "cases": [],
   "coverage": []
 }
@@ -39,98 +39,66 @@ Every intended category remains in `coverage`. Categories without a redistributa
 
 ## Active cases
 
-### Markdown
+### Markdown and UTF-8 TXT
 
-The structured Markdown fixture verifies:
-
-- document-title extraction;
-- heading-based sections;
-- table preservation;
-- abbreviation/source text preservation;
-- an external URL remaining in the source text;
-- valid pack creation and JSON reopen.
-
-### UTF-8 TXT
-
-The TXT fixture verifies:
-
-- Cyrillic preservation;
-- line breaks;
-- quantities and dates;
-- valid pack creation and JSON reopen.
+The text fixtures verify title/heading extraction, source text, tables, Cyrillic, quantities, dates, external links, valid pack creation and JSON reopen.
 
 ### DOCX
 
-The test builds a real ZIP container containing `word/document.xml`, writes a `.docx` file and invokes the installed `unzip` executable through the production preparer. It verifies:
-
-- title and Heading 1 recognition;
-- section grouping;
-- exact paragraph start/end provenance;
-- original source asset retention;
-- final pack compilation.
-
-The generated fixture avoids committing an opaque binary while still testing the external executable and real ZIP/XML path.
+The test builds a real ZIP container containing `word/document.xml`, writes a `.docx` file and invokes the installed `unzip` executable through the production preparer. It verifies title and Heading 1 recognition, exact paragraph provenance, source asset retention and final pack compilation.
 
 ### Bundled PDF
 
-The bundled PDF is processed through the actual pinned `@firecrawl/pdf-inspector-wasm` package. The test verifies:
-
-- parser version;
-- page count and structured Markdown output;
-- one-based page normalization;
-- every page reported by `pagesNeedingOcr` remaining outside searchable sections.
+The bundled PDF is processed through the actual pinned `@firecrawl/pdf-inspector-wasm` package. The test verifies parser version, page count, structured Markdown, one-based page normalization and exclusion of every page reported by `pagesNeedingOcr`.
 
 ### Mixed PDF
 
-A deterministic two-page PDF contains a substantial searchable text layer on page 1 and an image-only page 2. The real WASM parser must:
-
-- keep page 1 outside OCR routing;
-- route page 2 to OCR;
-- produce searchable sections only for page 1 before review;
-- preserve page anchors, inspection metadata, warnings and the original PDF asset.
+A deterministic two-page PDF contains a substantial searchable text layer on page 1 and an image-only page 2. The real WASM parser must keep page 1 searchable, route page 2 to OCR and preserve anchors, inspection metadata, warnings and the original PDF asset.
 
 ### Reviewed scanned PDF
 
-A deterministic image-only PDF is classified by the real WASM parser. The production preparation workflow then invokes the OCR boundary.
-
-The CI test uses a deterministic Tesseract TSV response rather than machine-dependent OCR output. This keeps recognition confidence and word boxes reproducible while still testing:
-
-- real PDF classification;
-- `pdftoppm` and Tesseract command routing;
-- the pending-review compilation block;
-- explicit reviewer accept/edit;
-- accepted OCR provenance and final pack compilation.
-
-The recognized text never enters a pack before review.
+A deterministic image-only PDF is classified by the real WASM parser. The production preparation workflow invokes the OCR boundary. CI uses deterministic Tesseract TSV so confidence and word boxes stay reproducible while testing command routing, the pending-review compilation block, explicit reviewer accept/edit and final OCR provenance.
 
 ### Multi-column PDF
 
-A deterministic PDF contains two physical columns with aligned rows. The real parser recognizes this layout as a two-column Markdown table rather than flattening the text into an ambiguous stream. The acceptance test verifies:
+A deterministic PDF contains two aligned physical columns. The parser recognizes them as a two-column Markdown table. The acceptance test verifies paired rows, Markdown table structure, physical vertical order and absence of unnecessary OCR routing.
 
-- the page is not unnecessarily routed to OCR;
-- both column headers and every row remain paired;
-- Markdown table structure is retained;
-- row order matches the physical vertical order of the source.
+### Image-heavy PDF
 
-This structured representation is preferred to forcing the whole left column before the whole right column because the source visually expresses paired rows.
+A generated searchable page contains four independent image XObjects around a reliable text layer. The test verifies:
+
+- all four images are physically present in the PDF bytes;
+- embedded images do not force the page through OCR;
+- reliable text remains searchable and page-anchored;
+- the original PDF remains available for visual content;
+- the prepared pack records no false OCR pages.
+
+The current portable contract does not claim binary extraction of embedded images. `pdf-inspector` currently provides Markdown-level image representation, while the original PDF remains the authoritative visual asset.
+
+### Long document and disk reopen
+
+A deterministic Markdown source creates 5,200 sections in one document. The acceptance workflow verifies:
+
+- browser-local preparation and pack validation;
+- JSON serialization and reopen without losing the final section;
+- automatic eligibility for disk-backed search;
+- portable SQLite/FTS5 artifact construction;
+- artifact metadata and record count;
+- close and independent reopen of the SQLite file;
+- exact search hits near the beginning, middle and end on repeated opens.
+
+This test validates portability and reopen behavior, not final mobile performance thresholds.
 
 ## Deterministic PDF generator
 
 `tests/fixtures/document-library/pdf-fixtures.mjs` writes valid PDF bytes directly, including xref offsets, standard Type 1 font resources and image XObjects. It has no runtime dependency on a PDF library or office application.
 
-This keeps the fixtures:
-
-- small and reviewable;
-- reproducible across CI runs;
-- independent from opaque binary-editor metadata;
-- easy to extend for focused layout failures.
-
 ## Adding a case
 
-1. Confirm that the source may legally be stored in the repository. Prefer small synthetic or permissively licensed fixtures.
-2. Add the file under `tests/fixtures/document-library/`, or add a deterministic generator when a binary container is simple to reproduce.
+1. Confirm that the source may legally be stored in the repository.
+2. Prefer small synthetic or permissively licensed fixtures.
 3. Add one `cases` entry and connect it to a `coverage` entry.
-4. Assert source preservation, provenance and pack validation—not only that the parser returned non-empty text.
+4. Assert source preservation, provenance and pack validation—not only non-empty parser output.
 5. Run:
 
 ```bash
@@ -138,7 +106,7 @@ npm run test:document-acceptance
 npm run check
 ```
 
-6. Increment `corpusVersion` when the expected source interpretation changes.
+6. Increment `corpusVersion` when expected source interpretation changes.
 
 ## Re-import and migration
 
@@ -146,22 +114,20 @@ Prepared pack text is derived data. When a parser, normalization rule or OCR dec
 
 The migration procedure is:
 
-1. keep the original source files and any reviewed OCR JSON;
-2. update the corpus expectations and increment `corpusVersion` when required;
+1. keep the original source files and reviewed OCR JSON;
+2. update expectations and increment `corpusVersion` when required;
 3. run the complete acceptance gate;
-4. repeat source preparation into a new output directory;
+4. repeat preparation into a new output directory;
 5. review new OCR/discrepancy candidates;
 6. build a new pack version;
-7. install the new pack alongside or instead of the old version through an explicit user action.
+7. install it through explicit user action.
 
-Historical packs remain valid snapshots of their preparation version. Their source and review provenance must stay available for comparison.
+Historical packs remain valid preparation snapshots with source and review provenance.
 
 ## Pending coverage
 
-The manifest still leaves these categories pending:
+The remaining explicit PDF fixture gap is:
 
-- image-heavy PDF with reliable text and several embedded images;
-- unusual embedded fonts and encoding failures;
-- long documents and large-corpus reopen behavior.
+- unusual embedded fonts and encoding failures.
 
-A category becomes active only after the repository contains a reproducible fixture and assertions for the relevant integrity risks.
+Broader ranking and answer-quality regressions remain separate Phase 3 tasks even though long-document disk reopen is now covered.
