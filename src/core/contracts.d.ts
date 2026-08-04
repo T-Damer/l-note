@@ -169,6 +169,8 @@ export interface PersonalNote {
   relation: PersonalNoteRelation;
   relationLabel?: string;
   targetClaimId?: string | null;
+  targetDocumentId?: string | null;
+  targetSectionId?: string | null;
   relatedEntityIds?: string[];
   createdAt: string;
   updatedAt: string;

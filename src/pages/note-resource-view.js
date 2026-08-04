@@ -1,4 +1,7 @@
-import { resolveStatement } from '../helpers/statement-conflicts.js';
+import {
+  resolveDocument,
+  resolveStatement,
+} from '../helpers/statement-conflicts.js';
 import { Button } from '../ui/components.js';
 import { element } from '../ui/dom.js';
 import { Text } from '../ui/text.js';
@@ -29,6 +32,11 @@ function sourceDocument(knowledge, claim) {
     ?? knowledge.documents.get(claim.source?.documentId);
 }
 
+function documentSection(documentRecord, sectionId) {
+  if (!sectionId) return null;
+  return (documentRecord?.sections ?? []).find((section) => section.id === sectionId) ?? null;
+}
+
 export function createNoteResourceView({
   dialogView,
   elements = {},
@@ -54,11 +62,10 @@ export function createNoteResourceView({
   const relatedPreview = requireElement(elements.relatedPreview, 'relatedPreview');
   const deleteButton = requireElement(elements.deleteButton, 'deleteButton');
   let activeNote = null;
+  let targetDocumentId = null;
+  let targetSectionId = null;
 
-  function renderTarget(claimId) {
-    targetSummary.replaceChildren();
-    if (!claimId) return;
-    const knowledge = getKnowledge();
+  function renderClaimTarget(claimId, knowledge) {
     const claim = resolveStatement(knowledge.packs, claimId) ?? knowledge.claims.get(claimId);
     if (!claim) {
       targetSummary.append(Text({
@@ -83,6 +90,46 @@ export function createNoteResourceView({
         onClick: () => navigate('statement', claim.runtimeId ?? claim.id),
       }),
     );
+  }
+
+  function renderDocumentTarget(documentId, sectionId, knowledge) {
+    const documentRecord = resolveDocument(knowledge.packs, documentId)
+      ?? knowledge.documents.get(documentId);
+    if (!documentRecord) {
+      targetSummary.append(Text({
+        variant: 'muted',
+        text: 'Связанный документ отсутствует в активных пакетах. Ссылка сохранится как неразрешённая.',
+      }));
+      return;
+    }
+    const section = documentSection(documentRecord, sectionId);
+    targetSummary.append(
+      Text({ variant: 'label', text: section ? 'Разметка раздела' : 'Разметка документа' }),
+      Button({
+        variant: 'ghost',
+        className: 'backlink-button',
+        children: [
+          Text({ variant: 'body', as: 'strong', text: documentRecord.title }),
+          Text({
+            variant: 'caption',
+            text: section?.title ?? documentRecord.source?.title ?? 'Документ целиком',
+          }),
+        ],
+        onClick: () => navigate('document', documentRecord.runtimeId ?? documentRecord.id, {
+          sectionId: section?.id,
+        }),
+      }),
+    );
+  }
+
+  function renderTarget() {
+    targetSummary.replaceChildren();
+    const knowledge = getKnowledge();
+    if (targetClaimId.value) {
+      renderClaimTarget(targetClaimId.value, knowledge);
+      return;
+    }
+    if (targetDocumentId) renderDocumentTarget(targetDocumentId, targetSectionId, knowledge);
   }
 
   function renderPreview(note = activeNote) {
@@ -121,23 +168,25 @@ export function createNoteResourceView({
     return { savedEntities, proposedEntities };
   }
 
-  function open(note = null, claimId = null) {
+  function open(note = null, target = {}) {
     activeNote = note;
     dialogTitle.textContent = note ? 'Редактировать заметку' : 'Новая заметка';
     id.value = note?.id ?? '';
-    targetClaimId.value = note?.targetClaimId ?? claimId ?? '';
+    targetClaimId.value = note?.targetClaimId ?? target.claimId ?? '';
+    targetDocumentId = note?.targetDocumentId ?? target.documentId ?? null;
+    targetSectionId = note?.targetSectionId ?? target.sectionId ?? null;
     title.value = note?.title ?? '';
     body.value = note?.body ?? '';
     relation.value = note?.relation ?? 'observation';
     deleteButton.classList.toggle('hidden', !note);
-    renderTarget(targetClaimId.value);
+    renderTarget();
     renderPreview(note);
     dialogView.show();
     return true;
   }
 
   function renderRoute(route) {
-    if (route.resourceId === 'new') return open(null, route.claimId);
+    if (route.resourceId === 'new') return open(null, route);
     const note = getNotes().find((item) => item.id === route.resourceId);
     return note ? open(note) : false;
   }
@@ -149,6 +198,8 @@ export function createNoteResourceView({
       body: body.value,
       relation: relation.value,
       targetClaimId: targetClaimId.value,
+      targetDocumentId,
+      targetSectionId,
     });
   }
 

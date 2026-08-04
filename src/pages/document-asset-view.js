@@ -8,6 +8,10 @@ function pageLabel(page) {
   return Number.isInteger(page) && page > 0 ? `Страница ${page}` : 'Источник';
 }
 
+function assetLabel(asset) {
+  return asset?.mimeType === 'application/pdf' ? pageLabel(asset.page) : 'Исходный файл';
+}
+
 function createPdfFrame(asset) {
   return element('iframe', {
     className: 'document-asset-frame',
@@ -17,6 +21,20 @@ function createPdfFrame(asset) {
   });
 }
 
+function createSourceLink(asset) {
+  const isPdf = asset.mimeType === 'application/pdf';
+  return element('a', {
+    className: 'source-link button-with-icon document-asset-open-link',
+    href: documentAssetUrl(asset),
+    target: '_blank',
+    rel: 'noreferrer',
+    ...(isPdf ? {} : { download: '' }),
+  }, [
+    Icon({ name: isPdf ? 'pdf' : 'download' }),
+    document.createTextNode(isPdf ? 'Открыть PDF отдельно' : 'Открыть или скачать исходный файл'),
+  ]);
+}
+
 export function createDocumentAssetView({ documentRecord, sectionId = null } = {}) {
   const initialAsset = resolveDocumentAsset(documentRecord, sectionId);
   if (!initialAsset) return null;
@@ -24,7 +42,7 @@ export function createDocumentAssetView({ documentRecord, sectionId = null } = {
   const frame = initialAsset.mimeType === 'application/pdf'
     ? createPdfFrame(initialAsset)
     : null;
-  const status = Text({ variant: 'caption', text: pageLabel(initialAsset.page) });
+  const status = Text({ variant: 'caption', text: assetLabel(initialAsset) });
   const details = element('details', { className: 'document-asset-view', open: true });
   const summary = element('summary', {}, [
     element('span', { className: 'document-asset-title' }, [
@@ -39,16 +57,17 @@ export function createDocumentAssetView({ documentRecord, sectionId = null } = {
   } else {
     body.append(Text({
       variant: 'muted',
-      text: 'Для этого типа локального документа встроенный просмотр пока недоступен.',
+      text: 'Встроенный просмотр этого формата недоступен. Исходный файл сохранён без изменений.',
     }));
   }
+  body.append(createSourceLink(initialAsset));
   details.append(summary, body);
 
   function openSection(targetSectionId) {
     const asset = resolveDocumentAsset(documentRecord, targetSectionId);
     if (!asset) return false;
     details.open = true;
-    status.textContent = pageLabel(asset.page);
+    status.textContent = assetLabel(asset);
     if (frame) {
       frame.src = documentAssetUrl(asset);
       frame.title = `${asset.title}, ${pageLabel(asset.page)}`;
@@ -64,7 +83,9 @@ export function createDocumentAssetView({ documentRecord, sectionId = null } = {
       variant: 'secondary',
       className: 'document-section-source',
       icon: asset.mimeType === 'application/pdf' ? 'pdf' : 'document',
-      text: `Открыть источник · ${pageLabel(asset.page).toLocaleLowerCase('ru-RU')}`,
+      text: asset.mimeType === 'application/pdf'
+        ? `Открыть источник · ${pageLabel(asset.page).toLocaleLowerCase('ru-RU')}`
+        : 'Открыть исходный файл',
       onClick: () => openSection(targetSectionId),
     });
   }

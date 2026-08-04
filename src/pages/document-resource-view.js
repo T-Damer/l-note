@@ -9,6 +9,11 @@ import { Button, Card } from '../ui/components.js';
 import { element } from '../ui/dom.js';
 import { Icon } from '../ui/icons.js';
 import { Text } from '../ui/text.js';
+import {
+  createSectionAnnotationButton,
+  renderSectionAnnotations,
+  sectionAnnotationNotes,
+} from './document-annotation-view.js';
 import { createDocumentAssetView } from './document-asset-view.js';
 import { createStatementConflictDisclosure } from './statement-conflict-view.js';
 
@@ -122,8 +127,11 @@ function renderSection({
   });
   const heading = element('header', { className: 'document-section-header' }, [
     Text({ variant: 'heading', as: 'h3', text: section.title }),
-    assetView?.sourceButton(section.id),
-  ].filter(Boolean));
+    element('div', { className: 'document-section-actions' }, [
+      assetView?.sourceButton(section.id),
+      createSectionAnnotationButton({ documentRecord, section, navigate }),
+    ].filter(Boolean)),
+  ]);
   const claims = statementsForSection(
     knowledge.packs,
     documentRecord.packId,
@@ -152,6 +160,11 @@ function renderSection({
       claims.map((claim) => renderClaim({ claim, navigate }))
     )));
   }
+  const annotations = renderSectionAnnotations({
+    notes: sectionAnnotationNotes(knowledge, documentRecord, section.id),
+    navigate,
+  });
+  if (annotations) article.append(annotations);
   return article;
 }
 

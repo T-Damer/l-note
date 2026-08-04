@@ -33,7 +33,13 @@
 }
 
 .document-asset-body {
+  display: grid;
+  gap: .75rem;
   padding: 0 .75rem .75rem;
+}
+
+.document-asset-open-link {
+  width: fit-content;
 }
 
 .document-asset-frame {
@@ -57,11 +63,37 @@
   margin: 0;
 }
 
-.document-section-source {
-  min-height: 2.35rem;
+.document-section-actions {
+  display: flex;
   flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .45rem;
+}
+
+.document-section-source,
+.document-section-annotation {
+  min-height: 2.35rem;
   padding: .45rem .65rem;
   font-size: .72rem;
+}
+
+.document-annotations {
+  display: grid;
+  gap: .55rem;
+  margin-top: .85rem;
+  padding-top: .85rem;
+  border-top: 1px solid var(--line);
+}
+
+.document-annotation-list {
+  display: grid;
+  gap: .55rem;
+}
+
+.document-annotation-card {
+  display: grid;
+  gap: .35rem;
 }
 
 @media (max-width: 680px) {
@@ -73,7 +105,7 @@
     display: grid;
   }
 
-  .document-section-source {
-    justify-self: start;
+  .document-section-actions {
+    justify-content: flex-start;
   }
 }

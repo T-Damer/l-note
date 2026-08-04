@@ -127,6 +127,7 @@ function ensureInitialRouteHistory() {
         depth: 1,
         sectionId: initial.sectionId,
         claimId: initial.claimId,
+        documentId: initial.documentId,
       }),
     };
     history.pushState(resourceHistoryState(directRoute), '', directRoute.hash);

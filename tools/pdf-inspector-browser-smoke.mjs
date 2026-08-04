@@ -164,10 +164,21 @@ try {
   await client.send('Runtime.enable');
   const result = await client.evaluate(`(async () => {
     const base = 'http://127.0.0.1:${appPort}/';
-    const { inspectBrowserPdf } = await import(base + 'src/services/browser-pdf-inspector.js');
+    let inspectorModule;
+    let moduleError;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      try {
+        inspectorModule = await import(base + 'src/services/browser-pdf-inspector.js?smoke=' + attempt);
+        break;
+      } catch (error) {
+        moduleError = error;
+        await new Promise((resolvePromise) => setTimeout(resolvePromise, 150 * (attempt + 1)));
+      }
+    }
+    if (!inspectorModule) throw moduleError;
     const response = await fetch(base + 'assets/lnote-source-demo.pdf');
     const file = new File([await response.arrayBuffer()], 'lnote-source-demo.pdf', { type: 'application/pdf' });
-    const parsed = await inspectBrowserPdf(file);
+    const parsed = await inspectorModule.inspectBrowserPdf(file);
     return {
       pdfType: parsed.pdfType,
       pageCount: parsed.pageCount,

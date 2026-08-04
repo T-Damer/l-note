@@ -5,13 +5,24 @@ import {
   createNoteRecord,
   normalizeImportedNotes,
   normalizeNoteRelation,
+  normalizeNoteTarget,
   normalizeRelatedEntityIds,
 } from '../src/services/note-workflow.js';
 
-test('normalizes note relations and related entity identifiers', () => {
+test('normalizes note relations, entity identifiers and source targets', () => {
   assert.equal(normalizeNoteRelation('supports'), 'supports');
   assert.equal(normalizeNoteRelation('invented'), 'observation');
   assert.deepEqual(normalizeRelatedEntityIds(['a', 'a', '', null, 'b']), ['a', 'b']);
+  assert.deepEqual(normalizeNoteTarget({
+    targetClaimId: ' claim-1 ',
+    targetDocumentId: ' pack::doc-1 ',
+    targetSectionId: ' section-1 ',
+  }), {
+    targetClaimId: 'claim-1',
+    targetDocumentId: 'pack::doc-1',
+    targetSectionId: 'section-1',
+  });
+  assert.equal(normalizeNoteTarget({ targetSectionId: 'orphan' }).targetSectionId, null);
 });
 
 test('creates a bounded note record without losing the original creation time', () => {
@@ -21,6 +32,8 @@ test('creates a bounded note record without losing the original creation time', 
       body: '  Текст заметки  ',
       relation: 'invented',
       targetClaimId: ' claim-1 ',
+      targetDocumentId: ' pack::doc-1 ',
+      targetSectionId: ' section-1 ',
     },
     previous: { id: 'note-1', createdAt: '2026-01-01T00:00:00.000Z' },
     relatedEntityIds: ['entity-1', 'entity-1', 'entity-2'],
@@ -35,13 +48,15 @@ test('creates a bounded note record without losing the original creation time', 
     relation: 'observation',
     relationLabel: 'label:observation',
     targetClaimId: 'claim-1',
+    targetDocumentId: 'pack::doc-1',
+    targetSectionId: 'section-1',
     relatedEntityIds: ['entity-1', 'entity-2'],
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-07-31T12:00:00.000Z',
   });
 });
 
-test('normalizes imported notes and preserves valid exported timestamps', () => {
+test('normalizes imported notes and preserves source targets plus timestamps', () => {
   let id = 0;
   const records = normalizeImportedNotes({
     notes: [
@@ -49,6 +64,8 @@ test('normalizes imported notes and preserves valid exported timestamps', () => 
         title: 'Импорт',
         body: 'Содержимое',
         relation: 'supports',
+        targetDocumentId: 'pack::doc-1',
+        targetSectionId: 'content',
         relatedEntityIds: ['entity-1'],
         createdAt: '2025-01-01T00:00:00.000Z',
         updatedAt: '2025-02-01T00:00:00.000Z',
@@ -69,6 +86,8 @@ test('normalizes imported notes and preserves valid exported timestamps', () => 
     relation: 'supports',
     relationLabel: 'SUPPORTS',
     targetClaimId: null,
+    targetDocumentId: 'pack::doc-1',
+    targetSectionId: 'content',
     relatedEntityIds: ['entity-1'],
     createdAt: '2025-01-01T00:00:00.000Z',
     updatedAt: '2025-02-01T00:00:00.000Z',
