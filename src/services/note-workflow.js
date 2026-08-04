@@ -58,7 +58,11 @@ export function createNoteRecord({
     body,
     relation,
     relationLabel: relationLabel(relation),
-    ...target,
+    targetClaimId: target.targetClaimId,
+    ...(target.targetDocumentId ? {
+      targetDocumentId: target.targetDocumentId,
+      targetSectionId: target.targetSectionId,
+    } : {}),
     relatedEntityIds: normalizeRelatedEntityIds(relatedEntityIds),
     createdAt: timestamp(previous?.createdAt ?? draft.createdAt, now),
     updatedAt: preserveUpdatedAt ? timestamp(draft.updatedAt, now) : now,
