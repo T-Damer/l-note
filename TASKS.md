@@ -2,7 +2,7 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** build and validate a representative personal document-library acceptance corpus, then measure large-corpus and mobile behavior. Android/iOS and live MiniMed integration remain deferred until the generic L-Note workflow is stable and benchmarked.
+**Current focus:** finish the remaining data-preparation operational gaps—real DuckDB executable acceptance and disk-backed intermediate outputs—then measure large-corpus and mobile behavior. Android/iOS and live MiniMed integration remain deferred until the generic L-Note workflow is stable and benchmarked.
 
 ## Ordered roadmap
 
@@ -32,11 +32,11 @@ This section defines execution order. The detailed checklists below remain the i
 
 ### Phase 3 — Representative document-library acceptance
 
-- [ ] Build a versioned acceptance corpus covering text PDF, mixed/scanned PDF, DOCX, TXT/Markdown, tables, columns, internal links, images, unusual fonts and long documents.
-- [ ] Verify reading order, table preservation, page/paragraph anchors, self-link cleanup, OCR routing and original-file opening.
-- [ ] Add broader non-demo and large-corpus ranking regressions.
-- [ ] Test local answers against the corpus for exact citations, numbers, negation and reviewed discrepancies.
-- [ ] Document known extractor limitations and a repeatable re-import/migration procedure when preparation rules change.
+- [x] Build a versioned acceptance corpus covering text PDF, mixed/scanned PDF, DOCX, TXT/Markdown, tables, columns, internal links, images, unusual fonts and long documents.
+- [x] Verify reading order, table preservation, page/paragraph anchors, self-link cleanup, OCR routing and original-file opening.
+- [x] Add broader non-demo and large-corpus ranking regressions.
+- [x] Test local answers against the corpus for exact citations, numbers, negation and reviewed discrepancies.
+- [x] Document known extractor limitations and a repeatable re-import/migration procedure when preparation rules change.
 
 **Exit criteria:** every fixture has an expected extraction/search result; no scan text enters evidence without review; the same prepared corpus reopens and searches offline after reload.
 
@@ -100,7 +100,7 @@ This section defines execution order. The detailed checklists below remain the i
 - [x] Place search suggestions directly below the input as a horizontal touch-scroll rail without a visible scrollbar.
 - [ ] Tune the current 5,000-record / approximately 8 MiB threshold on representative mobile devices.
 - [x] Import optional prebuilt SQLite search artifacts from large distributable packs.
-- [ ] Add broader non-demo and large-corpus ranking regressions.
+- [x] Add broader non-demo and large-corpus ranking regressions.
 - [ ] Add an optional OPFS adapter for controlled hosting/native shells with suitable isolation headers.
 
 ## Source discrepancies and provenance
@@ -151,11 +151,11 @@ This section defines execution order. The detailed checklists below remain the i
 - [x] Add a primary `Создать свой пакет` action to the existing Packages page.
 - [x] Use Phosphor rather than emoji or text glyphs for source-discrepancy warnings.
 - [x] Fix expanded sidebar label clipping and remove the sidebar status card.
-- [x] Show compact pie progress indicators for language and speech model downloads in the relevant navigation items.
+- [x] Show compact pie progress indicators for package, model and speech-model work in the owning desktop and mobile navigation items.
 - [x] Keep model-control panels inside the Ask form on narrow devices.
 - [x] Add list/graph switching inside concept relation accordions.
 - [x] Keep note-form labels directly above their controls.
-- [x] Add a compact global operations panel that appears only for active, interrupted, failed or cancelled work.
+- [x] Keep the compact global operations panel only for interrupted or failed work that requires explicit action.
 - [ ] Finish interaction-state, click-target and legacy-glyph auditing.
 - [ ] Let the local model propose note links with explicit user review.
 
@@ -175,6 +175,7 @@ This section defines execution order. The detailed checklists below remain the i
 - [x] Add `Экономный` and `Расширенный` evidence modes.
 - [x] Show progress, estimated bytes, speed, errors and retry.
 - [x] Check statement support in addition to citation-ID existence, including terms, numbers and negation mismatches.
+- [x] Bind negation to the best matching evidence sentence and cover exact citations, numbers and reviewed discrepancies in a 5,202-section corpus.
 - [x] Add a model-load cancellation primitive that terminates the loading Worker.
 - [x] Expose consistent Cancel/Continue/Retry controls for model and speech-model loading through the shared queue.
 - [ ] Benchmark representative Snapdragon 7-class 8 GB and 12 GB devices before selecting a mobile default.
@@ -231,6 +232,8 @@ This section defines execution order. The detailed checklists below remain the i
 - [x] Document the mandatory OCR review workflow and source-change protection.
 - [x] Document chronology-aware discrepancy review and its non-authoritative boundary.
 - [x] Document reviewed preferred/current statement selections and historical-version preservation.
+- [x] Document the versioned document acceptance corpus and explicit re-import procedure.
+- [x] Document large-corpus retrieval, portable FTS reopen and sentence-local grounding acceptance.
 - [x] Keep this file as the only implementation backlog.
 - [x] Keep development, decomposition and user-facing copy rules in `AGENTS.md`.
 - [x] Update docs together with behavior changes.
