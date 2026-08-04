@@ -40,13 +40,12 @@ test('keeps indeterminate progress when running tasks report no usable value', (
 });
 
 test('combines independent activity sources without allowing one to hide another', () => {
-  assert.deepEqual(summarizeActivitySources([
+  const combined = summarizeActivitySources([
     { active: true, progress: .4, label: 'Загрузка модели' },
     { active: true, progress: .8, label: 'Загрузка пакета' },
-  ]), {
-    progress: .6000000000000001,
-    label: 'Загрузка модели · Загрузка пакета',
-  });
+  ]);
+  assert.ok(Math.abs(combined.progress - .6) < Number.EPSILON * 4);
+  assert.equal(combined.label, 'Загрузка модели · Загрузка пакета');
   assert.deepEqual(summarizeActivitySources([
     { active: true, progress: .4, label: 'Загрузка модели' },
     { active: false, progress: 0, label: 'Transfer queue' },
