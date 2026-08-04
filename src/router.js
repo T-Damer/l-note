@@ -42,6 +42,7 @@ export function parseHashRoute(hash = '') {
       resourceId: null,
       sectionId: null,
       claimId: null,
+      documentId: null,
     };
   }
 
@@ -57,6 +58,7 @@ export function parseHashRoute(hash = '') {
       resourceId: safeDecode(segments.slice(1).join('/')),
       sectionId: params.get('section'),
       claimId: params.get('claim'),
+      documentId: params.get('document'),
     };
   }
 
@@ -69,6 +71,7 @@ export function parseHashRoute(hash = '') {
     resourceId: null,
     sectionId: null,
     claimId: null,
+    documentId: null,
   };
 }
 
@@ -85,6 +88,7 @@ export function resourceRouteHash(resourceType, resourceId, options = {}) {
   params.set('depth', String(positiveDepth(options.depth)));
   if (options.sectionId) params.set('section', options.sectionId);
   if (options.claimId) params.set('claim', options.claimId);
+  if (options.documentId) params.set('document', options.documentId);
   return `#/${resourceType}/${encodeURIComponent(resourceId)}?${params.toString()}`;
 }
 
@@ -101,11 +105,13 @@ export function nextResourceRoute(currentRoute, resourceType, resourceId, option
     resourceId,
     sectionId: options.sectionId ?? null,
     claimId: options.claimId ?? null,
+    documentId: options.documentId ?? null,
     hash: resourceRouteHash(resourceType, resourceId, {
       base,
       depth,
       sectionId: options.sectionId,
       claimId: options.claimId,
+      documentId: options.documentId,
     }),
   };
 }
