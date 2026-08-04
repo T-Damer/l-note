@@ -169,6 +169,8 @@ export interface PersonalNote {
   relation: PersonalNoteRelation;
   relationLabel?: string;
   targetClaimId?: string | null;
+  targetDocumentId?: string | null;
+  targetSectionId?: string | null;
   relatedEntityIds?: string[];
   createdAt: string;
   updatedAt: string;
@@ -181,16 +183,17 @@ export interface SearchRecord {
   body: string;
   packId?: string;
   packTitle?: string;
-  documentId?: string;
+  documentId?: string | null;
   documentTitle?: string;
-  sectionId?: string;
-  noteId?: string;
+  sectionId?: string | null;
   aliases?: string;
   entityNames?: string;
   entityIds?: string[];
   tags?: string;
   authority?: KnowledgeAuthority;
   relation?: PersonalNoteRelation;
+  effectiveFrom?: string | null;
+  sourceTitle?: string;
   claimIds?: string[];
   [key: string]: unknown;
 }
@@ -198,71 +201,64 @@ export interface SearchRecord {
 export interface SearchResult extends SearchRecord {
   score: number;
   relevance: number;
-  snippet: string;
-  queryTerms: string[];
+  queryTerms?: string[];
   expandedQuery?: string;
+  matches?: Array<{ start: number; end: number }>;
 }
 
 export interface EvidenceSource {
   id: string;
-  supplemental?: boolean;
-  result: SearchResult;
-  document?: KnowledgeDocument;
-  section?: KnowledgeSection;
-  claims: KnowledgeStatement[];
-}
-
-export interface EvidenceConflict {
-  note?: PersonalNote;
-  claim?: KnowledgeStatement;
-  statementConflict?: unknown;
-}
-
-export interface EvidenceDiscrepancySide {
-  evidenceId: string;
-  claimRef: string;
-  claim: KnowledgeStatement;
-  packId: string;
-  packTitle: string;
-  documentRef: string;
-  documentTitle: string;
-  sectionId: string | null;
-  quote: string;
-  date: string | null;
-}
-
-export interface EvidenceDiscrepancy {
-  id: string;
-  type: Extract<StatementRelationType, 'contradicts' | 'supersedes' | 'different_scope'>;
-  status: 'confirmed';
-  reason: string;
-  detectedBy: string;
-  confidence: number | null;
-  source: EvidenceDiscrepancySide;
-  target: EvidenceDiscrepancySide;
+  label: string;
+  title: string;
+  body: string;
+  packId?: string;
+  documentId?: string;
+  sectionId?: string;
+  authority?: KnowledgeAuthority;
+  [key: string]: unknown;
 }
 
 export interface EvidenceEnvelope {
-  contractVersion: '0.1.0';
+  schemaVersion: 1;
   query: string;
+  mode: string;
   sources: EvidenceSource[];
-  relatedNotes: PersonalNote[];
-  conflicts: EvidenceConflict[];
-  discrepancies: EvidenceDiscrepancy[];
+  [key: string]: unknown;
 }
 
-export interface ContractValidation {
-  valid: boolean;
-  errors: string[];
+export interface SearchPort {
+  kind: string;
+  count: number;
+  async?: boolean;
+  retainsRecords?: boolean;
+  ready?: Promise<unknown>;
+  search(query: string, options?: Record<string, unknown>): SearchResult[] | Promise<SearchResult[]>;
+  suggest(query: string, limit?: number): string[] | Promise<string[]>;
+  stats?(): unknown | Promise<unknown>;
+  close?(): void | Promise<void>;
 }
 
-export function isRecord(value: unknown): value is Record<string, unknown>;
-export function validateKnowledgePackContract(pack: unknown): ContractValidation;
-export function validateSearchResultContract(result: unknown): ContractValidation;
-export function createEvidenceEnvelope(input: {
-  query: string;
-  sources?: EvidenceSource[];
-  relatedNotes?: PersonalNote[];
-  conflicts?: EvidenceConflict[];
-  discrepancies?: EvidenceDiscrepancy[];
-}): EvidenceEnvelope;
+export interface StoragePort {
+  getAll(store: string): Promise<unknown[]>;
+  getOne(store: string, key: string): Promise<unknown>;
+  putOne(store: string, value: unknown): Promise<unknown>;
+  deleteOne(store: string, key: string): Promise<void>;
+}
+
+export interface AiPort {
+  available?: boolean;
+  load?(profile?: string): Promise<unknown>;
+  unload?(): Promise<void>;
+  generate(prompt: string, options?: Record<string, unknown>): Promise<string>;
+}
+
+export interface EvidenceVerifierPort {
+  verify(answer: string, evidence: EvidenceEnvelope): unknown | Promise<unknown>;
+}
+
+export interface SpeechPort {
+  available?: boolean;
+  load?(profile?: string): Promise<unknown>;
+  transcribe(audio: Float32Array, options?: Record<string, unknown>): Promise<string>;
+  cancel?(): void | Promise<void>;
+}
