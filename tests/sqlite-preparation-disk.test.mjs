@@ -62,7 +62,7 @@ test('writes each prepared SQLite document before importing the next object', as
   }
 });
 
-test('removes partial authoring output after an import failure', async () => {
+test('removes partial authoring output after import and open failures', async () => {
   const directory = await temporaryDirectory();
   try {
     const input = path.join(directory, 'source.sqlite');
@@ -80,8 +80,15 @@ test('removes partial authoring output after an import failure', async () => {
         },
       },
     }), /unknown text column missing_column/u);
-
     assert.equal(existsSync(output), false);
+
+    const missingOutput = path.join(directory, 'missing-output');
+    await assert.rejects(prepareSqliteDirectory({
+      inputPath: path.join(directory, 'missing.sqlite'),
+      outputPath: missingOutput,
+      id: 'acceptance.sqlite-open-cleanup',
+    }));
+    assert.equal(existsSync(missingOutput), false);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
