@@ -320,29 +320,44 @@ function renderSearchEmpty() {
   dom.searchEmpty.replaceChildren();
   if (!state.packRecords.some((record) => record.enabled)) {
     dom.searchEmpty.append(
-      create('h2', { text: 'Установите хотя бы один пакет' }),
-      create('p', { text: 'Откройте раздел «Пакеты», установите нужные наборы и вернитесь к поиску.' }),
+      create('h2', { text: 'На устройстве пока нет активных знаний' }),
+      create('p', { text: 'Откройте каталог, выберите MiniMed или другой пакет и скачайте его. После этого поиск не будет зависеть от сети.' }),
+      create('button', { className: 'primary-button', text: 'Открыть каталог', type: 'button' }),
     );
-    return;
+    dom.searchEmpty.querySelector('button').addEventListener('click', () => routeTo('library'));
+  } else if (!state.currentQuery) {
+    dom.searchEmpty.append(
+      create('h2', { text: 'Введите вопрос или термин' }),
+      create('p', { text: 'Поиск учитывает заголовки, текст, сокращения, алиасы и опечатки. Нажмите на результат, чтобы увидеть исходный раздел и backlinks.' }),
+    );
   }
-  dom.searchEmpty.append(
-    create('h2', { text: 'Начните с запроса' }),
-    create('p', { text: 'Поиск работает локально: точные совпадения, префиксы, алиасы и опечатки.' }),
-  );
 }
 
 function renderSuggestions() {
-  const suggestions = state.search.suggest(dom.searchInput.value, 6);
+  const examples = [
+    'грудничок свистит при дыхании',
+    'сатурация ниже 90 пневмония',
+    'сыпь пошла с лица вниз',
+    'ОАМ при температуре без очага',
+    'fuzzy serch с опечаткой',
+  ];
+  const auto = state.currentQuery ? state.search.suggest(state.currentQuery, 3) : [];
+  const suggestions = [...new Set([...auto, ...examples])].slice(0, 7);
   dom.searchSuggestions.replaceChildren();
   for (const suggestion of suggestions) {
-    dom.searchSuggestions.append(create('button', {
-      type: 'button',
-      className: 'suggestion',
-      text: suggestion,
-      onclick: () => {
-        dom.searchInput.value = suggestion;
-        runSearch(suggestion);
-      },
-    }));
+    const button = create('button', { type: 'button', text: suggestion });
+    button.addEventListener('click', () => {
+      dom.searchInput.value = suggestion;
+      runSearch(suggestion);
+    });
+    dom.searchSuggestions.append(button);
   }
 }
+
+function appendHighlighted(container, text, terms) {
+  const ranges = highlightRanges(text, terms);
+  if (!ranges.length) {
+    container.textContent = text;
+    return;
+  }
+  const merged = [];
