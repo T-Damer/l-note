@@ -33,6 +33,7 @@ const offlineModules = [
   'src/helpers/disk-search.js',
   'src/helpers/prebuilt-search-artifacts.js',
   'src/helpers/document-assets.js',
+  'src/helpers/note-targets.js',
   'src/helpers/pdf-inspector-result.js',
   'src/helpers/statement-conflicts.js',
   'src/helpers/statement-selections.js',
@@ -41,9 +42,11 @@ const offlineModules = [
   'src/helpers/transfer-queue.js',
   'src/pages/ask-page-controller.js',
   'src/pages/concept-resource-view.js',
+  'src/pages/document-annotation-view.js',
   'src/pages/document-asset-view.js',
   'src/pages/document-resource-view.js',
   'src/pages/model-lab-view.js',
+  'src/pages/note-resource-view.js',
   'src/pages/package-builder-view.js',
   'src/pages/search-results-view.js',
   'src/pages/sidebar-controller.js',
@@ -57,6 +60,7 @@ const offlineModules = [
   'src/services/evidence-query.js',
   'src/services/evidence-support-verifier.js',
   'src/services/installed-pack-record.js',
+  'src/services/note-workflow.js',
   'src/services/package-transfer.js',
   'src/services/queued-runtime-loader.js',
   'src/services/transfer-queue.js',
@@ -116,6 +120,8 @@ test('static build contains the complete local-first shell', async () => {
     /\.model-progress-track/u,
     /\.voice-search-panel/u,
     /\.document-asset-frame/u,
+    /\.document-section-actions/u,
+    /\.document-annotations/u,
     /\.knowledge-graph-node/u,
     /\.pack-builder/u,
     /\.statement-conflict-marker/u,
@@ -228,6 +234,11 @@ test('static build contains the complete local-first shell', async () => {
     /selectPrebuiltSearchArtifact/u,
     /searchArtifactFiles/u,
   ]);
+  await assertContains('src/helpers/note-targets.js', [
+    /indexNoteTargets/u,
+    /resolveNoteDocument/u,
+    /noteSectionRef/u,
+  ]);
   await assertContains('src/services/package-transfer.js', [
     /downloadSearchArtifacts/u,
     /searchArtifactFiles/u,
@@ -251,7 +262,22 @@ test('static build contains the complete local-first shell', async () => {
   await assertContains('src/pages/document-resource-view.js', [
     /buildStatementConflictIndex/u,
     /createStatementConflictDisclosure/u,
-    /statement-conflict-panels/u,
+    /createSectionAnnotationButton/u,
+    /renderSectionAnnotations/u,
+  ]);
+  await assertContains('src/pages/document-annotation-view.js', [
+    /Добавить разметку/u,
+    /sectionAnnotationNotes/u,
+    /document-annotation-card/u,
+  ]);
+  await assertContains('src/pages/document-asset-view.js', [
+    /Открыть или скачать исходный файл/u,
+    /document-asset-open-link/u,
+  ]);
+  await assertContains('src/pages/note-resource-view.js', [
+    /targetDocumentId/u,
+    /Разметка раздела/u,
+    /renderDocumentTarget/u,
   ]);
   await assertContains('src/pages/statement-conflict-view.js', [
     /statement-conflict-marker/u,
@@ -312,7 +338,7 @@ test('static build contains the complete local-first shell', async () => {
     /"type":"contradicts"/u,
   ]);
   await assertContains('service-worker.js', [
-    /l-note-shell-v45/u,
+    /l-note-shell-v46/u,
     /cdn\.jsdelivr\.net/u,
     /benchmarks\/search\.html/u,
     /benchmarks\/search-benchmark-runner\.js/u,
@@ -322,6 +348,8 @@ test('static build contains the complete local-first shell', async () => {
     /browser-pdf-inspector\.js/u,
     /pdf-inspector-worker\.js/u,
     /prebuilt-search-artifacts\.js/u,
+    /note-targets\.js/u,
+    /document-annotation-view\.js/u,
     /installed-pack-record\.js/u,
     /sqlite-artifact-runtime\.js/u,
     /sqlite-fts-search\.js/u,
