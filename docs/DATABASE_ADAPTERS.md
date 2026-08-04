@@ -2,9 +2,9 @@
 
 ## Scope
 
-The database adapter is a strong-device preparation and interchange tool. It does not add a database connection to the hosted browser runtime.
+Database adapters are strong-device preparation and interchange tools. They do not add database connections to the hosted browser runtime.
 
-Implemented commands use the built-in Node.js `node:sqlite` module and therefore require Node.js 22 or newer.
+SQLite import/export uses the built-in Node.js `node:sqlite` module and therefore requires Node.js 22 or newer. DuckDB staging is optional and invokes a separately installed `duckdb` executable; it is not an npm or browser dependency.
 
 ```bash
 npm run database:pack -- <command> [options]
@@ -122,6 +122,107 @@ Default limits:
 
 Override them with `--max-rows`, `--max-cell-chars`, and `--max-section-chars`. Large rows are split into several sections with the same provenance.
 
+## Stage bulk and remote sources through optional DuckDB
+
+DuckDB is an optional scanner that converts supported sources into one versioned SQLite staging database. The ordinary SQLite importer remains the source-preserving L-Note boundary.
+
+Install the DuckDB command-line executable separately and verify it:
+
+```bash
+npm run database:pack -- duckdb-info
+```
+
+A staging config is declarative and versioned. It cannot contain raw SQL, predicates, connection strings or inline passwords.
+
+```json
+{
+  "schemaVersion": 1,
+  "kind": "lnote.duckdb-stage",
+  "sources": [
+    {
+      "type": "csv",
+      "path": "./articles.csv",
+      "table": "articles",
+      "options": {
+        "header": true,
+        "all_varchar": true
+      }
+    },
+    {
+      "type": "parquet",
+      "path": "./archive/*.parquet",
+      "table": "archive",
+      "options": {
+        "union_by_name": true,
+        "filename": true
+      }
+    },
+    {
+      "type": "sqlite",
+      "path": "./legacy.sqlite",
+      "alias": "legacy",
+      "tables": [
+        { "source": "glossary", "target": "legacy_glossary" }
+      ]
+    },
+    {
+      "type": "postgres",
+      "alias": "reference_db",
+      "secretEnv": {
+        "host": "REFERENCE_DB_HOST",
+        "port": "REFERENCE_DB_PORT",
+        "database": "REFERENCE_DB_NAME",
+        "user": "REFERENCE_DB_USER",
+        "password": "REFERENCE_DB_PASSWORD"
+      },
+      "tables": [
+        { "source": "public.guidelines", "target": "guidelines" }
+      ]
+    }
+  ]
+}
+```
+
+MySQL uses the same shape with `"type": "mysql"`. Remote credentials are read from the named environment variables; credential values are not written into staging provenance.
+
+Create the staging database:
+
+```bash
+npm run database:pack -- stage \
+  --config ./duckdb-stage.json \
+  --output ./prepared/staging.sqlite
+```
+
+Use `--duckdb-bin /path/to/duckdb` for a non-standard executable path. An existing target is rejected unless `--force` is supplied.
+
+The bridge:
+
+- starts DuckDB with an intentionally empty init file instead of a user's `~/.duckdbrc`;
+- disables unsigned/community extensions and implicit extension loading;
+- allowlists reader options for CSV, JSON and Parquet;
+- opens SQLite/PostgreSQL/MySQL attachments read-only;
+- limits execution time and captured process output;
+- verifies staging schema metadata and every expected target table;
+- deletes partial output after failure.
+
+The staging database contains `lnote_stage_metadata` and `lnote_stage_sources`. During the next import, L-Note automatically carries the source type, locator, safe declarative config and staging timestamp into each generated document.
+
+Continue through the ordinary pipeline:
+
+```bash
+npm run database:pack -- import \
+  --input ./prepared/staging.sqlite \
+  --output ./prepared/reference \
+  --id com.example.reference \
+  --title "Reference database"
+
+npm run build:pack -- \
+  --input ./prepared/reference \
+  --output ./dist/reference.pack.json
+```
+
+DuckDB is preparation infrastructure, not evidence and not a runtime database. The source-preserving pack remains authoritative.
+
 ## Export a pack to relational SQLite
 
 ```bash
@@ -157,16 +258,3 @@ npm run database:pack -- restore \
 ```
 
 Restore accepts only the versioned L-Note relational schema. It rebuilds document nesting and record order from stored payload rows, preserves optional-array presence, then validates the result through the ordinary pack validator.
-
-## DuckDB and remote databases
-
-DuckDB is intentionally not a required dependency. For large imports, use it externally to scan SQLite/PostgreSQL/MySQL/ODBC or to convert CSV/JSON/Parquet into a smaller SQLite staging database, then run the L-Note importer.
-
-This keeps:
-
-- the repository dependency-free beyond existing packages;
-- remote credentials outside L-Note;
-- bulk scanning and Parquet conversion in a tool designed for them;
-- the L-Note adapter focused on provenance, review and portable pack contracts.
-
-Future adapters may invoke DuckDB as an optional executable, but they must still emit the same authoring directory and review artifacts.

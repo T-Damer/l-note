@@ -179,7 +179,7 @@ test('preserves an explicitly empty statementRelations array', async () => {
 test('CLI parses repeated table options and runs export/restore', async () => {
   assert.deepEqual(
     argumentsFrom(['import', '--input', 'a.db', '--table', 'a', '--table', 'b']),
-    { command: 'import', input: 'a.db', table: ['a', 'b'] },
+    { command: 'import', input: 'a.db', table: ['a', 'b'], force: false },
   );
   const directory = await temporaryDirectory();
   try {

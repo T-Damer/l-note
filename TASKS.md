@@ -2,7 +2,69 @@
 
 Single source of future work. Completed items describe the active branch.
 
-**Current focus:** finish product functionality. Adaptive SQLite/FTS5 search, reviewed source discrepancies, confirmed-discrepancy answer evidence, local voice search, the persisted transfer queue, deterministic discrepancy review, mandatory OCR review, PDF/DOCX and SQLite preparation, relational pack interchange, mandatory review of LLM semantic proposals and distributable prebuilt search artifacts are implemented; next are an optional DuckDB bulk/remote bridge and chronology-aware discrepancy preparation. Android/iOS and live MiniMed integration remain deferred.
+**Current focus:** finish the data-preparation foundation, then add chronology-aware discrepancy review and validate the product on representative personal document libraries. Android/iOS and live MiniMed integration remain deferred until the generic L-Note workflow is stable and benchmarked.
+
+## Ordered roadmap
+
+This section defines execution order. The detailed checklists below remain the implementation source for each phase.
+
+### Phase 1 — Complete universal data preparation
+
+- [ ] Refresh and merge the optional DuckDB staging bridge on top of the current `main`.
+- [ ] Keep the bridge declarative: no raw SQL, inline credentials or implicit extension loading.
+- [ ] Stage CSV, JSON, Parquet, SQLite and selected PostgreSQL/MySQL tables into a versioned SQLite file.
+- [ ] Preserve source locator, source type, staging time and safe configuration provenance through the ordinary SQLite importer.
+- [ ] Add a real executable acceptance smoke for local CSV, Parquet and SQLite when DuckDB is available in CI or an explicit local environment.
+- [ ] Keep large preparation outputs and intermediate corpora on disk rather than duplicating them in application RAM.
+
+**Exit criteria:** an arbitrary supported source can be staged, imported, compiled and searched through the ordinary pack pipeline; partial output is removed after failure; the complete `npm run check` gate passes.
+
+### Phase 2 — Temporal provenance and source editions
+
+- [ ] Merge the temporal-provenance decision record.
+- [ ] Separate publication/issue time, modification time, real-world validity and review/record time.
+- [ ] Add chronology as an explicit discrepancy-review signal without inferring that newer automatically wins.
+- [ ] Add explicit edition/artifact relations such as `replaces`, `amends`, `corrects`, `retracts` and their inverse forms.
+- [ ] Compare edition identifiers only when a comparison algorithm is declared.
+- [ ] Add a reviewed preferred/current statement overlay that preserves every historical version and permits several current statements when sources disagree.
+
+**Exit criteria:** review JSON/HTML shows dates, validity, edition and explicit replacement evidence separately; chronology alone never creates or accepts a discrepancy; accepted decisions preserve review evidence.
+
+### Phase 3 — Representative document-library acceptance
+
+- [ ] Build a versioned acceptance corpus covering text PDF, mixed/scanned PDF, DOCX, TXT/Markdown, tables, columns, internal links, images, unusual fonts and long documents.
+- [ ] Verify reading order, table preservation, page/paragraph anchors, self-link cleanup, OCR routing and original-file opening.
+- [ ] Add broader non-demo and large-corpus ranking regressions.
+- [ ] Test local answers against the corpus for exact citations, numbers, negation and reviewed discrepancies.
+- [ ] Document known extractor limitations and a repeatable re-import/migration procedure when preparation rules change.
+
+**Exit criteria:** every fixture has an expected extraction/search result; no scan text enters evidence without review; the same prepared corpus reopens and searches offline after reload.
+
+### Phase 4 — Mobile and large-corpus performance
+
+- [ ] Tune the MiniSearch/SQLite threshold on representative Android devices.
+- [ ] Benchmark PDF WASM, FTS build/reopen, Whisper Tiny/Base and WebLLM on Snapdragon 7-class 8 GB and 12 GB devices.
+- [ ] Measure peak memory for 10, 30 and 100 MiB documents and for 1k/10k/100k sections.
+- [ ] Verify interruption, cancellation and recovery when Android unloads the tab during preparation or download.
+- [ ] Consider OPFS, vector search, VAD/streaming and a local entailment verifier only after the baseline is measured.
+
+**Exit criteria:** published device profiles define safe defaults and limits; common 8 GB devices can search a prepared personal library without the language model being required.
+
+### Phase 5 — Product polish and first stable test release
+
+- [ ] Finish interaction-state, click-target, keyboard/focus and legacy-glyph auditing.
+- [ ] Validate the complete create/import/install/search/read/ask/note workflow on desktop and mobile layouts.
+- [ ] Remove obsolete transitional shell only where functional work has made it unnecessary.
+- [ ] Publish release notes and migration notes for the first stable test version.
+
+**Exit criteria:** no open P0/P1 usability or data-integrity issues; the representative corpus and complete CI gate pass; release `v0.3` as the first full personal-knowledge-base test version.
+
+## Deferred until after the roadmap
+
+- Native Android/iOS packaging.
+- Live MiniMed connection and clinical safety ownership.
+- Synchronization, signed catalogs, delta updates and encrypted personal data.
+- LLM Wiki as an optional generated navigation layer.
 
 ## Universal core and MiniMed
 
@@ -142,12 +204,14 @@ Single source of future work. Completed items describe the active branch.
 - [x] Preserve proposal provider, reviewer and review-time provenance on accepted records.
 - [x] Allow heavy preparation on a stronger desktop/server for weaker offline clients.
 - [x] Add a browser-local creator reachable from the existing Packages page.
-- [x] Accept multiple Markdown/TXT/JSON files or pasted Markdown text without uploading them.
+- [x] Accept multiple PDF/Markdown/TXT/JSON files or pasted Markdown text without uploading them.
 - [x] Preserve document titles, headings and source text; split large sections and discover common abbreviation patterns.
 - [x] Preview package statistics, download the JSON or install it immediately through the existing pack storage path.
 - [x] Validate ready-made pack JSON and enforce 32 MiB per file / 64 MiB total browser limits.
 - [x] Compare prepared statements with existing pack files and review proposed source discrepancies before export.
 - [x] Extract PDF text page-by-page and preserve exact `assetAnchor.page` references.
+- [x] Parse PDF layout and tables locally through the pinned `pdf-inspector` WASM runtime.
+- [x] Remove self-referential PDF links before sectioning and indexing while preserving external links.
 - [x] OCR only PDF pages without a usable text layer through an optional Tesseract hook.
 - [x] Extract DOCX headings and paragraph groups with paragraph start/end provenance.
 - [x] Copy original PDF/DOCX files into the prepared assets directory and compile the result through the existing pack builder.
