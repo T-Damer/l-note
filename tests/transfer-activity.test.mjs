@@ -6,6 +6,7 @@ import {
   sectionForTransferKind,
   sectionTransferActivities,
 } from '../src/helpers/transfer-activity.js';
+import { summarizeActivitySources } from '../src/pages/sidebar-controller.js';
 
 test('maps transfer kinds to their owning navigation sections', () => {
   assert.equal(sectionForTransferKind('speech-model'), 'search');
@@ -36,6 +37,34 @@ test('keeps indeterminate progress when running tasks report no usable value', (
   ]);
   assert.equal(activities.search.progress, null);
   assert.equal(activities.search.label, 'Whisper');
+});
+
+test('combines independent activity sources without allowing one to hide another', () => {
+  assert.deepEqual(summarizeActivitySources([
+    { active: true, progress: .4, label: 'Загрузка модели' },
+    { active: true, progress: .8, label: 'Загрузка пакета' },
+  ]), {
+    progress: .6000000000000001,
+    label: 'Загрузка модели · Загрузка пакета',
+  });
+  assert.deepEqual(summarizeActivitySources([
+    { active: true, progress: .4, label: 'Загрузка модели' },
+    { active: false, progress: 0, label: 'Transfer queue' },
+  ]), {
+    progress: .4,
+    label: 'Загрузка модели',
+  });
+  assert.equal(summarizeActivitySources([{ active: false }]), null);
+});
+
+test('indeterminate activity keeps the shared pie indeterminate', () => {
+  assert.deepEqual(summarizeActivitySources([
+    { active: true, progress: .5, label: 'Пакет' },
+    { active: true, progress: null, label: 'Распознавание речи' },
+  ]), {
+    progress: null,
+    label: 'Пакет · Распознавание речи',
+  });
 });
 
 test('large panel receives only operations that require user attention', () => {
