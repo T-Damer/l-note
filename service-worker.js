@@ -1,5 +1,5 @@
-const SHELL_CACHE = 'l-note-shell-v44';
-const RUNTIME_CACHE = 'l-note-runtime-v44';
+const SHELL_CACHE = 'l-note-shell-v45';
+const RUNTIME_CACHE = 'l-note-runtime-v45';
 const SHELL = [
   './',
   './index.html',
@@ -7,6 +7,11 @@ const SHELL = [
   './manifest.webmanifest',
   './assets/icon.svg',
   './assets/lnote-source-demo.pdf',
+  './benchmarks/search.html',
+  './benchmarks/search-benchmark.js',
+  './benchmarks/search-benchmark-core.js',
+  './benchmarks/search-benchmark-runner.js',
+  './benchmarks/sqlite-benchmark-worker.js',
   './vendor/minisearch.js',
   './vendor/minisearch.LICENSE.txt',
   './vendor/pdf-inspector/pdf_inspector_wasm.js',
