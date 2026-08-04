@@ -30,32 +30,35 @@ export function renderDiscrepancyReviewHtml(review) {
     .candidate h2 { margin: 0; font-size: 1rem; }
     .sources, .chronology-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
     .source, .chronology-side { min-width: 0; padding: .8rem; border-radius: .75rem; background: color-mix(in srgb, CanvasText 6%, Canvas); }
-    .source h3, .chronology h3, .chronology-side h4 { margin: 0 0 .2rem; font-size: .9rem; }
+    .source h3, .chronology h3, .chronology-side h4, .preference h3 { margin: 0 0 .2rem; font-size: .9rem; }
     blockquote { margin: .65rem 0 0; padding-left: .7rem; border-left: 3px solid color-mix(in srgb, CanvasText 28%, Canvas); line-height: 1.55; white-space: pre-wrap; }
-    .chronology { display: grid; gap: .65rem; padding: .8rem; border: 1px solid color-mix(in srgb, CanvasText 18%, Canvas); border-radius: .75rem; }
-    .chronology-warning { margin: 0; padding: .55rem .65rem; border-radius: .55rem; background: color-mix(in srgb, #b77a00 15%, Canvas); font-size: .82rem; }
+    .chronology, .preference { display: grid; gap: .65rem; padding: .8rem; border: 1px solid color-mix(in srgb, CanvasText 18%, Canvas); border-radius: .75rem; }
+    .chronology-warning, .preference-warning { margin: 0; padding: .55rem .65rem; border-radius: .55rem; background: color-mix(in srgb, #b77a00 15%, Canvas); font-size: .82rem; }
+    .preference-warning { background: color-mix(in srgb, #2f8f5b 13%, Canvas); }
     .chronology-facts { display: flex; flex-wrap: wrap; gap: .35rem; }
     .chronology-side dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: .3rem .6rem; margin: .55rem 0 0; font-size: .8rem; }
     .chronology-side dt { font-weight: 750; }
     .chronology-side dd { margin: 0; overflow-wrap: anywhere; }
     .controls { display: grid; grid-template-columns: minmax(12rem, .7fr) minmax(12rem, .7fr) minmax(16rem, 1.6fr); gap: .65rem; }
+    .preference-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; }
+    .preference-grid .wide { grid-column: span 2; }
     label { display: grid; gap: .25rem; font-size: .78rem; font-weight: 700; }
-    select, textarea, button { font: inherit; }
-    select, textarea { width: 100%; padding: .6rem .7rem; border: 1px solid color-mix(in srgb, CanvasText 24%, Canvas); border-radius: .6rem; background: Canvas; color: CanvasText; }
+    select, input, textarea, button { font: inherit; }
+    select, input, textarea { width: 100%; padding: .6rem .7rem; border: 1px solid color-mix(in srgb, CanvasText 24%, Canvas); border-radius: .6rem; background: Canvas; color: CanvasText; }
     textarea { min-height: 4.5rem; resize: vertical; }
     button { min-height: 2.6rem; padding: .6rem .85rem; border: 1px solid color-mix(in srgb, CanvasText 24%, Canvas); border-radius: .65rem; background: CanvasText; color: Canvas; cursor: pointer; font-weight: 750; }
     .decision { display: flex; flex-wrap: wrap; gap: .35rem; }
     .decision button { min-height: 2.25rem; background: Canvas; color: CanvasText; font-size: .78rem; }
     .decision button[aria-pressed="true"] { background: CanvasText; color: Canvas; }
     .empty { padding: 2rem; border: 1px dashed color-mix(in srgb, CanvasText 28%, Canvas); border-radius: 1rem; text-align: center; }
-    @media (max-width: 760px) { .sources, .chronology-grid, .controls { grid-template-columns: 1fr; } header.page { display: grid; } }
+    @media (max-width: 760px) { .sources, .chronology-grid, .controls, .preference-grid { grid-template-columns: 1fr; } .preference-grid .wide { grid-column: auto; } header.page { display: grid; } }
   </style>
 </head>
 <body>
   <header class="page">
     <div>
       <h1>Проверка разных сведений</h1>
-      <p class="muted">Сравните источники и подтвердите только те связи, которые действительно проверены. Эта страница не выбирает правильный документ автоматически.</p>
+      <p class="muted">Сравните источники и подтвердите только те связи, которые действительно проверены. Предпочтительная версия также назначается только вручную.</p>
     </div>
     <button id="download" type="button">Скачать результат</button>
   </header>
@@ -73,6 +76,12 @@ export function renderDiscrepancyReviewHtml(review) {
       ['supports', 'Поддерживает'],
       ['equivalent', 'То же утверждение'],
       ['supersedes', 'Заменяет после проверки'],
+    ];
+    const preferenceChoices = [
+      ['none', 'Не назначать'],
+      ['source', 'Исходное утверждение'],
+      ['target', 'Сопоставляемое утверждение'],
+      ['both', 'Оба утверждения'],
     ];
     const decisionLabels = { pending: 'Не решено', accept: 'Принять', dismiss: 'Отклонить' };
     const relationLabels = {
@@ -170,6 +179,36 @@ export function renderDiscrepancyReviewHtml(review) {
       ]);
     }
 
+    function boundInput(tag, candidate, property, value, attributes = {}) {
+      const control = node(tag, { ...attributes });
+      control.value = value;
+      const eventName = tag === 'select' ? 'change' : 'input';
+      control.addEventListener(eventName, () => { candidate[property] = control.value; });
+      return control;
+    }
+
+    function preferenceCard(candidate) {
+      const choice = node('select');
+      for (const [value, label] of preferenceChoices) choice.append(node('option', { value, text: label }));
+      choice.value = candidate.preferredChoice || 'none';
+      choice.addEventListener('change', () => { candidate.preferredChoice = choice.value; });
+      const group = boundInput('input', candidate, 'selectionGroupKey', candidate.selectionGroupKey || candidate.id, { type: 'text' });
+      const scope = boundInput('input', candidate, 'selectionScope', candidate.selectionScope || '', { type: 'text', placeholder: 'Например: взрослые, страна X' });
+      const validAt = boundInput('input', candidate, 'selectionValidAt', candidate.selectionValidAt || '', { type: 'text', placeholder: 'YYYY, YYYY-MM или YYYY-MM-DD' });
+      const reason = boundInput('textarea', candidate, 'selectionReason', candidate.selectionReason || '', { placeholder: 'Почему эта версия предпочтительна в указанном контексте' });
+      return node('section', { className: 'preference' }, [
+        node('h3', { text: 'Текущее или предпочтительное утверждение' }),
+        node('p', { className: 'preference-warning', text: 'Не назначается автоматически. Выбор попадёт в пакет только после принятия сопоставления и сохранит обе версии.' }),
+        node('div', { className: 'preference-grid' }, [
+          node('label', {}, [node('span', { text: 'Предпочтительная версия' }), choice]),
+          node('label', {}, [node('span', { text: 'Группа выбора' }), group]),
+          node('label', {}, [node('span', { text: 'Актуально на дату' }), validAt]),
+          node('label', {}, [node('span', { text: 'Контекст' }), scope]),
+          node('label', { className: 'wide' }, [node('span', { text: 'Основание выбора' }), reason]),
+        ]),
+      ]);
+    }
+
     function setDecision(candidate, article, value) {
       candidate.decision = value;
       article.dataset.decision = value;
@@ -194,10 +233,7 @@ export function renderDiscrepancyReviewHtml(review) {
         decisions.append(button);
       }
       const type = node('select');
-      for (const [value, label] of allowedTypes) {
-        const option = node('option', { value, text: label });
-        type.append(option);
-      }
+      for (const [value, label] of allowedTypes) type.append(node('option', { value, text: label }));
       type.value = candidate.selectedType || candidate.suggestedType || 'contradicts';
       type.addEventListener('change', () => { candidate.selectedType = type.value; });
       const reason = node('textarea', { text: candidate.reason || '' });
@@ -212,6 +248,7 @@ export function renderDiscrepancyReviewHtml(review) {
         ]),
         node('div', { className: 'sources' }, [sourceCard(candidate.source), sourceCard(candidate.target)]),
         chronologyCard(candidate.chronology),
+        preferenceCard(candidate),
         node('div', { className: 'controls' }, [
           node('label', {}, [node('span', { text: 'Решение' }), node('div', { className: 'muted', text: decisionLabels[candidate.decision || 'pending'] })]),
           node('label', {}, [node('span', { text: 'Тип связи' }), type]),
