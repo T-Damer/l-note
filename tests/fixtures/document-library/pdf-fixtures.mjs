@@ -138,18 +138,28 @@ export function multiColumnPdf() {
 export function imageHeavyPdf() {
   const text = textBlock([
     'IMAGE HEAVY SEARCHABLE PAGE',
-    'Four independent image objects surround this reliable text layer.',
-    'The text must remain searchable and anchored to page one.',
-    'Embedded images must not force the entire page through OCR.',
-    'The source PDF remains the authority for the visual content.',
+    'This report contains four independent figures and a reliable text layer.',
+    'The introduction explains the source and purpose of each illustration.',
+    'Figure one represents a stable synthetic checkerboard measurement.',
+    'Figure two represents a second independent synthetic measurement.',
+    'Figure three represents a third independent synthetic measurement.',
+    'Figure four represents a fourth independent synthetic measurement.',
+    'All captions and explanatory paragraphs remain ordinary PDF text.',
+    'The text must remain searchable and anchored to page number one.',
+    'Embedded illustrations must not erase the surrounding source text.',
+    'The original PDF remains authoritative for visual interpretation.',
+    'The extracted Markdown is used only for textual retrieval and evidence.',
     'Binary image extraction is outside the current portable pack contract.',
-  ], { x: 60, y: 748, size: 11, leading: 17 });
+    'Reviewers can always open the original page to inspect every figure.',
+    'Search results must preserve this explanatory context and its order.',
+    'The final paragraph confirms that the text layer is intentionally dense.',
+  ], { x: 46, y: 760, size: 9, leading: 15 });
   const images = [0, 1, 2, 3].map((offset) => imageObject(64, 64, offset));
   const placements = [
-    'q\n210 0 0 170 55 310 cm\n/Im1 Do\nQ',
-    'q\n210 0 0 170 345 310 cm\n/Im2 Do\nQ',
-    'q\n210 0 0 170 55 90 cm\n/Im3 Do\nQ',
-    'q\n210 0 0 170 345 90 cm\n/Im4 Do\nQ',
+    'q\n112 0 0 88 55 168 cm\n/Im1 Do\nQ',
+    'q\n112 0 0 88 185 168 cm\n/Im2 Do\nQ',
+    'q\n112 0 0 88 315 168 cm\n/Im3 Do\nQ',
+    'q\n112 0 0 88 445 168 cm\n/Im4 Do\nQ',
   ].join('\n');
   return serializePdf([
     '<< /Type /Catalog /Pages 2 0 R >>',
